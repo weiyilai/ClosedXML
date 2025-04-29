@@ -1,4 +1,6 @@
-﻿namespace ClosedXML.IO.CodeGen.Model;
+﻿using System.Diagnostics;
+
+namespace ClosedXML.IO.CodeGen.Model;
 
 /// <summary>
 /// <![CDATA[<xsd:attribute>]]> inside <![CDATA[<xsd:complexType>]]> or <![CDATA[<xsd:attributeGroup>]]>
@@ -29,5 +31,15 @@ public class AttributeElement : INode
     public T Accept<T>(IXsdVisitor<T> visitor)
     {
         return visitor.Visit(this);
+    }
+
+    internal void Generate(CodeBuilder code)
+    {
+        Debug.Assert(Name is not null);
+        Debug.Assert(Type is not null);
+        code.WriteIndent().Append("var ").AppendVariable(Name).Append(" = ").AppendSimpleTypeMethod(this);
+        if (DefaultValue is not null)
+            code.Append(" ?? ").Append(DefaultValue);
+        code.Append(";").EndLine();
     }
 }

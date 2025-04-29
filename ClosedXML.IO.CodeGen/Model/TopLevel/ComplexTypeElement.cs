@@ -10,4 +10,9 @@ public class ComplexTypeElement : ComplexType, INode
     {
         return visitor.Visit(this);
     }
+
+    internal override void GenerateParseMethod(CodeBuilder code, string namespaceField)
+    {
+        code.AddLine($"_reader.Close(elementName, {namespaceField});");
+    }
 }

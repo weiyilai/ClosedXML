@@ -1,5 +1,5 @@
 ﻿using ClosedXML.IO.CodeGen.Model.Elements;
-using System.Collections.Generic;
+using System;
 
 namespace ClosedXML.IO.CodeGen.Model.TopLevel;
 
@@ -25,5 +25,40 @@ public class ComplexTypeChoice : ComplexType, INode
     public T Accept<T>(IXsdVisitor<T> visitor)
     {
         return visitor.Visit(this);
+    }
+
+    internal override void GenerateParseMethod(CodeBuilder code, string namespaceField)
+    {
+        var min = Choice.Occurrences.Min ?? 1;
+        var max = Choice.Occurrences.Max ?? 1;
+
+        if (min == 1 && max == int.MaxValue)
+        {
+            code.AddLine("do");
+            code.OpenBrace();
+            var isFirst = true;
+            foreach (var child in Choice.Children)
+            {
+                var element = (ElementType)child;
+                var joiner = isFirst ? string.Empty : "else ";
+                isFirst = false;
+
+                code.AddLine($"{joiner}if (_reader.TryOpen(\"{element.Name}\", {namespaceField}))");
+                code.OpenBrace();
+                code.AddLine($"Parse{code.NormalizeCt(element.TypeName)}(\"{element.Name}\");");
+                code.CloseBrace();
+            }
+
+            code.AddLine("else");
+            code.OpenBrace();
+            code.AddLine("throw PartStructureException.ExpectedChoiceElementNotFound(reader);");
+            code.CloseBrace();
+            code.CloseBrace();
+            code.AddLine($"while (!_reader.TryClose(elementName, {namespaceField}));");
+        }
+        else
+        {
+            throw new NotImplementedException($"{min}-{max} choice is not implemented.");
+        }
     }
 }
