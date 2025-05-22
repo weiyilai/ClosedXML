@@ -1,3 +1,9 @@
+---
+name: Issue
+about: Issue template
+
+---
+
 ## Read and complete the full issue template
 
 Do not randomly delete sections. They are here for a reason.
