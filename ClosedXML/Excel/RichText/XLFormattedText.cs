@@ -4,40 +4,27 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
+using ClosedXML.Excel.Formatting;
 
 namespace ClosedXML.Excel
 {
     internal class XLFormattedText<T> : IXLFormattedText<T>
     {
+        // TODO: Move from ancestor to children, not needed here
+        protected T Container;
+        protected readonly XLWorkbookStyles Styles;
+
         /// <summary>
         /// Font used for a new rich text run, never modified. It is generally provided by a container of the formatted text.
         /// </summary>
-        private readonly IXLFontBase _defaultFont;
-        private List<XLRichString> _richTexts = new();
+        private readonly XLFontFormatValue _defaultFont;
+        private readonly List<XLRichString> _richTexts = new();
         private XLPhonetics _phonetics;
-        protected T Container;
 
-        protected XLFormattedText(IXLFormattedText<T> defaultRichText, IXLFontBase defaultFont)
-            : this(defaultFont)
+        protected XLFormattedText(XLFontFormatValue defaultFont, XLWorkbookStyles styles)
         {
-            foreach (var rt in defaultRichText)
-                AddText(rt.Text, rt);
-            if (defaultRichText.HasPhonetics)
-            {
-                _phonetics = new XLPhonetics(defaultRichText.Phonetics, defaultFont, OnContentChanged);
-            }
-        }
-
-        protected XLFormattedText(String text, IXLFontBase defaultFont)
-            : this(defaultFont)
-        {
-            AddText(text);
-        }
-
-        protected XLFormattedText(IXLFontBase defaultFont)
-        {
-            Length = 0;
             _defaultFont = defaultFont;
+            Styles = styles;
         }
 
         IXLPhonetics IXLFormattedText<T>.Phonetics => Phonetics;
@@ -51,23 +38,25 @@ namespace ClosedXML.Excel
         public Boolean HasPhonetics => _phonetics is not null;
 
         /// <inheritdoc cref="IXLFormattedText{T}.Phonetics"/>
-        internal XLPhonetics Phonetics => _phonetics ??= new XLPhonetics(_defaultFont, OnContentChanged);
+        internal XLPhonetics Phonetics
+        {
+            get => _phonetics ??= new XLPhonetics(_defaultFont, _defaultFont, Styles, OnContentChanged);
+            init => _phonetics = value;
+        } 
 
         public IXLRichString AddText(String text)
         {
-            return AddText(text, _defaultFont);
+            var richText = new XLRichString(text, _defaultFont, this, Styles, OnContentChanged);
+            AddText(richText);
+            OnContentChanged();
+            return richText;
         }
 
         public IXLRichString AddText(String text, IXLFontBase font)
         {
-            var richText = new XLRichString(text, font, this, OnContentChanged);
-            return AddText(richText);
-        }
-
-        public IXLRichString AddText(XLRichString richText)
-        {
-            _richTexts.Add(richText);
-            Length += richText.Text.Length;
+            var richFont = XLFontFormatValue.FromFontBase(font, Styles);
+            var richText = new XLRichString(text, richFont, this, Styles, OnContentChanged);
+            AddText(richText);
             OnContentChanged();
             return richText;
         }
@@ -100,6 +89,7 @@ namespace ClosedXML.Excel
             return sb.ToString();
         }
 
+#if !STYLES_REWORK
         public IXLFormattedText<T> Substring(Int32 index)
         {
             return Substring(index, Length - index);
@@ -159,6 +149,7 @@ namespace ClosedXML.Excel
 
             return this;
         }
+#endif
 
         public List<XLRichString>.Enumerator GetEnumerator() => _richTexts.GetEnumerator();
 
@@ -208,6 +199,12 @@ namespace ClosedXML.Excel
                 return false;
 
             return (_phonetics is null && !other.HasPhonetics) || Phonetics.Equals(other.Phonetics);
+        }
+
+        protected void AddText(XLRichString richText)
+        {
+            _richTexts.Add(richText);
+            Length += richText.Text.Length;
         }
 
         /// <summary>

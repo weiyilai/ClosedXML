@@ -76,28 +76,29 @@ internal record XLFontFormatValue
 
     public required XLFontScheme Scheme { get; init; }
 
-    internal XLFontKey GetFontKey()
+    /// <summary>
+    /// Return a registered font format equivalent to <paramref name="font"/>.
+    /// </summary>
+    internal static XLFontFormatValue FromFontBase(IXLFontBase font, XLWorkbookStyles styles)
     {
-        // XLFontKey doesn't contain outline, condense or extend
-        return new XLFontKey
+        var fontFormat = new XLFontFormatValue
         {
-            FontName = Name.Text,
-            FontCharSet = Charset,
-            FontFamilyNumbering = Family,
-            Bold = Bold,
-            Italic = Italic,
-            Strikethrough = Strikethrough,
-            Shadow = Shadow,
-
-            // TODO Styles: Incorrect default value for old XLFontValue.Color
-            // The correct color is auto, but XLFontValue uses black (0xFF000000).
-            // Changes few test workbooks, don't fix now. Fix it in bulk, when
-            // switching to new styles infra.
-            FontColor = Color == XLColor.Auto ? XLColor.FromArgb(0, 0, 0).Key : Color.Key,
-            FontSize = Size.Points,
-            Underline = Underline,
-            VerticalAlignment = VerticalAlignment,
-            FontScheme = Scheme
+            Name = font.FontName,
+            Charset = font.FontCharSet,
+            Family = font.FontFamilyNumbering,
+            Bold = font.Bold,
+            Italic = font.Italic,
+            Strikethrough = font.Strikethrough,
+            Outline = Default.Outline,
+            Shadow = font.Shadow,
+            Condense = Default.Condense,
+            Extend = Default.Extend,
+            Color = font.FontColor,
+            Size = XLFontSize.FromPoints(font.FontSize),
+            Underline = font.Underline,
+            VerticalAlignment = font.VerticalAlignment,
+            Scheme = font.FontScheme
         };
+        return styles.GetRegisteredFontFormat(fontFormat, static x => x);
     }
 }

@@ -1,7 +1,5 @@
 #nullable disable
 
-using ClosedXML.Excel.InsertData;
-using ClosedXML.Extensions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -11,10 +9,12 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using ClosedXML.Graphics;
-using ClosedXML.Parser;
 using ClosedXML.Excel.CalcEngine.Visitors;
 using ClosedXML.Excel.Formatting;
+using ClosedXML.Excel.InsertData;
+using ClosedXML.Extensions;
+using ClosedXML.Graphics;
+using ClosedXML.Parser;
 
 namespace ClosedXML.Excel
 {
@@ -93,20 +93,6 @@ namespace ClosedXML.Excel
         {
             get => _cellsCollection.ValueSlice.GetShareString(SheetPoint);
             set => _cellsCollection.ValueSlice.SetShareString(SheetPoint, value);
-        }
-
-        /// <summary>
-        /// Overriden <see cref="XLStylizedBase.StyleValue"/>, because we can't store the value
-        /// in the cell.
-        /// </summary>
-#if STYLES_REWORK
-        public XLStyleValue StyleValue
-#else
-        public override XLStyleValue StyleValue
-#endif
-        {
-            get => Worksheet.GetStyleValue(SheetPoint);
-            set => _cellsCollection.FormatSlice.Set(SheetPoint, value);
         }
 
         internal int MemorySstId => _cellsCollection.ValueSlice.GetShareStringId(SheetPoint);
@@ -197,6 +183,11 @@ namespace ClosedXML.Excel
 
         #region IXLFormatContainer
 #nullable enable
+
+        /// <summary>
+        /// A format of a cell. If cell has no explicitely set format, the value is <c>null</c>.
+        /// Use <see cref="CellFormat"/> for resolved format of a cell.
+        /// </summary>
         public XLCellFormatValue? FormatValue
         {
             get => _cellsCollection.FormatSlice.GetFormat(SheetPoint);
@@ -206,6 +197,18 @@ namespace ClosedXML.Excel
         #endregion
 
         internal XLCellFormat Format => XLCellFormat.ForCell(this);
+
+        /// <summary>
+        /// A format of a cell. If the cell has no explicit value, 
+        /// </summary>
+        internal XLCellFormatValue CellFormat
+        {
+            get
+            {
+                // TODO Styles: Implement
+                throw new NotImplementedException();
+            }
+        }
 
         internal XLComment GetComment()
         {
@@ -221,19 +224,19 @@ namespace ClosedXML.Excel
         {
             var sliceRichText = SliceRichText;
             if (sliceRichText is not null)
-                return new XLRichText(this, sliceRichText);
+                return new XLRichText(this, CellFormat.Font, sliceRichText);
 
             return CreateRichText();
         }
 
         public XLRichText CreateRichText()
         {
-            var font = new XLFont(GetStyleForRead().Font.Key);
+            var fontFormat = CellFormat.Font;
 
             // Don't include rich text string with 0 length to a new rich text
             var richText = DataType == XLDataType.Blank
-                ? new XLRichText(this, font)
-                : new XLRichText(this, GetFormattedString(), font);
+                ? new XLRichText(this, fontFormat)
+                : new XLRichText(this, fontFormat, GetFormattedString());
             SliceRichText = XLImmutableRichText.Create(richText);
             return richText;
         }

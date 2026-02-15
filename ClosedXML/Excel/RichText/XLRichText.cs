@@ -1,56 +1,67 @@
 using System;
-using System.Linq;
+using ClosedXML.Excel.Formatting;
 
 namespace ClosedXML.Excel
 {
+    /// <summary>
+    /// An API object for manipulating rich text. Every time it is changed, it calls
+    /// <see cref="OnContentChanged"/> to project changes back to the <see cref="SharedStringTable"/>.
+    /// </summary>
     internal class XLRichText : XLFormattedText<IXLRichText>, IXLRichText
     {
         // Should be set as the last thing in ctor to prevent firing changes to immutable rich text during ctor
         private readonly XLCell? _cell;
 
         /// <summary>
-        /// Copy ctor to return user modifiable rich text from immutable rich text stored
+        /// Copy ctor to return user modifiable rich text from an immutable rich text stored
         /// in the shared string table.
         /// </summary>
-        public XLRichText(XLCell cell, XLImmutableRichText original)
-            : base(cell.Style.Font)
+        internal XLRichText(XLCell cell, XLFontFormatValue defaultFont, XLImmutableRichText original)
+            : base(defaultFont, cell.Worksheet.Workbook.Styles)
         {
             foreach (var originalRun in original.Runs)
             {
                 var runText = original.GetRunText(originalRun);
-                AddText(new XLRichString(runText, new XLFont(originalRun.Font.Key), this, OnContentChanged));
+                AddText(new XLRichString(runText, originalRun.Font, this, Styles, OnContentChanged));
             }
 
-            var hasPhonetics = original.PhoneticRuns.Any() || original.PhoneticsProperties.HasValue;
+            var hasPhonetics = original.PhoneticRuns.Count > 0 || original.PhoneticsProperties.HasValue;
             if (hasPhonetics)
             {
-                // Access to phonetics instantiate a new instance.
-                var phonetics = Phonetics;
+                XLPhonetics phonetics;
                 if (original.PhoneticsProperties.HasValue)
                 {
-                    var phoneticProps = original.PhoneticsProperties.Value;
-                    phonetics.CopyFont(new XLFont(phoneticProps.Font.Key));
-                    phonetics.Type = phoneticProps.Type;
-                    phonetics.Alignment = phoneticProps.Alignment;
+                    var originalProps = original.PhoneticsProperties.Value;
+                    phonetics = new XLPhonetics(originalProps.Font, defaultFont, Styles, OnContentChanged)
+                    {
+                        Type = originalProps.Type,
+                        Alignment = originalProps.Alignment
+                    };
+                }
+                else
+                {
+                    phonetics = new XLPhonetics(defaultFont, defaultFont, Styles, OnContentChanged);
                 }
 
                 foreach (var phoneticRun in original.PhoneticRuns)
                     phonetics.Add(phoneticRun.Text, phoneticRun.StartIndex, phoneticRun.EndIndex);
+
+                Phonetics = phonetics;
             }
 
+            // TODO Styles: Convert to a factory method. The cell is set at the end to avoid false change trigger. Refactor so it's not needed anymore
             Container = this;
             _cell = cell;
         }
 
-        public XLRichText(XLCell cell, IXLFontBase defaultFont)
-            : base(defaultFont)
+        internal XLRichText(XLCell cell, XLFontFormatValue defaultFont, String text)
+            : this(cell, defaultFont)
         {
-            Container = this;
-            _cell = cell;
+            AddText(new XLRichString(text, defaultFont, this, Styles, OnContentChanged));
         }
 
-        public XLRichText(XLCell cell, String text, IXLFontBase defaultFont)
-            : base(text, defaultFont)
+        internal XLRichText(XLCell cell, XLFontFormatValue defaultFont)
+            : base(defaultFont, cell.Worksheet.Workbook.Styles)
         {
             Container = this;
             _cell = cell;

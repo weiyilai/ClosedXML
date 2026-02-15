@@ -1,33 +1,27 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ClosedXML.Excel.Formatting;
 
 namespace ClosedXML.Excel
 {
     internal class XLPhonetics : IXLPhonetics
     {
         private readonly List<IXLPhonetic> _phonetics = new();
-        private readonly XLFont _font;
-        private readonly IXLFontBase _defaultFont;
+        private readonly XLWorkbookStyles _styles;
+        private readonly XLFontFormatValue _defaultFont;
         private readonly Action _onChange;
+        private XLFontFormatValue _font;
         private XLPhoneticAlignment _alignment;
         private XLPhoneticType _type;
 
-        public XLPhonetics(IXLFontBase defaultFont, Action onChange)
+        public XLPhonetics(XLFontFormatValue font, XLFontFormatValue defaultFont, XLWorkbookStyles styles, Action onChange)
         {
+            _styles = styles;
             _defaultFont = defaultFont;
-            _font = new XLFont(defaultFont);
+            _font = font;
             _type = XLPhoneticType.FullWidthKatakana;
             _alignment = XLPhoneticAlignment.Left;
-            _onChange = onChange;
-        }
-
-        public XLPhonetics(IXLPhonetics defaultPhonetics, IXLFontBase defaultFont, Action onChange)
-        {
-            _defaultFont = defaultFont;
-            _font = new XLFont(defaultPhonetics);
-            _type = defaultPhonetics.Type;
-            _alignment = defaultPhonetics.Alignment;
             _onChange = onChange;
         }
 
@@ -36,121 +30,73 @@ namespace ClosedXML.Excel
         public Boolean Bold
         {
             get => _font.Bold;
-            set
-            {
-                _font.Bold = value;
-                _onChange();
-            }
+            set => ChangeFont(f => f with { Bold = value});
         }
 
         public Boolean Italic
         {
             get => _font.Italic;
-            set
-            {
-                _font.Italic = value;
-                _onChange();
-            }
+            set => ChangeFont(f => f with { Italic = value });
         }
 
         public XLFontUnderlineValues Underline
         {
             get => _font.Underline;
-            set
-            {
-                _font.Underline = value;
-                _onChange();
-            }
+            set => ChangeFont(f => f with { Underline = value });
         }
 
         public Boolean Strikethrough
         {
             get => _font.Strikethrough;
-            set
-            {
-                _font.Strikethrough = value;
-                _onChange();
-            }
+            set => ChangeFont(f => f with { Strikethrough = value });
         }
 
         public XLFontVerticalTextAlignmentValues VerticalAlignment
         {
             get => _font.VerticalAlignment;
-            set
-            {
-                _font.VerticalAlignment = value;
-                _onChange();
-            }
+            set => ChangeFont(f => f with { VerticalAlignment = value });
         }
 
         public Boolean Shadow
         {
             get => _font.Shadow;
-            set
-            {
-                _font.Shadow = value;
-                _onChange();
-            }
+            set => ChangeFont(f => f with { Shadow = value });
         }
 
         public Double FontSize
         {
-            get => _font.FontSize;
-            set
-            {
-                _font.FontSize = value;
-                _onChange();
-            }
+            get => _font.Size.Points;
+            set => ChangeFont(f => f with { Size = XLFontSize.FromPoints(value) });
         }
 
         public XLColor FontColor
         {
-            get => _font.FontColor;
-            set
-            {
-                _font.FontColor = value;
-                _onChange();
-            }
+            get => _font.Color;
+            set => ChangeFont(f => f with { Color = value });
         }
 
         public String FontName
         {
-            get => _font.FontName;
-            set
-            {
-                _font.FontName = value;
-                _onChange();
-            }
+            get => _font.Name.Text;
+            set => ChangeFont(f => f with { Name = value });
         }
 
         public XLFontFamilyNumberingValues FontFamilyNumbering
         {
-            get => _font.FontFamilyNumbering;
-            set
-            {
-                _font.FontFamilyNumbering = value;
-                _onChange();
-            }
+            get => _font.Family;
+            set => ChangeFont(f => f with { Family = value });
         }
 
         public XLFontCharSet FontCharSet
         {
-            get => _font.FontCharSet;
-            set
-            {
-                _font.FontCharSet = value;
-                _onChange();
-            }
+            get => _font.Charset;
+            set => ChangeFont(f => f with { Charset = value });
         }
 
         public XLFontScheme FontScheme
         {
-            get => _font.FontScheme;
-            set
-            {
-                _font.FontScheme = value;
-                _onChange();
-            }
+            get => _font.Scheme;
+            set => ChangeFont(f => f with { Scheme = value });
         }
 
         public XLPhoneticAlignment Alignment
@@ -172,6 +118,8 @@ namespace ClosedXML.Excel
                 _onChange();
             }
         }
+
+        internal XLFontFormatValue Font => _font;
 
         public IXLPhonetics SetBold() { Bold = true; return this; }
 
@@ -227,7 +175,7 @@ namespace ClosedXML.Excel
 
         public IXLPhonetics ClearFont()
         {
-            this.CopyFont(_defaultFont);
+            _font = _defaultFont;
             _onChange();
             return this;
         }
@@ -256,9 +204,15 @@ namespace ClosedXML.Excel
                 return false;
 
             return
-                _font.Key.Equals(other._font.Key) &&
+                _font.Equals(other._font) &&
                 Type == other.Type &&
                 Alignment == other.Alignment;
+        }
+
+        private void ChangeFont(Func<XLFontFormatValue, XLFontFormatValue> modifyFont)
+        {
+            _font = _styles.GetRegisteredFontFormat(_font, modifyFont);
+            _onChange();
         }
     }
 }

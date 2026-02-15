@@ -1,21 +1,27 @@
 using System;
 using System.Diagnostics;
+using ClosedXML.Excel.Formatting;
 
 namespace ClosedXML.Excel
 {
+    /// <summary>
+    /// An API object to modify a rich string.
+    /// </summary>
     [DebuggerDisplay("{Text}")]
     internal class XLRichString : IXLRichString
     {
+        private readonly XLWorkbookStyles _styles;
         private readonly IXLWithRichString _withRichString;
-        private readonly XLFont _font;
         private readonly Action _onChange;
         private string _text;
+        private XLFontFormatValue _font;
 
-        public XLRichString(String text, IXLFontBase font, IXLWithRichString withRichString, Action? onChange)
+        internal XLRichString(String text, XLFontFormatValue font, IXLWithRichString withRichString, XLWorkbookStyles styles, Action? onChange)
         {
             _text = text;
-            _font = new XLFont(font);
+            _font = font;
             _withRichString = withRichString;
+            _styles = styles;
             _onChange = onChange ?? (() => { });
         }
 
@@ -42,122 +48,76 @@ namespace ClosedXML.Excel
         public Boolean Bold
         {
             get => _font.Bold;
-            set
-            {
-                _font.Bold = value;
-                _onChange();
-            }
+            set => ChangeFont(f => f with { Bold = value });
         }
 
         public Boolean Italic
         {
             get => _font.Italic;
-            set
-            {
-                _font.Italic = value;
-                _onChange();
-            }
+            set => ChangeFont(f => f with { Italic = value });
         }
 
         public XLFontUnderlineValues Underline
         {
             get => _font.Underline;
-            set
-            {
-                _font.Underline = value;
-                _onChange();
-            }
+            set => ChangeFont(f => f with { Underline = value });
         }
 
         public Boolean Strikethrough
         {
             get => _font.Strikethrough;
-            set
-            {
-                _font.Strikethrough = value;
-                _onChange();
-            }
+            set => ChangeFont(f => f with { Strikethrough = value });
         }
 
         public XLFontVerticalTextAlignmentValues VerticalAlignment
         {
             get => _font.VerticalAlignment;
-            set
-            {
-                _font.VerticalAlignment = value;
-                _onChange();
-            }
+            set => ChangeFont(f => f with { VerticalAlignment = value });
         }
 
         public Boolean Shadow
         {
             get => _font.Shadow;
-            set
-            {
-                _font.Shadow = value;
-                _onChange();
-            }
+            set => ChangeFont(f => f with { Shadow = value });
         }
 
         public Double FontSize
         {
-            get => _font.FontSize;
-            set
-            {
-                _font.FontSize = value;
-                _onChange();
-            }
+            get => _font.Size.Points;
+            set => ChangeFont(f => f with { Size = XLFontSize.FromPoints(value) });
         }
 
         public XLColor FontColor
         {
-            get => _font.FontColor;
-            set
-            {
-                _font.FontColor = value;
-                _onChange();
-            }
+            get => _font.Color;
+            set => ChangeFont(f => f with { Color = value });
         }
 
         public String FontName
         {
-            get => _font.FontName;
-            set
-            {
-                _font.FontName = value;
-                _onChange();
-            }
+            get => _font.Name.Text;
+            set => ChangeFont(f => f with { Name = value });
         }
 
         public XLFontFamilyNumberingValues FontFamilyNumbering
         {
-            get => _font.FontFamilyNumbering;
-            set
-            {
-                _font.FontFamilyNumbering = value;
-                _onChange();
-            }
+            get => _font.Family;
+            set => ChangeFont(f => f with { Family = value });
         }
 
         public XLFontCharSet FontCharSet
         {
-            get => _font.FontCharSet;
-            set
-            {
-                _font.FontCharSet = value;
-                _onChange();
-            }
+            get => _font.Charset;
+            set => ChangeFont(f => f with { Charset = value });
         }
 
         public XLFontScheme FontScheme
         {
-            get => _font.FontScheme;
-            set
-            {
-                _font.FontScheme = value;
-                _onChange();
-            }
+            get => _font.Scheme;
+            set => ChangeFont(f => f with { Scheme = value });
         }
+
+        internal XLFontFormatValue Font => _font;
 
         public IXLRichString SetBold()
         {
@@ -256,7 +216,7 @@ namespace ClosedXML.Excel
             if (ReferenceEquals(this, other))
                 return true;
 
-            return Text == other.Text && _font.Key.Equals(other._font.Key);
+            return Text == other.Text && _font.Equals(other._font);
         }
 
         public override int GetHashCode()
@@ -264,6 +224,12 @@ namespace ClosedXML.Excel
             // Since all properties of type are mutable, can't have different hashcode for any instance.
             // Don't ever use this class in a dictionary, e.g. SST.
             return 4; // Chosen by fair dice roll. Guaranteed to be random.
+        }
+
+        private void ChangeFont(Func<XLFontFormatValue, XLFontFormatValue> modifyFont)
+        {
+            _font = _styles.GetRegisteredFontFormat(_font, modifyFont);
+            _onChange();
         }
     }
 }
