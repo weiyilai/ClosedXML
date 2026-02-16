@@ -259,26 +259,6 @@ namespace ClosedXML.Excel
             if (checkMergedRanges && IsInferiorMergedCell())
                 return this;
 
-            SetValueAndStyle(value);
-
-            FormulaA1 = null;
-
-            if (setTableHeader)
-            {
-                var cellRange = new XLSheetRange(SheetPoint, SheetPoint);
-                foreach (var table in Worksheet.Tables)
-                    table.RefreshFieldsFromCells(cellRange);
-            }
-
-            return this;
-        }
-
-        /// <summary>
-        /// Set value of a cell and its format (if necessary) from the passed value.
-        /// It doesn't clear formulas or checks merged cells or tables.
-        /// </summary>
-        private void SetValueAndStyle(XLCellValue value)
-        {
             // Mimic Excel behavior: When a value is set to a a certain types (e.g. timespan or
             // a date), the format of a cell is changed.
             var valueRequiredFormat = Worksheet.GetStyleForValue(value, SheetPoint);
@@ -296,6 +276,17 @@ namespace ClosedXML.Excel
             }
 
             SetOnlyValue(value);
+
+            FormulaA1 = null;
+
+            if (setTableHeader)
+            {
+                var cellRange = new XLSheetRange(SheetPoint, SheetPoint);
+                foreach (var table in Worksheet.Tables)
+                    table.RefreshFieldsFromCells(cellRange);
+            }
+
+            return this;
         }
 
         public Boolean GetBoolean() => Value.GetBoolean();
