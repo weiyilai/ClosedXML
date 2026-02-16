@@ -1954,7 +1954,7 @@ namespace ClosedXML.Excel
         /// <summary>
         /// Get the actual style for a point in the sheet.
         /// </summary>
-        internal XLStyleValue GetStyleValue(XLSheetPoint point)
+        internal XLCellFormatValue GetStyleValue(XLSheetPoint point)
         {
             var styleValue = Internals.CellsCollection.FormatSlice.GetStyleValue(point);
             if (styleValue is not null)
@@ -1980,7 +1980,7 @@ namespace ClosedXML.Excel
         /// Get a style that should be used for a <paramref name="value"/>,
         /// if the value is set to the <paramref name="point"/>.
         /// </summary>
-        internal XLStyleValue? GetStyleForValue(XLCellValue value, XLSheetPoint point)
+        internal XLCellFormatValue? GetStyleForValue(XLCellValue value, XLSheetPoint point)
         {
             // Because StyleValue property retrieves value from a slice,
             // access it only if necessary. This happens during ever cell

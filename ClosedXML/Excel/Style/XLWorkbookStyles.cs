@@ -316,6 +316,13 @@ internal class XLWorkbookStyles
         return modified;
     }
 
+    internal XLCellFormatValue GetModifiedFormat(XLCellFormatValue originalFormat, Func<XLFontFormatValue, XLFontFormatValue> modify)
+    {
+        var modifiedFont = GetRegisteredFontFormat(originalFormat.Font, modify);
+        var modifiedFormat = GetRegisteredCellFormat(originalFormat, format => format with { Font = modifiedFont });
+        return modifiedFormat;
+    }
+
     internal XLFillFormatValue GetRegisteredFillFormat(XLFillFormatValue original, Func<XLFillFormatValue, XLFillFormatValue> modify)
     {
         var modified = modify(original);
@@ -336,9 +343,9 @@ internal class XLWorkbookStyles
         return modified;
     }
 
-    internal XLCellFormatValue GetRegisteredCellFormat(XLCellFormatValue original, Func<XLCellFormatValue, XLCellFormatValue> modify)
+    internal XLCellFormatValue GetRegisteredCellFormat(XLCellFormatValue original, Func<XLCellFormatValue, XLCellFormatValue>? modify = null)
     {
-        var modified = modify(original);
+        var modified = modify is not null ? modify(original) : original;
         if (_cellFormats.TryGetValue(modified, out var existing))
             return existing;
 
