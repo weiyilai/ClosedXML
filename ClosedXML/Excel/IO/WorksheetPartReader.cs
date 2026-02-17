@@ -1,17 +1,17 @@
-using DocumentFormat.OpenXml.Packaging;
-using DocumentFormat.OpenXml.Spreadsheet;
-using DocumentFormat.OpenXml;
-using System.Collections.Generic;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using ClosedXML.Utils;
 using ClosedXML.Extensions;
 using ClosedXML.IO;
-using X14 = DocumentFormat.OpenXml.Office2010.Excel;
-using System.Diagnostics;
 using ClosedXML.Parser;
+using ClosedXML.Utils;
+using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Spreadsheet;
 using static ClosedXML.Excel.XLPredefinedFormat.DateTime;
+using X14 = DocumentFormat.OpenXml.Office2010.Excel;
 
 namespace ClosedXML.Excel.IO;
 
@@ -35,7 +35,6 @@ internal class WorksheetPartReader
 
     internal void LoadWorksheet(XLWorksheet ws, WorksheetPart worksheetPart, SharedStringItem[] sharedStrings, LoadContext context)
     {
-        var styleList = new Dictionary<int, XLStyleValue>();// {{0, ws.Style}};
         PageSetupProperties pageSetupProperties = null;
 
         _lastRow = 0;
@@ -83,7 +82,7 @@ internal class WorksheetPartReader
                 else if (reader.ElementType == typeof(Columns))
                     LoadColumns(ws, (Columns)reader.LoadCurrentElement());
                 else if (reader.ElementType == typeof(Row))
-                    LoadRow(ws, sharedStrings, styleList, reader);
+                    LoadRow(ws, sharedStrings, reader);
                 else if (reader.ElementType == typeof(AutoFilter))
                     AutoFilterReader.LoadAutoFilter((AutoFilter)reader.LoadCurrentElement(), ws);
                 else if (reader.ElementType == typeof(SheetProtection))
@@ -206,15 +205,13 @@ internal class WorksheetPartReader
         }
     }
 
-    private void LoadRow(XLWorksheet ws, SharedStringItem[] sharedStrings,
-                          Dictionary<Int32, XLStyleValue> styleList,
-                          OpenXmlPartReader reader)
+    private void LoadRow(XLWorksheet ws, SharedStringItem[] sharedStrings, OpenXmlPartReader reader)
     {
         Debug.Assert(reader.LocalName == "row");
 
         var attributes = reader.Attributes;
         var rowIndexAttr = attributes.GetAttribute("r");
-        
+
         // Row number is an optional attribute. If not specified, it should be a next row from the last read row.
         var rowIndex = string.IsNullOrEmpty(rowIndexAttr) ? ++_lastRow : int.Parse(rowIndexAttr);
         _lastRow = rowIndex;
@@ -274,7 +271,7 @@ internal class WorksheetPartReader
 
         while (reader.IsStartElement("c"))
         {
-            LoadCell(sharedStrings, ws, styleList, reader, rowIndex);
+            LoadCell(sharedStrings, ws, reader, rowIndex);
 
             // Move from end element of 'cell' either to next cell, extList start or end of row.
             reader.MoveAhead();
@@ -285,8 +282,7 @@ internal class WorksheetPartReader
             reader.Skip();
     }
 
-    private void LoadCell(SharedStringItem[] sharedStrings,
-                          XLWorksheet ws, Dictionary<Int32, XLStyleValue> styleList, OpenXmlPartReader reader, Int32 rowIndex)
+    private void LoadCell(SharedStringItem[] sharedStrings, XLWorksheet ws, OpenXmlPartReader reader, Int32 rowIndex)
     {
         Debug.Assert(reader.LocalName == "c" && reader.IsStartElement);
 
@@ -312,15 +308,6 @@ internal class WorksheetPartReader
 
         var styleIndex = attributes.GetIntAttribute("s") ?? 0;
         xlCell.FormatValue = ws.Workbook.Styles.CellFormats[styleIndex];
-
-        if (styleList.TryGetValue(styleIndex, out var styleValue))
-        {
-            xlCell.StyleValue = styleValue;
-        }
-        else
-        {
-            ApplyStyle(xlCell, styleIndex, ws.Workbook.Styles);
-        }
 
         var showPhonetic = attributes.GetBoolAttribute("ph", false);
         if (showPhonetic)
@@ -408,9 +395,6 @@ internal class WorksheetPartReader
             // so if a workbook is in 1904-format, we do that adjustment here and when saving.
             xlCell.SetOnlyValue(xlCell.GetDateTime().AddDays(1462));
         }
-
-        if (!styleList.ContainsKey(styleIndex))
-            styleList.Add(styleIndex, xlCell.StyleValue);
     }
 
     private XLCellFormula SetCellFormula(XLWorksheet ws, XLSheetPoint cellAddress, OpenXmlPartReader reader)
@@ -1255,52 +1239,15 @@ internal class WorksheetPartReader
         }
     }
 
-    private static void ApplyStyle(XLWorksheet sheet, Int32 styleIndex, XLWorkbookStyles styles)
+    private static void ApplyStyle(IXLFormatContainer container, Int32 styleIndex, XLWorkbookStyles styles)
     {
-        ApplyStyle(styleValue =>
-        {
-            sheet.StyleValue = styleValue;
-            sheet.FormatValue = styles.CellFormats[styleIndex];
-        }, styleIndex, styles);
-    }
-    
-    private static void ApplyStyle(XLRow row, Int32 styleIndex, XLWorkbookStyles styles)
-    {
-        ApplyStyle(styleValue =>
-        {
-            row.StyleValue = styleValue;
-            row.FormatValue = styles.CellFormats[styleIndex];
-        }, styleIndex, styles);
-    }
-
-    private static void ApplyStyle(XLCell cell, Int32 styleIndex, XLWorkbookStyles styles)
-    {
-        ApplyStyle(styleValue =>
-        {
-            cell.StyleValue = styleValue;
-            cell.FormatValue = styles.CellFormats[styleIndex];
-        }, styleIndex, styles);
-    }
-
-    private static void ApplyStyle(Action<XLStyleValue> setStyle, Int32 styleIndex, XLWorkbookStyles styles)
-    {
-        var xlStyleKey = XLStyle.Default.Key;
-        XLWorkbook.LoadStyle(ref xlStyleKey, styleIndex, styles);
-        var styleValue = XLStyleValue.FromKey(ref xlStyleKey);
-        setStyle(styleValue);
+        container.FormatValue = styles.CellFormats[styleIndex];
     }
 
     private static void ApplyStyle(XLColumns columns, Int32 styleIndex, XLWorkbookStyles styles)
     {
-        var xlStyleKey = XLStyle.Default.Key;
-        XLWorkbook.LoadStyle(ref xlStyleKey, styleIndex, styles);
-
         // When loading columns we must propagate style to each column but not deeper. In other cases we do not propagate at all.
-        var styleValue = XLStyleValue.FromKey(ref xlStyleKey);
-        columns.Cast<XLColumn>().ForEach(col =>
-        {
-            col.StyleValue = styleValue;
-            col.FormatValue = styles.CellFormats[styleIndex];
-        });
+        foreach (XLColumn col in columns)
+            ApplyStyle(col, styleIndex, styles);
     }
 }
