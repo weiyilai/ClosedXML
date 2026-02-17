@@ -183,7 +183,11 @@ namespace ClosedXML.Excel
         ///   Gets or sets the default style for the workbook.
         ///   <para>All new worksheets will use this style.</para>
         /// </summary>
-        public IXLStyle Style { get; set; }
+        public IXLStyle Style
+        {
+            get => Format;
+            set => Format.SetStyle(value);
+        }
 
         /// <summary>
         ///   Gets or sets the default row height for the workbook.

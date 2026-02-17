@@ -42,20 +42,4 @@ internal record XLAlignmentFormatValue
     public required bool ShrinkToFit { get; init; }
 
     public required XLAlignmentReadingOrderValues ReadingOrder { get; init; }
-
-    internal XLAlignmentKey ApplyTo(XLAlignmentKey alignmentKey)
-    {
-        return new XLAlignmentKey
-        {
-            Horizontal = Horizontal,
-            Vertical = Vertical,
-            TextRotation = TextRotation.Value,
-            WrapText = WrapText,
-            Indent = Indent,
-            RelativeIndent = RelativeIndent,
-            JustifyLastLine = JustifyLastLine,
-            ShrinkToFit = ShrinkToFit,
-            ReadingOrder = ReadingOrder
-        };
-    }
 }
