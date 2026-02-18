@@ -301,6 +301,18 @@ internal class XLWorkbookStyles
         return numberFormat;
     }
 
+    private XLAlignmentFormatValue GetRegisteredAlignmentFormat(XLAlignmentFormatValue original, Func<XLAlignmentFormatValue, XLAlignmentFormatValue> modify)
+    {
+        // TODO Styles: Probably also make a table for alignment
+        return modify(original);
+    }
+
+    private XLProtectionFormatValue GetRegisteredProtectionFormat(XLProtectionFormatValue original, Func<XLProtectionFormatValue, XLProtectionFormatValue> modify)
+    {
+        // TODO Styles: Probably also make a table for protection
+        return modify(original);
+    }
+
     /// <summary>
     /// Get a font format that is stored in the internal structures of the styles class. The font
     /// format is created by modification of existing font format. This is essential for saving,
@@ -314,6 +326,20 @@ internal class XLWorkbookStyles
 
         AddFontFormat(modified);
         return modified;
+    }
+
+    internal XLCellFormatValue GetModifiedFormat(XLCellFormatValue originalFormat, string numberFormat)
+    {
+        var modifiedNumberFormat = GetRegisteredNumberFormat(numberFormat);
+        var modifiedFormat = GetRegisteredCellFormat(originalFormat, format => format with { NumberFormat = modifiedNumberFormat });
+        return modifiedFormat;
+    }
+
+    internal XLCellFormatValue GetModifiedFormat(XLCellFormatValue originalFormat, Func<XLAlignmentFormatValue, XLAlignmentFormatValue> modify)
+    {
+        var modifiedAlignment = GetRegisteredAlignmentFormat(originalFormat.Alignment, static x => x);
+        var modifiedFormat = GetRegisteredCellFormat(originalFormat, format => format with { Alignment = modifiedAlignment });
+        return modifiedFormat;
     }
 
     internal XLCellFormatValue GetModifiedFormat(XLCellFormatValue originalFormat, Func<XLFontFormatValue, XLFontFormatValue> modify)
@@ -343,14 +369,30 @@ internal class XLWorkbookStyles
         return modified;
     }
 
-    internal XLCellFormatValue GetRegisteredCellFormat(XLCellFormatValue original, Func<XLCellFormatValue, XLCellFormatValue>? modify = null)
+    internal XLCellFormatValue GetRegisteredCellFormat(XLCellFormatValue original, Func<XLCellFormatValue, XLCellFormatValue> modify)
     {
-        var modified = modify is not null ? modify(original) : original;
+        var modified = modify(original);
         if (_cellFormats.TryGetValue(modified, out var existing))
             return existing;
 
         AddFormat(modified);
         return modified;
+    }
+
+    /// <summary>
+    /// Get registered format equal to <paramref name="format"/> from the styles. Generally for copying formats other workbooks.
+    /// </summary>
+    internal XLCellFormatValue GetRegisteredCellFormat(XLCellFormatValue format)
+    {
+        // Each component might be from a different workbook, so ensure they are all registered. Formats are immutable, so sharing is fine.
+        var registeredNumberFormat = GetRegisteredNumberFormat(format.NumberFormat);
+        var registeredAlignment = GetRegisteredAlignmentFormat(format.Alignment, static x => x);
+        var registeredProtection = GetRegisteredProtectionFormat(format.Protection, static x => x);
+        var registeredFont = GetRegisteredFontFormat(format.Font, static x => x);
+        var registeredFill = GetRegisteredFillFormat(format.Fill, static x => x);
+        var registeredBorder = GetRegisteredBorderFormat(format.Border, static x => x);
+        var registeredFormat = GetRegisteredCellFormat(format, static x => x);
+        return registeredFormat;
     }
 
     /// <summary>

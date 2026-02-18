@@ -170,5 +170,15 @@ namespace ClosedXML.Excel
 
             return text;
         }
+
+        // TODO Styles: Remove primitive obsession, make a custom type. It will be able to have methods and other constraints.
+        /// <summary>
+        /// Is a number format a general number format?
+        /// </summary>
+        internal static bool IsGeneralFormat(this string numberFormat)
+        {
+            // General format is an empty string.
+            return numberFormat.Length == 0;
+        }
     }
 }
