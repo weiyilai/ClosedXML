@@ -6,9 +6,9 @@ using ClosedXML.Excel.Formatting;
 namespace ClosedXML.Excel;
 
 /// <summary>
-/// API object to modify font properties of a cell format of a <see cref="IXLFormatContainer"/>.
-/// Unlike the <see cref="XLStyle"/>, the <see cref="XLCellFormat"/> one modifies formatting
-/// in a <see cref="XLWorkbookStyles"/>.
+/// API object to modify properties of a cell format of a <see cref="IXLFormatContainer"/>.
+/// The methods and properties create a modified formats and the formats are registered
+/// in the <see cref="XLWorkbookStyles"/>.
 /// </summary>
 internal partial class XLCellFormat
 {
