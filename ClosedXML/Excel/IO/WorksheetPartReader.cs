@@ -795,24 +795,11 @@ internal class WorksheetPartReader
 
             conditionalFormat.StopIfTrue = OpenXmlHelper.GetBooleanValueAsBool(fr.StopIfTrue, false);
 
-            var dxfKey = XLStyle.Default.Value.Key;
+            // TODO Styles: CF with empty format is technically legal, but seriously suss. Investigate.
             if (fr.FormatId is not null)
             {
-                var df = differentialFormats[checked((int)fr.FormatId.Value)];
-                if (df.NumberFormat is not null)
-                    dxfKey = dxfKey with { NumberFormat = XLNumberFormatKey.ForFormat(df.NumberFormat) };
-
-                if (df.Font is not null)
-                    dxfKey = dxfKey with { Font = df.Font.ApplyTo(dxfKey.Font) };
-
-                if (df.Fill is not null)
-                    dxfKey = dxfKey with { Fill = df.Fill.ApplyTo(dxfKey.Fill) };
-
-                if (df.Border is not null)
-                    dxfKey = dxfKey with { Border = df.Border.ApplyTo(dxfKey.Border) };
+                conditionalFormat.FormatValue = differentialFormats[checked((int)fr.FormatId.Value)];
             }
-
-            conditionalFormat.Style = new XLStyle(null, dxfKey);
 
             // The conditional formatting type is compulsory. If it doesn't exist, skip the entire rule.
             if (fr.Type == null) continue;

@@ -1,4 +1,4 @@
-#nullable disable
+#nullable disable warnings
 
 using System;
 using System.Collections.Generic;
@@ -7,13 +7,7 @@ using ClosedXML.Excel.Formatting;
 
 namespace ClosedXML.Excel
 {
-    internal class XLConditionalFormat :
-#if STYLES_REWORK
-        IXLDxfContainer,
-#else
-        XLStylizedBase,
-#endif
-        IXLConditionalFormat
+    internal class XLConditionalFormat : IXLDxfContainer, IXLConditionalFormat
     {
         private readonly XLWorksheet _worksheet;
 
@@ -171,8 +165,7 @@ namespace ClosedXML.Excel
 
         public Boolean CopyDefaultModify { get; set; }
 
-#if STYLES_REWORK
-        public XLDxfValue FormatValue { get; set; }
+        public XLDxfValue? FormatValue { get; set; }
 
         internal XLDxFormat Format => new(_worksheet.Workbook.Styles, this);
 
@@ -181,14 +174,6 @@ namespace ClosedXML.Excel
             get => Format;
             set => Format.SetValue(value);
         }
-#else
-        protected override IEnumerable<XLStylizedBase> Children
-        {
-            get { yield break; }
-        }
-
-        public override IEnumerable<IXLRange> RangesUsed => Array.Empty<IXLRange>();
-#endif
 
         public XLDictionary<XLFormula> Values { get; private set; }
 

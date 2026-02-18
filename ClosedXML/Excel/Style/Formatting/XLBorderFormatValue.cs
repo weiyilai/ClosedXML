@@ -48,25 +48,4 @@ internal record XLBorderFormatValue
     public required bool DiagonalDown { get; init; }
 
     public required bool Outline { get; init; }
-
-    internal XLBorderKey ApplyTo(XLBorderKey borderKey)
-    {
-        borderKey = new XLBorderKey
-        {
-            LeftBorder = Left.Style,
-            LeftBorderColor = Left.Color.Key,
-            RightBorder = Right.Style,
-            RightBorderColor = Right.Color.Key,
-            TopBorder = Top.Style,
-            TopBorderColor = Top.Color.Key,
-            BottomBorder = Bottom.Style,
-            BottomBorderColor = Bottom.Color.Key,
-            DiagonalBorder = Diagonal.Style,
-            DiagonalBorderColor = Diagonal.Color.Key,
-            DiagonalUp = DiagonalUp,
-            DiagonalDown = DiagonalDown
-        };
-
-        return borderKey;
-    }
 }
