@@ -134,7 +134,7 @@ internal class PivotTableDefinitionPartWriter2
             xml.WriteAttributeOptional("uniqueMemberProperty", pf.UniqueMemberProperty);
             xml.WriteAttributeDefault("compact", pf.Compact, true);
             xml.WriteAttributeDefault("allDrilled", pf.AllDrilled, false);
-            xml.WriteAttributeOptional("numFmtId", context.GetNumberFormat(pf.NumberFormatValue));
+            xml.WriteAttributeOptional("numFmtId", context.GetNumberFormatId(pf.NumberFormatValue));
             xml.WriteAttributeDefault("outline", pf.Outline, true);
             xml.WriteAttributeDefault("subtotalTop", pf.SubtotalTop, true);
             xml.WriteAttributeDefault("dragToRow", pf.DragToRow, true);
@@ -305,7 +305,7 @@ internal class PivotTableDefinitionPartWriter2
 
                 xml.WriteAttributeDefault("baseField", dataField.BaseField, -1);
                 xml.WriteAttributeDefault("baseItem", dataField.BaseItem, 1048832);
-                xml.WriteAttributeOptional("numFmtId", context.GetNumberFormat(dataField.NumberFormatValue));
+                xml.WriteAttributeOptional("numFmtId", context.GetNumberFormatId(dataField.NumberFormatValue));
 
                 xml.WriteEndElement(); // dataField
             }
@@ -331,10 +331,10 @@ internal class PivotTableDefinitionPartWriter2
                     xml.WriteAttribute("action", actionAttr);
                 }
 
-                // DxfId is optional.
-                if (format.DxfStyleValue != XLStyleValue.Default)
+                // DxfId is technically optional.
+                if (format.FormatValue is not null)
                 {
-                    var dxfId = context.GetDxfId(format.DxfStyleValue);
+                    var dxfId = context.GetDxfId(format.FormatValue);
                     xml.WriteAttribute("dxfId", dxfId);
                 }
 

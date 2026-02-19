@@ -89,7 +89,7 @@ internal class XLPivotDataField : IXLPivotValue
     /// <summary>
     /// Formatting to apply to the data field. If <see cref="XLPivotFormat"/> disagree, this has precedence.
     /// </summary>
-    internal XLNumberFormatValue? NumberFormatValue { get; set; }
+    internal string? NumberFormatValue { get; set; }
 
     #region IXLPivotValue
 
