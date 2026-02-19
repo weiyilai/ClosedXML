@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using ClosedXML.Excel.Formatting;
 using ClosedXML.Extensions;
 using ClosedXML.IO;
 using ClosedXML.Parser;
@@ -306,8 +307,12 @@ internal class WorksheetPartReader
 
         var xlCell = ws.Cell(cellAddress.Row, cellAddress.Column);
 
-        var styleIndex = attributes.GetIntAttribute("s") ?? 0;
-        xlCell.FormatValue = ws.Workbook.Styles.CellFormats[styleIndex];
+        var xfId = attributes.GetIntAttribute("s") ?? 0;
+        var cellFormat = ws.Workbook.Styles.CellFormats[xfId];
+        if (xfId != 0)
+        {
+            xlCell.FormatValue = cellFormat;
+        }
 
         var showPhonetic = attributes.GetBoolAttribute("ph", false);
         if (showPhonetic)
@@ -339,7 +344,7 @@ internal class WorksheetPartReader
         var cellHasValue = reader.IsStartElement("v");
         if (cellHasValue)
         {
-            SetCellValue(dataType, reader.GetText(), xlCell, sharedStrings);
+            SetCellValue(dataType, reader.GetText(), xlCell, cellFormat, sharedStrings);
 
             // Skips all nodes of the 'v' element (has no child nodes) and moves to the first element after.
             reader.Skip();
@@ -498,14 +503,14 @@ internal class WorksheetPartReader
         return formula;
     }
 
-    private void SetCellValue(CellValues dataType, string cellValue, XLCell xlCell, SharedStringItem[] sharedStrings)
+    private void SetCellValue(CellValues dataType, string cellValue, XLCell xlCell, XLCellFormatValue format, SharedStringItem[] sharedStrings)
     {
         if (dataType == CellValues.Number)
         {
             // XLCell is by default blank, so no need to set it.
             if (cellValue is not null && double.TryParse(cellValue, XLHelper.NumberStyle, XLHelper.ParseCulture, out var number))
             {
-                var numberDataType = GetNumberDataType(xlCell.StyleValue.NumberFormat);
+                var numberDataType = GetNumberDataType(format.NumberFormat);
                 var cellNumber = numberDataType switch
                 {
                     XLDataType.DateTime => XLCellValue.FromSerialDateTime(number),
@@ -614,9 +619,15 @@ internal class WorksheetPartReader
         }
     }
 
-    private static XLDataType GetNumberDataType(XLNumberFormatValue numberFormat)
+    // TODO Styles: Move methods to strongly typed number format
+    private static XLDataType GetNumberDataType(string numberFormat)
     {
-        var numberFormatId = (XLPredefinedFormat.DateTime)numberFormat.NumberFormatId;
+        if (!XLPredefinedFormat.NumberFormatIds.TryGetValue(numberFormat, out var formatId))
+        {
+            return XLDataType.Number;
+        }
+
+        var numberFormatId = (XLPredefinedFormat.DateTime)formatId;
         var isTimeOnlyFormat = numberFormatId is
             Hour12MinutesAmPm or
             Hour12MinutesSecondsAmPm or
@@ -638,9 +649,9 @@ internal class WorksheetPartReader
         if (isDateTimeFormat)
             return XLDataType.DateTime;
 
-        if (!String.IsNullOrWhiteSpace(numberFormat.Format))
+        if (!String.IsNullOrWhiteSpace(numberFormat))
         {
-            var dataType = GetDataTypeFromFormat(numberFormat.Format);
+            var dataType = GetDataTypeFromFormat(numberFormat);
             return dataType ?? XLDataType.Number;
         }
 
