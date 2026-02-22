@@ -125,7 +125,7 @@ internal class PivotTableDefinitionPartReader
                 var baseField = dataField.BaseField?.Value ?? -1;
                 var baseItem = dataField.BaseItem?.Value ?? 1048832;
                 var numberFormatId = checked((int?)dataField.NumberFormatId?.Value);
-                var numberFormat = numberFormatId is not null ? styles.GetNumberFormat(numberFormatId.Value) : null;
+                var numberFormat = numberFormatId is not null ? styles.NumberFormats[numberFormatId.Value] : null;
                 var xlDataField = new XLPivotDataField(xlPivotTable, checked((int)field))
                 {
                     DataFieldName = name,
@@ -362,7 +362,7 @@ internal class PivotTableDefinitionPartReader
         var compact = pivotField.Compact?.Value ?? true;
         var allDrilled = pivotField.AllDrilled?.Value ?? false;
         var numberFormatId = checked((int?)pivotField.NumberFormatId?.Value);
-        var numberFormat = numberFormatId is not null ? styles.GetNumberFormat(numberFormatId.Value) : null;
+        var numberFormat = numberFormatId is not null ? styles.NumberFormats[numberFormatId.Value] : null;
         var outline = pivotField.Outline?.Value ?? true;
         var subtotalTop = pivotField.SubtotalTop?.Value ?? true;
         var dragToRow = pivotField.DragToRow?.Value ?? true;

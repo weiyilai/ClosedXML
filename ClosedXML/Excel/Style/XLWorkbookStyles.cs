@@ -217,16 +217,6 @@ internal class XLWorkbookStyles
         CustomFormat = CellFormatComponents.None
     };
 
-    internal XLNumberFormatValue GetNumberFormat(int numberFormatId)
-    {
-        var xlNumberFormat = new XLNumberFormatKey
-        {
-            NumberFormatId = numberFormatId,
-            Format = _numberFormats[numberFormatId]
-        };
-        return XLNumberFormatValue.FromKey(ref xlNumberFormat);
-    }
-
     internal void AddNumberFormat(int numFmtId, string formatCode)
     {
         _numberFormats.Add(numFmtId, formatCode);
