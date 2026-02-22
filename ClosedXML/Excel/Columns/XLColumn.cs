@@ -14,11 +14,7 @@ namespace ClosedXML.Excel
         /// The direct constructor should only be used in <see cref="XLWorksheet.RangeFactory"/>.
         /// </summary>
         public XLColumn(XLWorksheet worksheet, Int32 column)
-#if STYLES_REWORK
             : base(XLRangeAddress.EntireColumn(worksheet, column))
-#else
-            : base(XLRangeAddress.EntireColumn(worksheet, column), worksheet.StyleValue)
-#endif
         {
             SetColumnNumber(column);
 
@@ -108,7 +104,16 @@ namespace ClosedXML.Excel
             Worksheet.Internals.ColumnsCollection.ShiftColumnsRight(columnNum + 1, numberOfColumns);
             Worksheet.Column(columnNum).InsertColumnsAfterVoid(true, numberOfColumns);
             var newColumns = Worksheet.Columns(columnNum + 1, columnNum + numberOfColumns);
-            CopyColumns(newColumns);
+            foreach (var newColumn in newColumns)
+            {
+                var internalColumn = Worksheet.Internals.ColumnsCollection[newColumn.ColumnNumber()];
+                internalColumn.Width = Width;
+                internalColumn.FormatValue = FormatValue; // Is within a worbook
+                internalColumn.Collapsed = Collapsed;
+                internalColumn.IsHidden = IsHidden;
+                internalColumn._outlineLevel = OutlineLevel;
+            }
+
             return newColumns;
         }
 
@@ -124,19 +129,6 @@ namespace ClosedXML.Excel
             Worksheet.Column(columnNum).InsertColumnsBeforeVoid(true, numberOfColumns);
 
             return Worksheet.Columns(columnNum, columnNum + numberOfColumns - 1);
-        }
-
-        private void CopyColumns(IXLColumns newColumns)
-        {
-            foreach (var newColumn in newColumns)
-            {
-                var internalColumn = Worksheet.Internals.ColumnsCollection[newColumn.ColumnNumber()];
-                internalColumn.Width = Width;
-                internalColumn.StyleValue = StyleValue;
-                internalColumn.Collapsed = Collapsed;
-                internalColumn.IsHidden = IsHidden;
-                internalColumn._outlineLevel = OutlineLevel;
-            }
         }
 
         public IXLColumn AdjustToContents()
@@ -213,7 +205,6 @@ namespace ClosedXML.Excel
 
             // Reusable buffer
             var glyphs = new List<GlyphBox>();
-            XLStyle? cellStyle = null;
             var columnWidthPx = 0;
             foreach (var cell in Column(startRow, endRow).CellsUsed())
             {
@@ -223,14 +214,13 @@ namespace ClosedXML.Excel
                 if (cell.IsMerged())
                     continue;
 
-                // Reuse styles if possible to reduce memory consumption
-                if (cellStyle is null || cellStyle.Value != cell.StyleValue)
-                    cellStyle = (XLStyle)cell.Style;
+                var cellStyle = Worksheet.GetStyleValue(cell.SheetPoint);
 
                 cell.GetGlyphBoxes(engine, dpi, glyphs);
-                var textWidthPx = (int)Math.Ceiling(GetContentWidth(cellStyle.Alignment.TextRotation, glyphs));
+                var textWidthPx = (int)Math.Ceiling(GetContentWidth(cellStyle.Alignment.TextRotation.Value, glyphs));
 
-                var scaledMdw = engine.GetMaxDigitWidth(cellStyle.Font, dpi.X);
+                // TODO Styles: This allocates for each cell, reuse.
+                var scaledMdw = engine.GetMaxDigitWidth(cellStyle.Font.ToFontBase(), dpi.X);
                 scaledMdw = Math.Round(scaledMdw, MidpointRounding.AwayFromZero);
 
                 // Not sure about rounding, but larger is probably better, so use ceiling.
@@ -416,7 +406,7 @@ namespace ClosedXML.Excel
             column.Clear();
             var newColumn = (XLColumn)column;
             newColumn.Width = Width;
-            newColumn.StyleValue = StyleValue;
+            newColumn.FormatValue = newColumn.Worksheet.Workbook.Styles.GetRegisteredCellFormat(GetFormat());
             newColumn.IsHidden = IsHidden;
 
             (this as XLRangeBase).CopyTo(column);
@@ -469,6 +459,11 @@ namespace ClosedXML.Excel
         public XLCellFormatValue? FormatValue { get; set; }
 
         internal override XLCellFormat Format => XLCellFormat.ForColumn(this);
+
+        private XLCellFormatValue GetFormat()
+        {
+            return FormatValue ?? Worksheet.Workbook.Styles.DefaultCellFormat;
+        }
 
         #endregion
 
@@ -587,8 +582,7 @@ namespace ClosedXML.Excel
 
         public override Boolean IsEmpty(XLCellsUsedOptions options)
         {
-            if (options.HasFlag(XLCellsUsedOptions.NormalFormats) &&
-                !StyleValue.Equals(Worksheet.StyleValue))
+            if (options.HasFlag(XLCellsUsedOptions.NormalFormats) && FormatValue is not null)
                 return false;
 
             return base.IsEmpty(options);
@@ -603,14 +597,5 @@ namespace ClosedXML.Excel
         {
             return true;
         }
-
-#if STYLES_REWORK
-        // TODO Styles: Replace with FormatValue during cut-over
-        internal XLStyleValue StyleValue
-        {
-            get;
-            set;
-        } = null!;
-#endif
     }
 }
