@@ -28,7 +28,7 @@ namespace ClosedXML.Excel
             SetAsInitial();
         }
 
-        internal readonly IXLWorksheet Worksheet;
+        internal readonly XLWorksheet Worksheet;
 
         public IXLHFItem Left { get; private set; }
         public IXLHFItem Center { get; private set; }
