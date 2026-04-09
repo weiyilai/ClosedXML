@@ -205,7 +205,7 @@ namespace ClosedXML.Excel
                 .Cells()
                 .Skip(this.table.ShowHeaderRow ? 1 : 0)
                 .OfType<XLCell>()
-                .Select(c => c.StyleValue);
+                .Select(c => c.Format);
 
             if (this.table.ShowTotalsRow)
                 styles = styles.SkipLast();

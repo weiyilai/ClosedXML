@@ -33,8 +33,6 @@ namespace ClosedXML.Excel
         IXLFormattedText<T> ClearText();
         IXLFormattedText<T> ClearFont();
 
-#if !STYLES_REWORK
-TODO Styles: Restore after styles are finished. 
         IXLFormattedText<T> Substring(Int32 index);
         IXLFormattedText<T> Substring(Int32 index, Int32 length);
 
@@ -44,7 +42,6 @@ TODO Styles: Restore after styles are finished.
         /// <param name="original">Original to copy from.</param>
         /// <returns>This text.</returns>
         IXLFormattedText<T> CopyFrom(IXLFormattedText<T> original);
-#endif
 
         /// <summary>
         /// How many rich strings is the formatted text composed of.

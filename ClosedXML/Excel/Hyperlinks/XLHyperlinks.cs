@@ -244,8 +244,9 @@ internal class XLHyperlinks : IXLHyperlinks, ISheetListener
 
     private void ClearHyperlinkStyle(XLSheetRange range)
     {
-        var sheetColor = _worksheet.StyleValue.Font.FontColor;
-        var sheetUnderline = _worksheet.StyleValue.Font.Underline;
+        var worksheetFont = _worksheet.GetFormat().Font;
+        var sheetColor = worksheetFont.Color;
+        var sheetUnderline = worksheetFont.Underline;
         foreach (var point in range)
         {
             var cell = _worksheet.GetCell(point);

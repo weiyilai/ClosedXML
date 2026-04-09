@@ -79,7 +79,7 @@ namespace ClosedXML.Excel
                         item.Ranges.Select(r => r.RangeAddress.FirstAddress.RowNumber).Min(),
                         item.Ranges.Select(r => r.RangeAddress.FirstAddress.ColumnNumber).Min(),
                         false, false);
-                    var baseCell = firstRange.Worksheet.Cell(baseAddress) as XLCell;
+                    var baseCell = (XLCell)firstRange.Worksheet.Cell(baseAddress);
 
                     int i = 1;
                     bool stop = false;
@@ -120,7 +120,7 @@ namespace ClosedXML.Excel
                     item.Ranges.RemoveAll();
                     consRanges.ForEach(r => item.Ranges.Add(r));
 
-                    var targetCell = item.Ranges.First().FirstCell() as XLCell;
+                    var targetCell = (XLCell)item.Ranges.First().FirstCell();
                     item.AdjustFormulas(baseCell, targetCell);
 
                     similarFormats.ForEach(cf => formats.Remove(cf));

@@ -81,12 +81,12 @@ namespace ClosedXML.Excel.IO
                 // https://github.com/ClosedXML/ClosedXML/issues/513
                 if (xlField.IsConsistentStyle())
                 {
-                    var style = ((XLStyle)xlField.Column.Cells()
+                    // TODO Styles: This is not a great way to determine data format id, because cell uses fullformat, not dxf.
+                    var firstDataCell = (XLCell)xlField.Column.Cells()
                         .Skip(xlTable.ShowHeaderRow ? 1 : 0)
-                        .First()
-                        .Style).Value;
-
-                    if (!DefaultStyleValue.Equals(style) && context.TryGetDxfId(style, out var dxfId))
+                        .First();
+                    var format = firstDataCell.FormatValue;
+                    if (format is not null && context.TryGetDxfId(format, out var dxfId))
                         tableColumn.DataFormatId = dxfId;
                 }
                 else

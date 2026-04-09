@@ -52,15 +52,8 @@ namespace ClosedXML.Excel
         {
             get
             {
-                return XLStyle.Default;
-            }
-        }
-
-        internal static XLStyleValue DefaultStyleValue
-        {
-            get
-            {
-                return XLStyleValue.Default;
+                // TODO Styles: Deal with this, only used in tests. Maybe delete?
+                throw new NotImplementedException();
             }
         }
 
@@ -808,7 +801,6 @@ namespace ClosedXML.Excel
             DefaultRowHeight = 15;
             DefaultColumnWidth = 8.43;
             Styles = XLWorkbookStyles.CreateInitialized();
-            Style = new XLStyle(null, DefaultStyle);
             RowHeight = DefaultRowHeight;
             ColumnWidth = DefaultColumnWidth;
             PageOptions = DefaultPageOptions;

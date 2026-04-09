@@ -165,7 +165,19 @@ internal class StylesWriter
 
         xml.WriteEndElement();
 
-        // Fill the map used in other parts to determine format id
+        // Fill the maps used in other parts to determine saved id for a format
+        foreach (var (numberFormatId, numberFormat) in numberFormatMap.GetActual())
+        {
+            if (!context.NumberFormatMap.ContainsKey(numberFormat))
+                context.NumberFormatMap.Add(numberFormat, numberFormatId);
+        }
+
+        foreach (var (fontId, fontFormat) in fontFormatsMap.GetActual())
+        {
+            if (!context.FontMap.ContainsKey(fontFormat))
+                context.FontMap.Add(fontFormat, fontId);
+        }
+
         foreach (var (xfId, format) in cellXfsMap.GetActual())
         {
             if (!context.FormatMap.ContainsKey(format))
@@ -779,7 +791,8 @@ internal class StylesWriter
         xml.WriteEndElement(); // colors
     }
 
-    private class SequentialMap<TKey, T>
+    // TODO Styles: Move the class out and initialition of maps to different place.
+    internal class SequentialMap<TKey, T>
         where TKey : struct
     {
         /// <summary>

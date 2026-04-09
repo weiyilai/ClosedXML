@@ -202,7 +202,7 @@ namespace ClosedXML.Excel
 
         internal XLComment CreateComment(int? shapeId = null)
         {
-            return SliceComment = new XLComment(this, shapeId: shapeId);
+            return SliceComment = XLComment.Create(this, shapeId: shapeId);
         }
 
         public XLRichText GetRichText()
@@ -1142,7 +1142,7 @@ namespace ClosedXML.Excel
         /// <summary>
         /// Get format of a cell that should be used to render it.
         /// </summary>
-        private XLCellFormatValue GetFormat()
+        internal XLCellFormatValue GetFormat()
         {
             return Worksheet.GetStyleValue(SheetPoint);
         }
@@ -1347,7 +1347,7 @@ namespace ClosedXML.Excel
                 SliceRichText = sourceRichText;
 
             FormulaR1C1 = source.FormulaR1C1;
-            SliceComment = source.SliceComment == null ? null : new XLComment(this, source.SliceComment, source.Style.Font, source.SliceComment.Style);
+            SliceComment = source.SliceComment == null ? null : XLComment.CreateAsCopy(this, source, source.SliceComment);
 
             if (source.Worksheet.Hyperlinks.TryGet(source.SheetPoint, out var sourceHyperlink))
             {

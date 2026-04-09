@@ -210,6 +210,11 @@ namespace ClosedXML.Excel
 
         internal override XLCellFormat Format => XLCellFormat.ForWorksheet(this);
 
+        internal XLCellFormatValue GetFormat()
+        {
+            return FormatValue ?? Workbook.Styles.DefaultCellFormat;
+        }
+
         #endregion
 
         #region IXLWorksheet Members

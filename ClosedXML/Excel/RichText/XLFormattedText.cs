@@ -2,8 +2,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using ClosedXML.Excel.Formatting;
 
 namespace ClosedXML.Excel
@@ -23,6 +24,7 @@ namespace ClosedXML.Excel
 
         protected XLFormattedText(XLFontFormatValue defaultFont, XLWorkbookStyles styles)
         {
+            Debug.Assert(styles.Fonts.ContainsValue(defaultFont));
             _defaultFont = defaultFont;
             Styles = styles;
         }
@@ -89,7 +91,23 @@ namespace ClosedXML.Excel
             return sb.ToString();
         }
 
-#if !STYLES_REWORK
+
+#if STYLES_REWORK
+        // TODO Styles: Implement
+        public IXLFormattedText<T> Substring(Int32 index)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IXLFormattedText<T> Substring(Int32 index, Int32 length)
+        {
+            throw new NotImplementedException();
+        }
+        public IXLFormattedText<T> CopyFrom(IXLFormattedText<T> original)
+        {
+            throw new NotImplementedException();
+        }
+#else
         public IXLFormattedText<T> Substring(Int32 index)
         {
             return Substring(index, Length - index);

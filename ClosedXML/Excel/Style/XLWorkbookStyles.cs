@@ -311,11 +311,16 @@ internal class XLWorkbookStyles
     internal XLFontFormatValue GetRegisteredFontFormat(XLFontFormatValue original, Func<XLFontFormatValue, XLFontFormatValue> modify)
     {
         var modified = modify(original);
-        if (_fontFormats.TryGetValue(modified, out var existingFont))
+        return GetRegisteredFontFormat(modified);
+    }
+
+    internal XLFontFormatValue GetRegisteredFontFormat(XLFontFormatValue font)
+    {
+        if (_fontFormats.TryGetValue(font, out var existingFont))
             return existingFont;
 
-        AddFontFormat(modified);
-        return modified;
+        AddFontFormat(font);
+        return font;
     }
 
     internal XLCellFormatValue GetModifiedFormat(XLCellFormatValue originalFormat, string numberFormat)
@@ -327,7 +332,7 @@ internal class XLWorkbookStyles
 
     internal XLCellFormatValue GetModifiedFormat(XLCellFormatValue originalFormat, Func<XLAlignmentFormatValue, XLAlignmentFormatValue> modify)
     {
-        var modifiedAlignment = GetRegisteredAlignmentFormat(originalFormat.Alignment, static x => x);
+        var modifiedAlignment = GetRegisteredAlignmentFormat(originalFormat.Alignment, modify);
         var modifiedFormat = GetRegisteredCellFormat(originalFormat, format => format with { Alignment = modifiedAlignment });
         return modifiedFormat;
     }

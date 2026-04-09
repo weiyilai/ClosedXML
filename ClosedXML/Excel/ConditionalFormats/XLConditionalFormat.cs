@@ -35,13 +35,8 @@ namespace ClosedXML.Excel
                 var yyValues = yy.Values.Values.Where(v => v == null || !v.IsFormula).Select(v => v?.Value);
                 var xxFormulas = xx.Ranges.Count > 0 ? xx.Values.Values.Where(v => v != null && v.IsFormula).Select(f => ((XLCell)xx.Ranges.First().FirstCell()).GetFormulaR1C1(f.Value)) : null;
                 var yyFormulas = yy.Ranges.Count > 0 ? yy.Values.Values.Where(v => v != null && v.IsFormula).Select(f => ((XLCell)yy.Ranges.First().FirstCell()).GetFormulaR1C1(f.Value)) : null;
-#if STYLES_REWORK
-                var xStyle = xx.Format;
-                var yStyle = yy.Format;
-#else
-                var xStyle = xx.StyleValue;
-                var yStyle = yy.StyleValue;
-#endif
+                var xStyle = xx.FormatValue;
+                var yStyle = yy.FormatValue;
                 return Equals(xStyle, yStyle)
                     && xx.CopyDefaultModify == yy.CopyDefaultModify
                     && xx.ConditionalFormatType == yy.ConditionalFormatType
@@ -65,7 +60,7 @@ namespace ClosedXML.Excel
             public int GetHashCode(XLConditionalFormat obj)
             {
                 var xx = obj;
-                var xStyle = ((XLStyle)obj.Style).Value;
+                var xStyle = obj.FormatValue;
                 var xValues = xx.Values.Values.Where(v => !v.IsFormula).Select(v => v.Value);
                 if (obj.Ranges.Count > 0)
                     xValues = xValues

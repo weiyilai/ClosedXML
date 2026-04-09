@@ -316,47 +316,20 @@ namespace ClosedXML.Excel
                 }
 
                 var firstCell = FirstCell();
-                var firstCellStyleKey = (firstCell.Style as XLStyle).Key;
-                var firstCellStyle = firstCell.Style;
-                var defaultStyleKey = XLStyle.Default.Key;
                 var cellsUsed =
                     CellsUsed(XLCellsUsedOptions.All & ~XLCellsUsedOptions.MergedRanges, c => !c.Equals(firstCell)).ToList();
                 cellsUsed.ForEach(c => c.Clear(XLClearOptions.All
                                                & ~XLClearOptions.MergedRanges
                                                & ~XLClearOptions.NormalFormats));
 
-                if (firstCellStyleKey.Alignment != defaultStyleKey.Alignment)
-                    asRange.Style.Alignment = firstCellStyle.Alignment;
-                else
-                    cellsUsed.ForEach(c => c.Style.Alignment = firstCellStyle.Alignment);
-
-                if (firstCellStyleKey.Fill != defaultStyleKey.Fill)
-                    asRange.Style.Fill = firstCellStyle.Fill;
-                else
-                    cellsUsed.ForEach(c => c.Style.Fill = firstCellStyle.Fill);
-
-                if (firstCellStyleKey.Font != defaultStyleKey.Font)
-                    asRange.Style.Font = firstCellStyle.Font;
-                else
-                    cellsUsed.ForEach(c => c.Style.Font = firstCellStyle.Font);
-
-                if (firstCellStyleKey.IncludeQuotePrefix != defaultStyleKey.IncludeQuotePrefix)
-                    asRange.Style.IncludeQuotePrefix = firstCellStyle.IncludeQuotePrefix;
-                else
-                    cellsUsed.ForEach(c => c.Style.IncludeQuotePrefix = firstCellStyle.IncludeQuotePrefix);
-
-                if (firstCellStyleKey.NumberFormat != defaultStyleKey.NumberFormat)
-                    asRange.Style.NumberFormat = firstCellStyle.NumberFormat;
-                else
-                    cellsUsed.ForEach(c => c.Style.NumberFormat = firstCellStyle.NumberFormat);
-
-                if (firstCellStyleKey.Protection != defaultStyleKey.Protection)
-                    asRange.Style.Protection = firstCellStyle.Protection;
-                else
-                    cellsUsed.ForEach(c => c.Style.Protection = firstCellStyle.Protection);
-
-                if (cellsUsed.Any(c => (c.Style as XLStyle).Key.Border != defaultStyleKey.Border))
-                    asRange.Style.Border.SetInsideBorder(XLBorderStyleValues.None);
+                // TODO Styles: Optimize, this is an old version. Newer versions were more complicated, but likely also more performant (e.g. merge of columns).
+                asRange.Style.Alignment = firstCell.Style.Alignment;
+                asRange.Style.Border.SetInsideBorder(XLBorderStyleValues.None);
+                asRange.Style.Fill = firstCell.Style.Fill;
+                asRange.Style.Font = firstCell.Style.Font;
+                asRange.Style.IncludeQuotePrefix = firstCell.Style.IncludeQuotePrefix;
+                asRange.Style.NumberFormat = firstCell.Style.NumberFormat;
+                asRange.Style.Protection = firstCell.Style.Protection;
             }
 
             Worksheet.Internals.MergedRanges.Add(asRange);
