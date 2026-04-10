@@ -16,7 +16,7 @@ internal class XLWorkbookStyles
     /// </summary>
     public const int FirstUserDefinedNumberFormatIndex = 164;
 
-    private readonly BiDictionary<int, string> _numberFormats;
+    private readonly BiDictionary<int, XLNumberFormat> _numberFormats;
 
     private readonly BiDictionary<int, XLFontFormatValue> _fontFormats;
 
@@ -109,7 +109,7 @@ internal class XLWorkbookStyles
 
     internal XLWorkbookStyles()
     {
-        _numberFormats = new BiDictionary<int, string>();
+        _numberFormats = new BiDictionary<int, XLNumberFormat>();
         _fontFormats = new BiDictionary<int, XLFontFormatValue>();
         _fillFormats = new BiDictionary<int, XLFillFormatValue>();
         _borderFormats = new BiDictionary<int, XLBorderFormatValue>();
@@ -120,7 +120,7 @@ internal class XLWorkbookStyles
         _pivotStyles = new Dictionary<string, XLPivotTableStyle>(XLHelper.NameComparer);
     }
 
-    internal IReadOnlyBiDictionary<int, string> NumberFormats => _numberFormats;
+    internal IReadOnlyBiDictionary<int, XLNumberFormat> NumberFormats => _numberFormats;
 
     internal IReadOnlyBiDictionary<int, XLFontFormatValue> Fonts => _fontFormats;
 
@@ -191,7 +191,7 @@ internal class XLWorkbookStyles
             VerticalAlignment = XLFontVerticalTextAlignmentValues.Baseline,
             Scheme = XLFontScheme.None
         },
-        NumberFormat = "",
+        NumberFormat = XLPredefinedFormat.FormatCodes[XLPredefinedFormat.General],
         Alignment = new XLAlignmentFormatValue()
         {
             Horizontal = XLAlignmentHorizontalValues.General,
@@ -217,18 +217,18 @@ internal class XLWorkbookStyles
         CustomFormat = CellFormatComponents.None
     };
 
-    internal void AddNumberFormat(int numFmtId, string formatCode)
+    internal void AddNumberFormat(int numFmtId, XLNumberFormat format)
     {
-        _numberFormats.Add(numFmtId, formatCode);
+        _numberFormats.Add(numFmtId, format);
     }
 
-    internal void AddUserDefinedNumberFormat(string formatCode)
+    internal void AddUserDefinedNumberFormat(XLNumberFormat numberFormat)
     {
         var numFmtId = FirstUserDefinedNumberFormatIndex;
         if (_numberFormats.Count > 0)
             numFmtId = Math.Max(_numberFormats.Keys.Max() + 1, numFmtId);
         
-        _numberFormats.Add(numFmtId, formatCode);
+        _numberFormats.Add(numFmtId, numberFormat);
     }
 
     internal void AddFontFormat(XLFontFormatValue fontFormat)
@@ -282,7 +282,7 @@ internal class XLWorkbookStyles
         _mruColors = mruColors;
     }
 
-    internal string GetRegisteredNumberFormat(string numberFormat)
+    internal XLNumberFormat GetRegisteredNumberFormat(XLNumberFormat numberFormat)
     {
         if (_numberFormats.TryGetValue(numberFormat, out var existingFormat))
             return existingFormat;
@@ -323,7 +323,7 @@ internal class XLWorkbookStyles
         return font;
     }
 
-    internal XLCellFormatValue GetModifiedFormat(XLCellFormatValue originalFormat, string numberFormat)
+    internal XLCellFormatValue GetModifiedFormat(XLCellFormatValue originalFormat, XLNumberFormat numberFormat)
     {
         var modifiedNumberFormat = GetRegisteredNumberFormat(numberFormat);
         var modifiedFormat = GetRegisteredCellFormat(originalFormat, format => format with { NumberFormat = modifiedNumberFormat });

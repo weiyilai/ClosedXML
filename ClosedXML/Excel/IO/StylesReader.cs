@@ -18,7 +18,7 @@ internal partial class StylesReader
     private readonly SequentialNameGenerator _styleNameGenerator = new("Style ", 1);
 
     // Format components to use when not specified in xf record
-    private readonly string _defaultNumberFormat;
+    private readonly XLNumberFormat _defaultNumberFormat;
     private readonly XLFillFormatValue _defaultFillFormat;
     private readonly XLBorderFormatValue _defaultBorderFormat;
     private readonly XLAlignmentFormatValue _defaultAlignmentFormat;
@@ -246,12 +246,12 @@ internal partial class StylesReader
             _styles.AddFormat(cellFormat);
     }
 
-    private (int NumFmtId, string FormatCode) OnNumFmtParsed(uint numFmtId, string formatCode)
+    private (int NumFmtId, XLNumberFormat FormatCode) OnNumFmtParsed(uint numFmtId, string formatCode)
     {
-        return (checked((int)numFmtId), formatCode);
+        return (checked((int)numFmtId), XLNumberFormat.Parse(formatCode));
     }
 
-    partial void OnNumFmtsParsed(List<(int NumFmtId, string FormatCode)> numFmt, uint? count)
+    partial void OnNumFmtsParsed(List<(int NumFmtId, XLNumberFormat Format)> numFmt, uint? count)
     {
         foreach (var (numFmtId, formatCode) in numFmt)
         {

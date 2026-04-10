@@ -57,7 +57,7 @@ internal class StylesWriter
         // Determine which format components are used and thus should be saved.
         // TODO Styles: For now just assume everything in styles is used
         var usedCellFormats = styles.CellFormats.Select(x => x.Value).ToHashSet();
-        var usedNumberFormats = new HashSet<string>();
+        var usedNumberFormats = new HashSet<XLNumberFormat>();
         var usedFonts = new HashSet<XLFontFormatValue>();
         var usedFills = new HashSet<XLFillFormatValue>();
         var usedBorders = new HashSet<XLBorderFormatValue>();
@@ -105,7 +105,7 @@ internal class StylesWriter
         // The map has predefined formats from index 0 and the user defined ones from 164 onward.
         // There is a gap between predefined formats.
         var predefinedNumberFormats = XLPredefinedFormat.FormatCodes.OrderBy(x => x.Key).Select(x => x.Value).ToArray();
-        var numberFormatMap = SequentialMap<int, string>.Create(usedNumberFormats, styles.NumberFormats, FirstUserDefinedFormatIndex, predefinedNumberFormats);
+        var numberFormatMap = SequentialMap<int, XLNumberFormat>.Create(usedNumberFormats, styles.NumberFormats, FirstUserDefinedFormatIndex, predefinedNumberFormats);
 
         if (numberFormatMap.Count > predefinedNumberFormats.Length)
             WriteNumberFormats(xml, numberFormatMap);
@@ -200,7 +200,7 @@ internal class StylesWriter
         }
     }
 
-    private void WriteNumberFormats(XmlTreeWriter xml, SequentialMap<int, string> idMap)
+    private void WriteNumberFormats(XmlTreeWriter xml, SequentialMap<int, XLNumberFormat> idMap)
     {
         xml.WriteStartElement("numFmts", _ns);
         xml.WriteAttribute("count", idMap.Count - FirstUserDefinedFormatIndex);
@@ -469,7 +469,7 @@ internal class StylesWriter
     private void WriteCellStyleXfs(
         XmlTreeWriter xml,
         SequentialMap<StyleId, XLCellStyleValue> cellStylesMap,
-        SequentialMap<int, string> numFmtIdMap,
+        SequentialMap<int, XLNumberFormat> numFmtIdMap,
         SequentialMap<int, XLFontFormatValue> fontIdMap,
         SequentialMap<int, XLFillFormatValue> fillIdMap,
         SequentialMap<int, XLBorderFormatValue> borderIdMap)
@@ -510,7 +510,7 @@ internal class StylesWriter
     private void WriteCellXfs(
         XmlTreeWriter xml,
         SequentialMap<int, XLCellFormatValue> idMap,
-        SequentialMap<int, string> numFmtIdMap,
+        SequentialMap<int, XLNumberFormat> numFmtIdMap,
         SequentialMap<int, XLFontFormatValue> fontIdMap,
         SequentialMap<int, XLFillFormatValue> fillIdMap,
         SequentialMap<int, XLBorderFormatValue> borderIdMap,

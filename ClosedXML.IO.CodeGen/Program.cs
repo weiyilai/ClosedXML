@@ -128,7 +128,7 @@ public class Program
             .AddComplexTypeMapping("CT_BorderPr", "XLBorderLine")
             .AddComplexTypeMapping("CT_PatternFill", "XLFillFormatValue")
             .AddComplexTypeMapping("CT_GradientFill", "XLFillFormatValue")
-            .AddComplexTypeMapping("CT_NumFmt", "(int NumFmtId, string FormatCode)")
+            .AddComplexTypeMapping("CT_NumFmt", "(int NumFmtId, XLNumberFormat Format)")
             .AddComplexTypeMapping("CT_CellAlignment", "XLAlignmentFormatValue")
             .AddComplexTypeMapping("CT_CellProtection", "XLProtectionFormatValue")
             .AddComplexTypeMapping("CT_Xf", "(XLCellFormatValue Format, int? CellStyleXfId)")

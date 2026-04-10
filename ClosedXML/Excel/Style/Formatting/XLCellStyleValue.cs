@@ -25,7 +25,7 @@ internal class XLCellStyleValue
     /// </summary>
     public required bool Hidden { get; init; }
 
-    public required string NumberFormat { get; init; }
+    public required XLNumberFormat NumberFormat { get; init; }
 
     public required XLAlignmentFormatValue Alignment { get; init; }
 

@@ -11,7 +11,7 @@ internal partial class StylesReader
     private void ParseNumFmts(string elementName)
     {
         var count = _reader.GetOptionalUInt("count");
-        var numFmt = new List<(int NumFmtId, string FormatCode)>();
+        var numFmt = new List<(int NumFmtId, XLNumberFormat Format)>();
         while (_reader.TryOpen("numFmt", _ns))
         {
             numFmt.Add(ParseNumFmt("numFmt"));
@@ -20,9 +20,9 @@ internal partial class StylesReader
         OnNumFmtsParsed(numFmt, count);
     }
 
-    partial void OnNumFmtsParsed(List<(int NumFmtId, string FormatCode)> numFmt, uint? count);
+    partial void OnNumFmtsParsed(List<(int NumFmtId, XLNumberFormat Format)> numFmt, uint? count);
 
-    private (int NumFmtId, string FormatCode) ParseNumFmt(string elementName)
+    private (int NumFmtId, XLNumberFormat Format) ParseNumFmt(string elementName)
     {
         var numFmtId = _reader.GetUInt("numFmtId");
         var formatCode = _reader.GetXString("formatCode");

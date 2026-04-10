@@ -86,7 +86,7 @@ internal class XLPivotTableField
     /// </summary>
     internal bool AllDrilled { get; set; } = false;
 
-    internal string? NumberFormatValue { get; init; }
+    internal XLNumberFormat? NumberFormatValue { get; init; }
 
     /// <summary>
     /// <para>

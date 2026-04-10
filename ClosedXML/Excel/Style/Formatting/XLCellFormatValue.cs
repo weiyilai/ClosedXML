@@ -7,7 +7,7 @@ namespace ClosedXML.Excel.Formatting;
 /// </summary>
 internal record XLCellFormatValue
 {
-    public required string NumberFormat { get; init; }
+    public required XLNumberFormat NumberFormat { get; init; }
 
     public required XLAlignmentFormatValue Alignment { get; init; }
 

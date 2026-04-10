@@ -216,7 +216,7 @@ internal partial class XLCellFormat
         return selector(format);
     }
 
-    internal void ModifyNumberFormat(string numberFormat)
+    internal void ModifyNumberFormat(XLNumberFormat numberFormat)
     {
         var styles = _workbook.Styles;
         Modify(format =>

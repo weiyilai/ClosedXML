@@ -89,19 +89,19 @@ namespace ClosedXML.Tests.Excel.Styles
         }
 
         [Test]
-        public void XLNumberFormatKey_GetHashCode_IsCaseSensitive()
+        public void XLNumberFormat_GetHashCode_IsCaseSensitive()
         {
-            var numberFormatKey1 = XLNumberFormatKey.ForFormat("MM");
-            var numberFormatKey2 = XLNumberFormatKey.ForFormat("mm");
+            var numberFormatKey1 = new XLNumberFormat("MM");
+            var numberFormatKey2 = new XLNumberFormat("mm");
 
             Assert.AreNotEqual(numberFormatKey1.GetHashCode(), numberFormatKey2.GetHashCode());
         }
 
         [Test]
-        public void XLNumberFormatKey_Equals_IsCaseSensitive()
+        public void XLNumberFormat_Equals_IsCaseSensitive()
         {
-            var numberFormatKey1 = XLNumberFormatKey.ForFormat("MM");
-            var numberFormatKey2 = XLNumberFormatKey.ForFormat("mm");
+            var numberFormatKey1 = new XLNumberFormat("MM");
+            var numberFormatKey2 = new XLNumberFormat("mm");
 
             Assert.IsFalse(numberFormatKey1.Equals(numberFormatKey2));
         }

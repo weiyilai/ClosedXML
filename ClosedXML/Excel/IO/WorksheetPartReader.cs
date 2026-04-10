@@ -620,7 +620,7 @@ internal class WorksheetPartReader
     }
 
     // TODO Styles: Move methods to strongly typed number format
-    private static XLDataType GetNumberDataType(string numberFormat)
+    private static XLDataType GetNumberDataType(XLNumberFormat numberFormat)
     {
         if (!XLPredefinedFormat.NumberFormatIds.TryGetValue(numberFormat, out var formatId))
         {

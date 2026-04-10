@@ -18,7 +18,7 @@ namespace ClosedXML.Excel
                 if (_pivotValue.NumberFormatValue is null)
                     return -1;
 
-                if (!XLPredefinedFormat.NumberFormatIds.TryGetValue(_pivotValue.NumberFormatValue, out var numFmtId))
+                if (!XLPredefinedFormat.NumberFormatIds.TryGetValue(_pivotValue.NumberFormatValue.Value, out var numFmtId))
                     return -1;
 
                 return numFmtId;
@@ -38,7 +38,7 @@ namespace ClosedXML.Excel
             get => _pivotValue.NumberFormatValue ?? string.Empty;
             set
             {
-                _pivotValue.NumberFormatValue = value;
+                _pivotValue.NumberFormatValue = XLNumberFormat.Parse(value);
             }
         }
 
