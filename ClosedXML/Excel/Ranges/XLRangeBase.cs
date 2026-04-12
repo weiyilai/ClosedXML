@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using ClosedXML.Excel.CalcEngine.Visitors;
+using ClosedXML.Excel.Formatting;
 
 namespace ClosedXML.Excel
 {
@@ -317,19 +318,22 @@ namespace ClosedXML.Excel
 
                 var firstCell = FirstCell();
                 var cellsUsed =
-                    CellsUsed(XLCellsUsedOptions.All & ~XLCellsUsedOptions.MergedRanges, c => !c.Equals(firstCell)).ToList();
+                    CellsUsedInternal(XLCellsUsedOptions.All & ~XLCellsUsedOptions.MergedRanges, c => c.SheetPoint != firstCell.SheetPoint).ToList<XLCell>();
                 cellsUsed.ForEach(c => c.Clear(XLClearOptions.All
                                                & ~XLClearOptions.MergedRanges
                                                & ~XLClearOptions.NormalFormats));
 
-                // TODO Styles: Optimize, this is an old version. Newer versions were more complicated, but likely also more performant (e.g. merge of columns).
-                asRange.Style.Alignment = firstCell.Style.Alignment;
-                asRange.Style.Border.SetInsideBorder(XLBorderStyleValues.None);
-                asRange.Style.Fill = firstCell.Style.Fill;
-                asRange.Style.Font = firstCell.Style.Font;
-                asRange.Style.IncludeQuotePrefix = firstCell.Style.IncludeQuotePrefix;
-                asRange.Style.NumberFormat = firstCell.Style.NumberFormat;
-                asRange.Style.Protection = firstCell.Style.Protection;
+                // When a range is merged, remaining cells of the area take on the format of the first cell
+                if (firstCell.FormatValue is null)
+                {
+                    Worksheet.Internals.CellsCollection.FormatSlice.Clear(SheetRange);
+                }
+                else
+                {
+                    // Merging removes borders, even on the first cell
+                    var borderlessFormat = Worksheet.Workbook.Styles.GetModifiedFormat(firstCell.FormatValue, _ => XLBorderFormatValue.None);
+                    Worksheet.Internals.CellsCollection.FormatSlice.SetAll(SheetRange, borderlessFormat);
+                }
             }
 
             Worksheet.Internals.MergedRanges.Add(asRange);
@@ -939,6 +943,11 @@ namespace ClosedXML.Excel
         }
 
         public IXLCells CellsUsed(XLCellsUsedOptions options, Func<IXLCell, Boolean> predicate)
+        {
+            return CellsUsedInternal(options, predicate);
+        }
+
+        internal XLCells CellsUsedInternal(XLCellsUsedOptions options, Func<XLCell, Boolean> predicate)
         {
             var cells = new XLCells(Worksheet, true, options, predicate) { RangeAddress };
             return cells;

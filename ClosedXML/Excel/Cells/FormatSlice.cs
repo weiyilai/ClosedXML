@@ -63,6 +63,11 @@ internal class FormatSlice : ISlice
         _slice.Set(point, modified);
     }
 
+    internal void SetAll(XLSheetRange area, XLCellFormatValue? value)
+    {
+        _slice.SetAll(area, new SliceValue { Format = value });
+    }
+
     internal XLCellFormatValue? GetFormat(XLSheetPoint point)
     {
         return _slice[point].Format;
