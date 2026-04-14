@@ -104,14 +104,15 @@ internal class StylesWriter
         // Number formats
         // The map has predefined formats from index 0 and the user defined ones from 164 onward.
         // There is a gap between predefined formats.
-        var predefinedNumberFormats = XLPredefinedFormat.FormatCodes.OrderBy(x => x.Key).Select(x => x.Value).ToArray();
-        var numberFormatMap = SequentialMap<int, XLNumberFormat>.Create(usedNumberFormats, styles.NumberFormats, FirstUserDefinedFormatIndex, predefinedNumberFormats);
+        var predefinedNumberFormats = XLPredefinedFormat.NumberFormatIds;
+        var numberFormatMap = SequentialMap<int, XLNumberFormat>.Create(usedNumberFormats, styles.NumberFormats, XLPredefinedFormat.NumberFormatIds, FirstUserDefinedFormatIndex);
 
-        if (numberFormatMap.Count > predefinedNumberFormats.Length)
+        if (numberFormatMap.Count > predefinedNumberFormats.Count)
             WriteNumberFormats(xml, numberFormatMap);
 
         // Fonts. Register default format font as font zero. The font zero is used for font name and size.
-        var fontFormatsMap = SequentialMap<int, XLFontFormatValue>.Create(usedFonts, styles.Fonts, 0, styles.DefaultFormat.Font);
+        var firstFontValues = new Dictionary<XLFontFormatValue, int> { { styles.DefaultFormat.Font, 0 } };
+        var fontFormatsMap = SequentialMap<int, XLFontFormatValue>.Create(usedFonts, styles.Fonts, firstFontValues);
         if (fontFormatsMap.Count > 0)
             WriteFonts(xml, fontFormatsMap);
 
@@ -120,7 +121,12 @@ internal class StylesWriter
         // or not.
         AddFillAsUsed(XLFillFormatValue.None);
         AddFillAsUsed(XLFillFormatValue.Gray125);
-        var fillsFormatsMap = SequentialMap<int, XLFillFormatValue>.Create(usedFills, styles.Fills, 0, XLFillFormatValue.None, XLFillFormatValue.Gray125);
+        var firstFillValues = new Dictionary<XLFillFormatValue, int>
+        {
+            { XLFillFormatValue.None, 0 },
+            { XLFillFormatValue.Gray125, 1 },
+        };
+        var fillsFormatsMap = SequentialMap<int, XLFillFormatValue>.Create(usedFills, styles.Fills, firstFillValues);
         WriteFills(xml, fillsFormatsMap);
 
         var borderFormatsMap = SequentialMap<int, XLBorderFormatValue>.Create(usedBorders, styles.Borders);
@@ -138,9 +144,9 @@ internal class StylesWriter
         if (cellStylesMap.Count > 0)
             WriteCellStyleXfs(xml, cellStylesMap, numberFormatMap, fontFormatsMap, fillsFormatsMap, borderFormatsMap);
 
-        var cellXfsMap = SequentialMap<int, XLCellFormatValue>.Create(usedCellFormats, styles.CellFormats, 0, styles.DefaultFormat);
-        if (cellXfsMap.Count > 0)
-            WriteCellXfs(xml, cellXfsMap, numberFormatMap, fontFormatsMap, fillsFormatsMap, borderFormatsMap, cellStylesMap);
+        var firstCellXfsValues = new Dictionary<XLCellFormatValue, int> { { styles.DefaultFormat, 0 } };
+        var cellXfsMap = SequentialMap<int, XLCellFormatValue>.Create(usedCellFormats, styles.CellFormats, firstCellXfsValues);
+        WriteCellXfs(xml, cellXfsMap, numberFormatMap, fontFormatsMap, fillsFormatsMap, borderFormatsMap, cellStylesMap);
 
         if (cellStylesMap.Count > 0)
             WriteCellStyles(xml, cellStylesMap);
@@ -604,7 +610,7 @@ internal class StylesWriter
             alignment.TextRotation.GetIso() == 0 &&
             alignment.WrapText == false &&
             alignment.Indent == 0 &&
-            alignment.RelativeIndent ==0 &&
+            alignment.RelativeIndent == 0 &&
             alignment.JustifyLastLine == false &&
             alignment.ShrinkToFit == false &&
             alignment.ReadingOrder == XLAlignmentFormatValue.DefaultReadingOrder;
@@ -908,13 +914,14 @@ internal class StylesWriter
         /// </summary>
         public int Count => _savedIdToActualId.Count;
 
-        internal static SequentialMap<TKey, T> Create(HashSet<T> usedValues, IReadOnlyBiDictionary<TKey, T> allValuesMap, int usedStart = 0, params T[] firstValues)
+        internal static SequentialMap<TKey, T> Create(HashSet<T> usedValues, IReadOnlyBiDictionary<TKey, T> allValuesMap, IReadOnlyDictionary<T, int>? firstValues = null, int usedStart = 0)
         {
             var map = new SequentialMap<TKey, T>(allValuesMap);
-            foreach (var firstValue in firstValues)
+            firstValues ??= new Dictionary<T, int>();
+            foreach (var (firstValue, savedId) in firstValues)
             {
                 var actualId = allValuesMap[firstValue];
-                map.Add(actualId);
+                map.Add(actualId, savedId);
             }
 
             // This is here basically for number formats. It ensures that user defined number
@@ -923,7 +930,7 @@ internal class StylesWriter
             var usedSaveId = Math.Max(map.Count, usedStart);
             foreach (var (actualId, value) in allValuesMap)
             {
-                if (firstValues.Contains(value))
+                if (firstValues.ContainsKey(value))
                     continue;
 
                 if (!usedValues.Contains(value))
