@@ -239,7 +239,7 @@ internal partial class StylesReader
     private XLAlignmentFormatValue ParseCellAlignment(string elementName)
     {
         var horizontal = _reader.GetOptionalEnum<XLAlignmentHorizontalValues>("horizontal");
-        var vertical = _reader.GetOptionalEnum<XLAlignmentVerticalValues>("vertical") ?? XLAlignmentVerticalValues.Bottom;
+        var vertical = _reader.GetOptionalEnum<XLAlignmentVerticalValues>("vertical") ?? XLAlignmentFormatValue.DefaultVertical;
         var textRotation = _reader.GetOptionalUInt("textRotation");
         var wrapText = _reader.GetOptionalBool("wrapText");
         var indent = _reader.GetOptionalUInt("indent");

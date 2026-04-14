@@ -79,7 +79,7 @@ internal class XLWorkbookStyles
         Font = new XLFontFormatValue
         {
             Name = "Calibri",
-            Charset = XLFontCharSet.ShiftJIS,
+            Charset = XLFontCharSet.Ansi,
             Family = XLFontFamilyNumberingValues.Swiss,
             Bold = false,
             Italic = false,
@@ -88,7 +88,7 @@ internal class XLWorkbookStyles
             Shadow = false,
             Condense = false,
             Extend = false,
-            Color = XLColor.FromArgb(0x00000000),
+            Color = XLColor.Black,
             Size = XLFontSize.FromPoints(11),
             Underline = XLFontUnderlineValues.None,
             VerticalAlignment = XLFontVerticalTextAlignmentValues.Baseline,

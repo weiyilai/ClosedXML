@@ -1,7 +1,7 @@
-using ClosedXML.Extensions;
-using ClosedXML.IO;
 using System;
 using System.Xml;
+using ClosedXML.Extensions;
+using ClosedXML.IO;
 
 namespace ClosedXML.Excel.IO;
 
@@ -19,7 +19,8 @@ internal class XmlTreeWriter : IDisposable
 
     public void WriteStartDocument(string rootElementName, string ns)
     {
-        _xml.WriteStartDocument();
+        // No part should rely on external DTD, plus Excel also writes standalone="yes"
+        _xml.WriteStartDocument(standalone: true);
 
         // Make root element ns a default namespace to avoid prefix if possible
         _xml.WriteStartElement(rootElementName, ns);
@@ -29,6 +30,18 @@ internal class XmlTreeWriter : IDisposable
     public void WriteStartElement(string localName, string ns)
     {
         _xml.WriteStartElement(localName, ns);
+    }
+
+    public void WriteStartExtension(string extUri, string defaultNs, string nsPrefix, string extNs)
+    {
+        WriteStartElement("ext", defaultNs);
+        WriteAttribute("uri", extUri);
+        WriteNsPrefix(nsPrefix, extNs);
+    }
+
+    public void WriteNsPrefix(string prefix, string ns)
+    {
+        _xml.WriteAttributeString("xmlns", prefix, null, ns);
     }
 
     public void WriteAttribute(string attributeName, int value)
@@ -63,6 +76,12 @@ internal class XmlTreeWriter : IDisposable
     public void WriteEndElement()
     {
         _xml.WriteEndElement();
+    }
+
+    public void WriteEndDocument()
+    {
+        _xml.WriteEndElement();
+        _xml.WriteEndDocument();
     }
 
     public void Dispose()

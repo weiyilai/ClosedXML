@@ -113,7 +113,7 @@ public class Program
             .AddSimpleTypeEnum("ST_GradientType", "XLGradientType", "linear", "XLGradientType.Linear")
             .AddSimpleTypeEnum("ST_BorderStyle", "XLBorderStyleValues", "none", "XLBorderStyleValues.None")
             .AddSimpleTypeEnum("ST_HorizontalAlignment", "XLAlignmentHorizontalValues")
-            .AddSimpleTypeEnum("ST_VerticalAlignment", "XLAlignmentVerticalValues", "bottom", "XLAlignmentVerticalValues.Bottom")
+            .AddSimpleTypeEnum("ST_VerticalAlignment", "XLAlignmentVerticalValues", "bottom", "XLAlignmentFormatValue.DefaultVertical")
             .AddSimpleType(new SimpleTypeMapping
             {
                 Name = "ST_TableStyleType",

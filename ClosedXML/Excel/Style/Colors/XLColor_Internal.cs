@@ -14,4 +14,9 @@ public partial class XLColor
         Key = key;
         HasValue = true;
     }
+
+    /// <summary>
+    /// Is the color zero-value? Zero value structures can in some cases be omitted from saving to a file.
+    /// </summary>
+    internal bool IsArgbZero => ColorType == XLColorType.Color && Key.Color.ToArgb() == 0x000000;
 }

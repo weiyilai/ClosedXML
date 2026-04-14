@@ -4,6 +4,10 @@ namespace ClosedXML.Excel.Formatting;
 
 internal record XLAlignmentFormatValue
 {
+    internal const XLAlignmentHorizontalValues DefaultHorizontal = XLAlignmentHorizontalValues.General;
+    internal const XLAlignmentVerticalValues DefaultVertical = XLAlignmentVerticalValues.Bottom;
+    internal const XLAlignmentReadingOrderValues DefaultReadingOrder = XLAlignmentReadingOrderValues.ContextDependent;
+
     private readonly int _indent;
 
     public required XLAlignmentHorizontalValues Horizontal { get; init; }

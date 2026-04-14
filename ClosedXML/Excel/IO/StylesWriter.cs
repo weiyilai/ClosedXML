@@ -163,7 +163,9 @@ internal class StylesWriter
 
         WriteColors(xml, styles);
 
-        xml.WriteEndElement();
+        WriteExtensions(xml);
+
+        xml.WriteEndDocument();
 
         // Fill the maps used in other parts to determine saved id for a format
         foreach (var (numberFormatId, numberFormat) in numberFormatMap.GetActual())
@@ -238,26 +240,47 @@ internal class StylesWriter
 
     private void WriteFont(XmlTreeWriter xml, string elementName, XLFontFormatValue font)
     {
-        // Font table and dxf use same XML type, use adapter.
-        var dxfAdapter = new XLDifferentialFontValue
+        // MS-OI29500 dictates font elements order.
+        xml.WriteStartElement(elementName, _ns);
+
+        WriteFlag("b", font.Bold);
+        WriteFlag("i", font.Italic);
+        WriteFlag("strike", font.Strikethrough);
+        WriteFlag("condense", font.Condense);
+        WriteFlag("extend", font.Extend);
+        WriteFlag("outline", font.Outline);
+        WriteFlag("shadow", font.Shadow);
+
+        if (font.Underline != XLFontUnderlineValues.None)
+            WriteFontUnderline(xml, font.Underline);
+
+        if (font.VerticalAlignment != XLFontVerticalTextAlignmentValues.Baseline)
+            WriteFontVerticalAlignment(xml, font.VerticalAlignment);
+
+        WriteFontSize(xml, font.Size);
+
+        if (!font.Color.IsArgbZero)
+            xml.WriteColor("color", _ns, font.Color);
+
+        WriteFontName(xml, font.Name);
+
+        if (font.Family != XLFontFamilyNumberingValues.NotApplicable)
+            WriteFontFamily(xml, font.Family);
+
+        if (font.Charset != XLFontCharSet.Ansi)
+            WriteFontCharset(xml, font.Charset);
+
+        if (font.Scheme != XLFontScheme.None)
+            WriteFontScheme(xml, font.Scheme);
+
+        xml.WriteEndElement();
+        return;
+
+        void WriteFlag(string flagName, bool flag)
         {
-            Name = font.Name,
-            Size = font.Size,
-            Charset = font.Charset,
-            Family = font.Family,
-            Bold = font.Bold,
-            Italic = font.Italic,
-            Strikethrough = font.Strikethrough,
-            Outline = font.Outline,
-            Shadow = font.Shadow,
-            Condense = font.Condense,
-            Extend = font.Extend,
-            Color = font.Color,
-            Underline = font.Underline,
-            VerticalAlignment = font.VerticalAlignment,
-            Scheme = font.Scheme,
-        };
-        WriteFont(xml, elementName, dxfAdapter);
+            if (flag)
+                xml.WriteBooleanProperty(flagName, true, _ns);
+        }
     }
 
     private void WriteFont(XmlTreeWriter xml, string elementName, XLDifferentialFontValue font)
@@ -274,59 +297,28 @@ internal class StylesWriter
         WriteFlag("shadow", font.Shadow);
 
         if (font.Underline is { } underline && underline != XLFontUnderlineValues.None)
-        {
-            xml.WriteStartElement("u", _ns);
-            xml.WriteAttributeDefault("val", underline, XLFontUnderlineValues.Single);
-            xml.WriteEndElement();
-        }
+            WriteFontUnderline(xml, underline);
 
         if (font.VerticalAlignment is { } verticalAlignment && verticalAlignment != XLFontVerticalTextAlignmentValues.Baseline)
-        {
-            xml.WriteStartElement("vertAlign", _ns);
-            xml.WriteAttribute("val", verticalAlignment);
-            xml.WriteEndElement();
-        }
+            WriteFontVerticalAlignment(xml, verticalAlignment);
 
         if (font.Size is { } size)
-        {
-            xml.WriteStartElement("sz", _ns);
-            xml.WriteAttribute("val", size.Points);
-            xml.WriteEndElement();
-        }
+            WriteFontSize(xml, size);
 
         if (font.Color is { } color)
-        {
             xml.WriteColor("color", _ns, color);
-        }
 
         if (font.Name is { } name)
-        {
-            xml.WriteStartElement("name", _ns);
-            xml.WriteAttribute("val", name.Text);
-            xml.WriteEndElement();
-        }
+            WriteFontName(xml, name);
 
         if (font.Family is { } family && family != XLFontFamilyNumberingValues.NotApplicable)
-        {
-            xml.WriteStartElement("family", _ns);
-            xml.WriteAttribute("val", (int)family);
-            xml.WriteEndElement();
-        }
+            WriteFontFamily(xml, family);
 
         if (font.Charset is { } charset && charset != XLFontCharSet.Ansi)
-        {
-            // Charset is stored as an CT_IntProperty
-            xml.WriteStartElement("charset", _ns);
-            xml.WriteAttribute("val", (int)charset);
-            xml.WriteEndElement();
-        }
+            WriteFontCharset(xml, charset);
 
         if (font.Scheme is { } scheme && scheme != XLFontScheme.None)
-        {
-            xml.WriteStartElement("scheme", _ns);
-            xml.WriteAttribute("val", scheme);
-            xml.WriteEndElement();
-        }
+            WriteFontScheme(xml, scheme);
 
         xml.WriteEndElement();
         return;
@@ -336,6 +328,56 @@ internal class StylesWriter
             if (flag == true)
                 xml.WriteBooleanProperty(flagName, true, _ns);
         }
+    }
+
+    private void WriteFontUnderline(XmlTreeWriter xml, XLFontUnderlineValues underline)
+    {
+        xml.WriteStartElement("u", _ns);
+        xml.WriteAttributeDefault("val", underline, XLFontUnderlineValues.Single);
+        xml.WriteEndElement();
+    }
+
+    private void WriteFontVerticalAlignment(XmlTreeWriter xml, XLFontVerticalTextAlignmentValues verticalAlignment)
+    {
+        xml.WriteStartElement("vertAlign", _ns);
+        xml.WriteAttribute("val", verticalAlignment);
+        xml.WriteEndElement();
+    }
+
+    private void WriteFontSize(XmlTreeWriter xml, XLFontSize size)
+    {
+        xml.WriteStartElement("sz", _ns);
+        xml.WriteAttribute("val", size.Points);
+        xml.WriteEndElement();
+    }
+
+    private void WriteFontName(XmlTreeWriter xml, XLFontName fontName)
+    {
+        xml.WriteStartElement("name", _ns);
+        xml.WriteAttribute("val", fontName.Text);
+        xml.WriteEndElement();
+    }
+
+    private void WriteFontFamily(XmlTreeWriter xml, XLFontFamilyNumberingValues family)
+    {
+        xml.WriteStartElement("family", _ns);
+        xml.WriteAttribute("val", (int)family);
+        xml.WriteEndElement();
+    }
+
+    private void WriteFontCharset(XmlTreeWriter xml, XLFontCharSet charset)
+    {
+        // Charset is stored as an CT_IntProperty
+        xml.WriteStartElement("charset", _ns);
+        xml.WriteAttribute("val", (int)charset);
+        xml.WriteEndElement();
+    }
+
+    private void WriteFontScheme(XmlTreeWriter xml, XLFontScheme scheme)
+    {
+        xml.WriteStartElement("scheme", _ns);
+        xml.WriteAttribute("val", scheme);
+        xml.WriteEndElement();
     }
 
     private void WriteFills(XmlTreeWriter xml, SequentialMap<int, XLFillFormatValue> idMap)
@@ -446,21 +488,23 @@ internal class StylesWriter
         WriteBorderPr("top", border.Top);
         WriteBorderPr("bottom", border.Bottom);
         WriteBorderPr("diagonal", border.Diagonal);
-        WriteBorderPr("vertical", border.Vertical);
-        WriteBorderPr("horizontal", border.Horizontal);
+
+        // Pivot borders are written only if necessary
+        if (border.Vertical.Style != XLBorderStyleValues.None)
+            WriteBorderPr("vertical", border.Vertical);
+
+        if (border.Horizontal.Style != XLBorderStyleValues.None)
+            WriteBorderPr("horizontal", border.Horizontal);
 
         xml.WriteEndElement();
         return;
 
-        void WriteBorderPr(string name, XLBorderLine? borderLine)
+        void WriteBorderPr(string name, XLBorderLine borderLine)
         {
-            if (!borderLine.HasValue)
-                return;
-
             xml.WriteStartElement(name, _ns);
-            xml.WriteAttributeDefault("style", borderLine.Value.Style, XLBorderStyleValues.None);
-            if (borderLine.Value.Style != XLBorderStyleValues.None)
-                xml.WriteColor("color", _ns, borderLine.Value.Color);
+            xml.WriteAttributeDefault("style", borderLine.Style, XLBorderStyleValues.None);
+            if (borderLine.Style != XLBorderStyleValues.None)
+                xml.WriteColor("color", _ns, borderLine.Color);
 
             xml.WriteEndElement();
         }
@@ -528,7 +572,7 @@ internal class StylesWriter
             xml.WriteAttributeOptional("borderId", borderIdMap.GetSavedId(cellXf.Border));
 
             if (cellXf.CellStyleId is not null)
-                xml.WriteAttributeDefault("xfId", cellStyleIdMap.GetSavedId(cellXf.CellStyleId.Value), 0);
+                xml.WriteAttribute("xfId", cellStyleIdMap.GetSavedId(cellXf.CellStyleId.Value));
 
             xml.WriteAttributeDefault("quotePrefix", cellXf.IncludeQuotePrefix, false);
             xml.WriteAttributeDefault("pivotButton", cellXf.PivotButton, false);
@@ -554,16 +598,30 @@ internal class StylesWriter
 
     private void WriteAlignment(XmlTreeWriter xml, string elementName, XLAlignmentFormatValue alignment)
     {
+        var isDefault =
+            alignment.Horizontal == XLAlignmentFormatValue.DefaultHorizontal &&
+            alignment.Vertical == XLAlignmentFormatValue.DefaultVertical &&
+            alignment.TextRotation.GetIso() == 0 &&
+            alignment.WrapText == false &&
+            alignment.Indent == 0 &&
+            alignment.RelativeIndent ==0 &&
+            alignment.JustifyLastLine == false &&
+            alignment.ShrinkToFit == false &&
+            alignment.ReadingOrder == XLAlignmentFormatValue.DefaultReadingOrder;
+
+        if (isDefault)
+            return;
+
         xml.WriteStartElement(elementName, _ns);
-        xml.WriteAttributeDefault("horizontal", alignment.Horizontal, XLAlignmentHorizontalValues.General);
-        xml.WriteAttributeDefault("vertical", alignment.Vertical, XLAlignmentVerticalValues.Bottom);
+        xml.WriteAttributeDefault("horizontal", alignment.Horizontal, XLAlignmentFormatValue.DefaultHorizontal);
+        xml.WriteAttributeDefault("vertical", alignment.Vertical, XLAlignmentFormatValue.DefaultVertical);
         xml.WriteAttributeDefault("textRotation", alignment.TextRotation.GetIso(), 0);
         xml.WriteAttributeDefault("wrapText", alignment.WrapText, false);
         xml.WriteAttributeDefault("indent", alignment.Indent, 0);
         xml.WriteAttributeDefault("relativeIndent", alignment.RelativeIndent, 0);
         xml.WriteAttributeDefault("justifyLastLine", alignment.JustifyLastLine, false);
         xml.WriteAttributeDefault("shrinkToFit", alignment.ShrinkToFit, false);
-        xml.WriteAttributeDefault("readingOrder", alignment.ReadingOrder, XLAlignmentReadingOrderValues.ContextDependent);
+        xml.WriteAttributeDefault("readingOrder", alignment.ReadingOrder, XLAlignmentFormatValue.DefaultReadingOrder);
         xml.WriteEndElement();
     }
 
@@ -789,6 +847,38 @@ internal class StylesWriter
         }
 
         xml.WriteEndElement(); // colors
+    }
+
+    private void WriteExtensions(XmlTreeWriter xml)
+    {
+        xml.WriteStartElement("extLst", _ns);
+        WriteSlicerStyles(xml);
+        WriteTimelineStyles(xml);
+        xml.WriteEndElement();
+    }
+
+    private void WriteSlicerStyles(XmlTreeWriter xml)
+    {
+        // TODO Styles: Represent and write back, this only writes default created by Excel
+        xml.WriteStartExtension("{EB79DEF2-80B8-43e5-95BD-54CBDDF9020C}", _ns, "x14", X14Main2009SsNs);
+        xml.WriteStartElement("slicerStyles", X14Main2009SsNs);
+        xml.WriteAttribute("defaultSlicerStyle", "SlicerStyleLight1");
+        xml.WriteEndElement();
+        xml.WriteEndElement();
+
+        // dxfs for slicer styles: 46F421CA-312F-682F-3DD2-61675219B42D
+    }
+
+    private void WriteTimelineStyles(XmlTreeWriter xml)
+    {
+        // TODO Styles: Represent and write back, this only writes default created by Excel
+        xml.WriteStartExtension("{9260A510-F301-46a8-8635-F512D64BE5F5}", _ns, "x15", X15Main2010SsNs);
+        xml.WriteStartElement("timelineStyles", X15Main2010SsNs);
+        xml.WriteAttribute("defaultTimelineStyle", "TimeSlicerStyleLight1");
+        xml.WriteEndElement();
+        xml.WriteEndElement();
+
+        // dxfs for timeline styles: A0A4C193-F2C1-4fcb-8827-314CF55A85BB
     }
 
     // TODO Styles: Move the class out and initialition of maps to different place.

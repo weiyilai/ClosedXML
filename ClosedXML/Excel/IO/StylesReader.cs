@@ -683,7 +683,7 @@ internal partial class StylesReader
         var normalizedTextRotation = OpenXmlHelper.NormalizeRotation(textRotation ?? 0);
         return new XLAlignmentFormatValue
         {
-            Horizontal = horizontal ?? XLAlignmentHorizontalValues.General,
+            Horizontal = horizontal ?? XLAlignmentFormatValue.DefaultHorizontal,
             Vertical = vertical,
             TextRotation = new TextRotation(normalizedTextRotation),
             WrapText = wrapText ?? false,
@@ -691,7 +691,7 @@ internal partial class StylesReader
             RelativeIndent = relativeIndent ?? 0,
             JustifyLastLine = justifyLastLine ?? false,
             ShrinkToFit = shrinkToFit ?? false,
-            ReadingOrder = readingOrder is not null ? (XLAlignmentReadingOrderValues)readingOrder.Value : XLAlignmentReadingOrderValues.ContextDependent
+            ReadingOrder = readingOrder is not null ? (XLAlignmentReadingOrderValues)readingOrder.Value : XLAlignmentFormatValue.DefaultReadingOrder
         };
     }
 
