@@ -5,7 +5,7 @@ namespace ClosedXML.Excel;
 /// <summary>
 /// A strongly typed number format.
 /// </summary>
-internal readonly record struct XLNumberFormat
+internal readonly record struct XLNumberFormat : IEquatable<string>
 {
     private readonly string _format;
 
@@ -31,5 +31,10 @@ internal readonly record struct XLNumberFormat
     {
         // Format code was originally just a string and not checked, so keep the same semantic for now.
         return new XLNumberFormat(formatCode);
+    }
+
+    public bool Equals(string other)
+    {
+        return other == _format;
     }
 }

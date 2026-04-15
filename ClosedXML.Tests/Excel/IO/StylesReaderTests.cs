@@ -324,7 +324,7 @@ internal class StylesReaderTests
             Assert.IsTrue(format.Protection.Locked);
             Assert.IsFalse(format.Protection.Hidden);
 
-            Assert.AreSame(styles.NumberFormats[164], format.NumberFormat);
+            Assert.AreEqual(styles.NumberFormats[164], format.NumberFormat);
             Assert.AreSame(styles.Fonts[1], format.Font);
             Assert.AreSame(styles.Fills[1], format.Fill);
             Assert.AreSame(styles.Borders[0], format.Border);
@@ -382,7 +382,7 @@ internal class StylesReaderTests
             Assert.IsTrue(style.Protection.Locked);
             Assert.IsFalse(style.Protection.Hidden);
 
-            Assert.AreSame(styles.NumberFormats[190], style.NumberFormat);
+            Assert.AreEqual(styles.NumberFormats[190], style.NumberFormat);
             Assert.AreEqual("0.00", style.NumberFormat);
 
             Assert.AreSame(styles.Fonts[1], style.Font);
@@ -1016,8 +1016,8 @@ internal class StylesReaderTests
         {
             var style = styles.CellStyles[0];
 
-            Assert.AreSame(XLPredefinedFormat.FormatCodes[XLPredefinedFormat.General], style.NumberFormat);
-            Assert.AreSame(XLPredefinedFormat.FormatCodes[XLPredefinedFormat.General], styles.NumberFormats[0]);
+            Assert.AreEqual(XLPredefinedFormat.FormatCodes[XLPredefinedFormat.General], style.NumberFormat);
+            Assert.AreEqual(XLPredefinedFormat.FormatCodes[XLPredefinedFormat.General], styles.NumberFormats[0]);
 
             Assert.AreSame(styles.Fonts[0], style.Font);
 
@@ -1064,8 +1064,8 @@ internal class StylesReaderTests
         {
             var format = styles.CellFormats[0];
 
-            Assert.AreSame(XLPredefinedFormat.FormatCodes[XLPredefinedFormat.General], format.NumberFormat);
-            Assert.AreSame(XLPredefinedFormat.FormatCodes[XLPredefinedFormat.General], styles.NumberFormats[0]);
+            Assert.AreEqual(XLPredefinedFormat.FormatCodes[XLPredefinedFormat.General], format.NumberFormat);
+            Assert.AreEqual(XLPredefinedFormat.FormatCodes[XLPredefinedFormat.General], styles.NumberFormats[0]);
 
             Assert.AreSame(styles.Fonts[0], format.Font);
 
