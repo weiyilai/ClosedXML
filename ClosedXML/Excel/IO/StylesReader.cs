@@ -713,7 +713,7 @@ internal partial class StylesReader
         {
             NumberFormat = numFmt?.FormatCode,
             Font = font ?? XLDifferentialFontValue.Empty,
-            Fill = fill,
+            Fill = fill is not null ? new XLDifferentialFillValue(fill) : XLDifferentialFillValue.Empty,
             Alignment = alignment ?? XLDifferentialAlignmentValue.Empty,
             Border = border,
             Protection = protection,

@@ -20,6 +20,8 @@ internal partial class XLDxFormat
 
     private XLDxfFontFormat Font => new(this);
 
+    private XLDxfFillFormat Fill => new(this);
+
     internal TProperty? Resolve<TComponent, TProperty>(Func<XLDxfValue, TComponent> getComponent, Func<TComponent, TProperty?> getProperty)
         where TProperty : struct
     {
@@ -40,6 +42,17 @@ internal partial class XLDxFormat
         {
             var modifiedFont = modify(dxf.Font, value);
             var modifiedDxf = dxf with { Font = modifiedFont };
+            return modifiedDxf;
+        });
+        _container.FormatValue = modifiedDxf;
+    }
+
+    internal void ModifyFill<T>(Func<XLDifferentialFillValue, T, XLDifferentialFillValue> modify, T value)
+    {
+        var modifiedDxf = _styles.GetRegisteredDxFormat(Dxf, dxf =>
+        {
+            var modifiedFill = modify(dxf.Fill, value);
+            var modifiedDxf = dxf with { Fill = modifiedFill };
             return modifiedDxf;
         });
         _container.FormatValue = modifiedDxf;

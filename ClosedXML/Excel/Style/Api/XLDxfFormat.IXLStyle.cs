@@ -20,8 +20,8 @@ internal partial class XLDxFormat : IXLStyle
 
     IXLFill IXLStyle.Fill
     {
-        get => throw new NotImplementedException();
-        set => throw new NotImplementedException();
+        get => Fill;
+        set => Fill.SetValue(value);
     }
 
     IXLFont IXLStyle.Font

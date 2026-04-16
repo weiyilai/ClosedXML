@@ -392,17 +392,17 @@ internal class StylesWriter
         xml.WriteAttribute("count", idMap.Count);
 
         foreach (var (_, fill) in idMap.GetActual())
-            WriteFill(xml, "fill", fill, false);
+            WriteFill(xml, "fill", fill.Pattern, fill.LinearGradient, fill.PathGradient, false);
 
         xml.WriteEndElement();
     }
 
-    private void WriteFill(XmlTreeWriter xml, string elementName, XLFillFormatValue fill, bool isDxf)
+    private void WriteFill(XmlTreeWriter xml, string elementName, XLPatternFill? patternFill, XLLinearGradientFill? linearGradient, XLPathGradientFill? pathGradient, bool isDxf)
     {
         xml.WriteStartElement(elementName, _ns);
 
         // A fill element with no pattern/gradient is a valid state per XML
-        if (fill.Pattern is { } patternFill)
+        if (patternFill is not null)
         {
             xml.WriteStartElement("patternFill", _ns);
             xml.WriteAttribute("patternType", patternFill.PatternType);
@@ -428,7 +428,7 @@ internal class StylesWriter
 
             xml.WriteEndElement();
         }
-        else if (fill.LinearGradient is { } linearGradient)
+        else if (linearGradient is not null)
         {
             // Linear is the default type, so no need to write it
             xml.WriteStartElement("gradientFill", _ns);
@@ -438,7 +438,7 @@ internal class StylesWriter
 
             xml.WriteEndElement();
         }
-        else if (fill.PathGradient is { } pathGradient)
+        else if (pathGradient is not null)
         {
             xml.WriteStartElement("gradientFill", _ns);
             xml.WriteAttribute("type", "path");
@@ -723,7 +723,7 @@ internal class StylesWriter
             }
 
             if (dxf.Fill is { } fill)
-                WriteFill(xml, "fill", fill, true);
+                WriteFill(xml, "fill", fill.Pattern, fill.LinearGradient, fill.PathGradient, true);
 
             if (dxf.Alignment is { } alignment)
                 WriteAlignment(xml, "alignment", alignment);
