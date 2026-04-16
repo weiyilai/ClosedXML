@@ -534,7 +534,7 @@ internal partial class StylesReader
         _styleFormats = xf.Select(x => x.Format).ToList();
     }
 
-    private (XLCellFormatValue Format, int? CellStyleXfId) OnXfParsed(XLAlignmentFormatValue? alignment, XLProtectionFormatValue? protection, uint? numFmtId, uint? fontId, uint? fillId, uint? borderId, uint? xfId, bool quotePrefix, bool pivotButton, bool? applyNumberFormat, bool? applyFont, bool? applyFill, bool? applyBorder, bool? applyAlignment, bool? applyProtection)
+    private (XLCellFormatValue Format, int? CellStyleXfId) OnXfParsed(XLDifferentialAlignmentValue? alignment, XLProtectionFormatValue? protection, uint? numFmtId, uint? fontId, uint? fillId, uint? borderId, uint? xfId, bool quotePrefix, bool pivotButton, bool? applyNumberFormat, bool? applyFont, bool? applyFill, bool? applyBorder, bool? applyAlignment, bool? applyProtection)
     {
         // When xf is parsed, all number formats, fonts, fills and borders should already be read.
         var numberFormat = _defaultNumberFormat;
@@ -578,7 +578,19 @@ internal partial class StylesReader
         var format = new XLCellFormatValue
         {
             NumberFormat = numberFormat,
-            Alignment = alignment ?? _defaultAlignmentFormat,
+            // Alignment is not copied from default format
+            Alignment = alignment is not null ? new XLAlignmentFormatValue
+            {
+                Horizontal = alignment.Horizontal ?? XLAlignmentFormatValue.Default.Horizontal,
+                Vertical = alignment.Vertical ?? XLAlignmentFormatValue.Default.Vertical,
+                TextRotation = alignment.TextRotation ?? XLAlignmentFormatValue.Default.TextRotation,
+                WrapText = alignment.WrapText ?? XLAlignmentFormatValue.Default.WrapText,
+                Indent = alignment.Indent ?? XLAlignmentFormatValue.Default.Indent,
+                RelativeIndent = alignment.RelativeIndent ?? XLAlignmentFormatValue.Default.RelativeIndent,
+                JustifyLastLine = alignment.JustifyLastLine ?? XLAlignmentFormatValue.Default.JustifyLastLine,
+                ShrinkToFit = alignment.ShrinkToFit ?? XLAlignmentFormatValue.Default.ShrinkToFit,
+                ReadingOrder = alignment.ReadingOrder ?? XLAlignmentFormatValue.Default.ReadingOrder,
+            } : XLAlignmentFormatValue.Default,
             Protection = protection ?? _defaultProtectionFormat,
             Font = font,
             Fill = fill,
@@ -675,34 +687,34 @@ internal partial class StylesReader
         return cellStyles;
     }
 
-    private XLAlignmentFormatValue OnCellAlignmentParsed(XLAlignmentHorizontalValues? horizontal, XLAlignmentVerticalValues vertical, uint? textRotation, bool? wrapText, uint? indent, int? relativeIndent, bool? justifyLastLine, bool? shrinkToFit, uint? readingOrder)
+    private XLDifferentialAlignmentValue OnCellAlignmentParsed(XLAlignmentHorizontalValues? horizontal, XLAlignmentVerticalValues vertical, uint? textRotation, bool? wrapText, uint? indent, int? relativeIndent, bool? justifyLastLine, bool? shrinkToFit, uint? readingOrder)
     {
         if (readingOrder is not null && readingOrder is not (0 or 1 or 2))
             throw PartStructureException.InvalidAttributeFormat();
 
         var normalizedTextRotation = OpenXmlHelper.NormalizeRotation(textRotation ?? 0);
-        return new XLAlignmentFormatValue
+        return new XLDifferentialAlignmentValue
         {
-            Horizontal = horizontal ?? XLAlignmentFormatValue.DefaultHorizontal,
+            Horizontal = horizontal,
             Vertical = vertical,
-            TextRotation = new TextRotation(normalizedTextRotation),
-            WrapText = wrapText ?? false,
-            Indent = indent is not null ? checked((int)indent.Value) : 0,
-            RelativeIndent = relativeIndent ?? 0,
-            JustifyLastLine = justifyLastLine ?? false,
-            ShrinkToFit = shrinkToFit ?? false,
-            ReadingOrder = readingOrder is not null ? (XLAlignmentReadingOrderValues)readingOrder.Value : XLAlignmentFormatValue.DefaultReadingOrder
+            TextRotation = textRotation is not null ? new TextRotation(normalizedTextRotation) : null,
+            WrapText = wrapText,
+            Indent = indent is not null ? checked((int)indent.Value) : null,
+            RelativeIndent = relativeIndent,
+            JustifyLastLine = justifyLastLine,
+            ShrinkToFit = shrinkToFit,
+            ReadingOrder = readingOrder is not null ? (XLAlignmentReadingOrderValues)readingOrder.Value : null
         };
     }
 
-    partial void OnDxfParsed(XLDifferentialFontValue? font, (int NumFmtId, string FormatCode)? numFmt, XLFillFormatValue? fill, XLAlignmentFormatValue? alignment, XLBorderFormatValue? border, XLProtectionFormatValue? protection)
+    partial void OnDxfParsed(XLDifferentialFontValue? font, (int NumFmtId, string FormatCode)? numFmt, XLFillFormatValue? fill, XLDifferentialAlignmentValue? alignment, XLBorderFormatValue? border, XLProtectionFormatValue? protection)
     {
         var dxf = new XLDxfValue
         {
             NumberFormat = numFmt?.FormatCode,
             Font = font ?? XLDifferentialFontValue.Empty,
             Fill = fill,
-            Alignment = alignment,
+            Alignment = alignment ?? XLDifferentialAlignmentValue.Empty,
             Border = border,
             Protection = protection,
         };

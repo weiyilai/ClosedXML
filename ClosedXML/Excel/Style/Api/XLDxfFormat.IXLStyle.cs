@@ -6,8 +6,8 @@ internal partial class XLDxFormat : IXLStyle
 {
     IXLAlignment IXLStyle.Alignment
     {
-        get => throw new NotImplementedException();
-        set => throw new NotImplementedException();
+        get => Alignment;
+        set => Alignment.SetValue(value);
     }
 
     IXLBorder IXLStyle.Border

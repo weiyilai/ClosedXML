@@ -4,11 +4,23 @@ namespace ClosedXML.Excel.Formatting;
 
 internal record XLAlignmentFormatValue
 {
-    internal const XLAlignmentHorizontalValues DefaultHorizontal = XLAlignmentHorizontalValues.General;
-    internal const XLAlignmentVerticalValues DefaultVertical = XLAlignmentVerticalValues.Bottom;
-    internal const XLAlignmentReadingOrderValues DefaultReadingOrder = XLAlignmentReadingOrderValues.ContextDependent;
-
     private readonly int _indent;
+
+    /// <summary>
+    /// Default values of alignment properties in XML part. If a value is missing in XML this one is used instead.
+    /// </summary>
+    internal static XLAlignmentFormatValue Default => new()
+    {
+        Horizontal = XLAlignmentHorizontalValues.General,
+        Vertical = XLAlignmentVerticalValues.Bottom,
+        TextRotation = TextRotation.None,
+        WrapText = false,
+        Indent = 0,
+        RelativeIndent = 0,
+        JustifyLastLine = false,
+        ShrinkToFit = false,
+        ReadingOrder = XLAlignmentReadingOrderValues.ContextDependent,
+    };
 
     public required XLAlignmentHorizontalValues Horizontal { get; init; }
 

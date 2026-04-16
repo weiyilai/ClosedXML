@@ -604,30 +604,53 @@ internal class StylesWriter
 
     private void WriteAlignment(XmlTreeWriter xml, string elementName, XLAlignmentFormatValue alignment)
     {
-        var isDefault =
-            alignment.Horizontal == XLAlignmentFormatValue.DefaultHorizontal &&
-            alignment.Vertical == XLAlignmentFormatValue.DefaultVertical &&
-            alignment.TextRotation.GetIso() == 0 &&
-            alignment.WrapText == false &&
-            alignment.Indent == 0 &&
-            alignment.RelativeIndent == 0 &&
-            alignment.JustifyLastLine == false &&
-            alignment.ShrinkToFit == false &&
-            alignment.ReadingOrder == XLAlignmentFormatValue.DefaultReadingOrder;
-
-        if (isDefault)
+        if (alignment == XLAlignmentFormatValue.Default)
             return;
 
         xml.WriteStartElement(elementName, _ns);
-        xml.WriteAttributeDefault("horizontal", alignment.Horizontal, XLAlignmentFormatValue.DefaultHorizontal);
-        xml.WriteAttributeDefault("vertical", alignment.Vertical, XLAlignmentFormatValue.DefaultVertical);
-        xml.WriteAttributeDefault("textRotation", alignment.TextRotation.GetIso(), 0);
-        xml.WriteAttributeDefault("wrapText", alignment.WrapText, false);
-        xml.WriteAttributeDefault("indent", alignment.Indent, 0);
-        xml.WriteAttributeDefault("relativeIndent", alignment.RelativeIndent, 0);
-        xml.WriteAttributeDefault("justifyLastLine", alignment.JustifyLastLine, false);
-        xml.WriteAttributeDefault("shrinkToFit", alignment.ShrinkToFit, false);
-        xml.WriteAttributeDefault("readingOrder", alignment.ReadingOrder, XLAlignmentFormatValue.DefaultReadingOrder);
+        xml.WriteAttributeDefault("horizontal", alignment.Horizontal, XLAlignmentFormatValue.Default.Horizontal);
+        xml.WriteAttributeDefault("vertical", alignment.Vertical, XLAlignmentFormatValue.Default.Vertical);
+        xml.WriteAttributeDefault("textRotation", alignment.TextRotation.GetIso(), XLAlignmentFormatValue.Default.TextRotation.Value);
+        xml.WriteAttributeDefault("wrapText", alignment.WrapText, XLAlignmentFormatValue.Default.WrapText);
+        xml.WriteAttributeDefault("indent", alignment.Indent, XLAlignmentFormatValue.Default.Indent);
+        xml.WriteAttributeDefault("relativeIndent", alignment.RelativeIndent, XLAlignmentFormatValue.Default.RelativeIndent);
+        xml.WriteAttributeDefault("justifyLastLine", alignment.JustifyLastLine, XLAlignmentFormatValue.Default.JustifyLastLine);
+        xml.WriteAttributeDefault("shrinkToFit", alignment.ShrinkToFit, XLAlignmentFormatValue.Default.ShrinkToFit);
+        xml.WriteAttributeDefault("readingOrder", alignment.ReadingOrder, XLAlignmentFormatValue.Default.ReadingOrder);
+        xml.WriteEndElement();
+    }
+
+    private void WriteAlignment(XmlTreeWriter xml, string elementName, XLDifferentialAlignmentValue alignment)
+    {
+        // Alignment is kind of wonky. Current Excel doesn't even support it in a DXF dialogue and doesn't always work correctly.
+        xml.WriteStartElement(elementName, _ns);
+        if (alignment.Horizontal is { } horizontal)
+            xml.WriteAttribute("horizontal", horizontal);
+
+        if (alignment.Vertical is { } vertical)
+            xml.WriteAttribute("vertical", vertical);
+
+        if (alignment.TextRotation is { } textRotation)
+            xml.WriteAttribute("textRotation", textRotation.GetIso());
+
+        if (alignment.WrapText is { } wrapText)
+            xml.WriteAttribute("wrapText", wrapText);
+
+        if (alignment.Indent is { } indent)
+            xml.WriteAttribute("indent", indent);
+
+        if (alignment.RelativeIndent is { } relativeIndent)
+            xml.WriteAttribute("relativeIndent", relativeIndent);
+
+        if (alignment.JustifyLastLine is { } justifyLastLine)
+            xml.WriteAttribute("justifyLastLine", justifyLastLine);
+
+        if (alignment.ShrinkToFit is { } shrinkToFit)
+            xml.WriteAttribute("shrinkToFit", shrinkToFit);
+
+        if (alignment.ReadingOrder is { } readingOrder)
+            xml.WriteAttribute("readingOrder", readingOrder);
+
         xml.WriteEndElement();
     }
 
