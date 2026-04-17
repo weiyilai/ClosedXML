@@ -11,6 +11,16 @@ namespace ClosedXML.Excel
         private static readonly XLColorRepository Repository = new XLColorRepository(key => new XLColor(key));
 
         /// <summary>
+        /// System foreground color. Depends on system settings, but there is no platform-agnostic way to resolve it.
+        /// </summary>
+        private static readonly XLColor SystemForeground = FromRgb(0x000000);
+
+        /// <summary>
+        /// System background color. Depends on system settings, but there is no platform-agnostic way to resolve it.
+        /// </summary>
+        private static readonly XLColor SystemBackground = FromRgb(0xFFFFFF);
+
+        /// <summary>
         /// VML palette entries from MS-OI29500. Excel uses Windows system color scheme to determine the actual colors of a palette
         /// entry, but we have no way to get them. Win10 doesn't even have a tool, use Classic Color Panel. We will use the default
         /// values that are default on Windows.
@@ -18,7 +28,7 @@ namespace ClosedXML.Excel
         private static readonly Lazy<Dictionary<String, XLColor>> VmlPaletteColors = new(() => new Dictionary<String, XLColor>(StringComparer.OrdinalIgnoreCase)
         {
             { "ButtonFace", FromRgb(0xF0F0F0) },
-            { "WindowText", FromRgb(0x000000) },
+            { "WindowText", SystemForeground },
             { "Menu", FromRgb(0xF0F0F0) },
             { "Highlight", FromRgb(0x0078D7) },
             { "HighlightText", FromRgb(0xFFFFFF) },
@@ -34,7 +44,7 @@ namespace ClosedXML.Excel
             { "InfoText", FromRgb(0x000000) },
             { "MenuText", FromRgb(0x000000) },
             { "Scrollbar", FromRgb(0xC8C8C8) },
-            { "Window", FromRgb(0xFFFFFF) },
+            { "Window", SystemBackground },
             { "WindowFrame", FromRgb(0x646464) },
             { "ThreeDLightShadow", FromRgb(0x000000) },
             { "ThreeDDarkShadow", FromRgb(0x696969) },
@@ -70,6 +80,9 @@ namespace ClosedXML.Excel
             { "Aqua", Aqua },
         });
 
+        /// <summary>
+        /// Default indexed colors from ISO-29500:18.8.27. If a workbook doesn't have a specific colors, these are used.
+        /// </summary>
         private static readonly Lazy<Dictionary<Int32, XLColor>> IndexedColorsLazy = new(() => new Dictionary<int, XLColor>
         {
             {  0, FromArgb(0xFF000000) },
@@ -136,7 +149,8 @@ namespace ClosedXML.Excel
             { 61, FromArgb(0xFF993366) },
             { 62, FromArgb(0xFF333399) },
             { 63, FromArgb(0xFF333333) },
-            { 64, FromColor(Color.Transparent) }, // System Foreground
+            { 64, SystemForeground },
+            { 65, SystemBackground },
         });
 
         /// <summary>

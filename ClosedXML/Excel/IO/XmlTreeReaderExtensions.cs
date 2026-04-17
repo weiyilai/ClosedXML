@@ -54,7 +54,7 @@ internal static class XmlTreeReaderExtensions
         var indexed = reader.GetOptionalUintAsInt("indexed");
         if (indexed is not null)
         {
-            var indexedColor = indexed <= 64 ? XLColor.FromIndex(indexed.Value) : XLColor.NoColor;
+            var indexedColor = indexed <= XLColor.IndexedColors.Count ? XLColor.FromIndex(indexed.Value) : XLColor.NoColor;
             reader.Close(colorElementName, ns);
             return indexedColor;
         }

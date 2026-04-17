@@ -706,7 +706,7 @@ namespace ClosedXML.Excel
                 }
 
                 if (clearOptions.HasFlag(XLClearOptions.NormalFormats))
-                    SetStyle(Worksheet.Style);
+                    FormatValue = Worksheet.FormatValue;
 
                 if (clearOptions.HasFlag(XLClearOptions.ConditionalFormats))
                 {
@@ -1145,11 +1145,6 @@ namespace ClosedXML.Excel
         internal XLCellFormatValue GetFormat()
         {
             return Worksheet.GetStyleValue(SheetPoint);
-        }
-
-        private void SetStyle(IXLStyle styleToUse)
-        {
-            Style = styleToUse;
         }
 
         #endregion Styles

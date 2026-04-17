@@ -358,11 +358,11 @@ namespace ClosedXML.Excel
                     & ~XLClearOptions.MergedRanges
                     & ~XLClearOptions.Sparklines;
             var cellUsedOptions = cellClearOptions.ToCellsUsedOptions();
-            foreach (var cell in CellsUsed(cellUsedOptions))
+            foreach (var cell in CellsUsedInternal(cellUsedOptions))
             {
                 // We'll clear the conditional formatting, data validations, sparklines
                 // and merged ranges later down.
-                (cell as XLCell).Clear(cellClearOptions, true);
+                cell.Clear(cellClearOptions, true);
             }
 
             if (clearOptions.HasFlag(XLClearOptions.ConditionalFormats))
@@ -947,7 +947,7 @@ namespace ClosedXML.Excel
             return CellsUsedInternal(options, predicate);
         }
 
-        internal XLCells CellsUsedInternal(XLCellsUsedOptions options, Func<XLCell, Boolean> predicate)
+        internal XLCells CellsUsedInternal(XLCellsUsedOptions options, Func<XLCell, Boolean> predicate = null)
         {
             var cells = new XLCells(Worksheet, true, options, predicate) { RangeAddress };
             return cells;
