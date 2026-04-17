@@ -108,7 +108,7 @@ internal class StylesWriter
         var numberFormatMap = SequentialMap<int, XLNumberFormat>.Create(usedNumberFormats, styles.NumberFormats, XLPredefinedFormat.NumberFormatIds, FirstUserDefinedFormatIndex);
 
         if (numberFormatMap.Count > predefinedNumberFormats.Count)
-            WriteNumberFormats(xml, numberFormatMap);
+            WriteNumberFormats(xml, numberFormatMap, predefinedNumberFormats);
 
         // Fonts. Register default format font as font zero. The font zero is used for font name and size.
         var firstFontValues = new Dictionary<XLFontFormatValue, int> { { styles.DefaultFormat.Font, 0 } };
@@ -208,15 +208,15 @@ internal class StylesWriter
         }
     }
 
-    private void WriteNumberFormats(XmlTreeWriter xml, SequentialMap<int, XLNumberFormat> idMap)
+    private void WriteNumberFormats(XmlTreeWriter xml, SequentialMap<int, XLNumberFormat> idMap, IReadOnlyDictionary<XLNumberFormat, int> predefinedNumberFormats)
     {
         xml.WriteStartElement("numFmts", _ns);
-        xml.WriteAttribute("count", idMap.Count - FirstUserDefinedFormatIndex);
+        xml.WriteAttribute("count", idMap.Count - predefinedNumberFormats.Count);
 
         foreach (var (savedId, format) in idMap.GetActual())
         {
-            // The number format map has identity map for predefined formats
-            if (savedId < FirstUserDefinedFormatIndex)
+            // Do not write the predefined formats, Excel doesn't write that either
+            if (predefinedNumberFormats.ContainsKey(format))
                 continue;
 
             WriteNumFmt(xml, "numFmt", savedId, format);
