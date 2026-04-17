@@ -475,9 +475,8 @@ namespace ClosedXML.Tests
         public void KeepOriginalDrawingShapesZOrder()
         {
             // File contains shapes and a picture in a mixed order.
-            using var stream = TestHelper.GetStreamFromResource(@"Other.Pictures.ImageShapeZOrder-Input.xlsx");
-            TestHelper.CreateAndCompare(
-                () => new XLWorkbook(stream),
+            TestHelper.LoadSaveAndCompare(
+                @"Other\Pictures\ImageShapeZOrder-Input.xlsx",
                 @"Other\Pictures\ImageShapeZOrder-Output.xlsx");
         }
 
