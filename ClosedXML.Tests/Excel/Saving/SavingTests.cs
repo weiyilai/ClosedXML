@@ -20,12 +20,10 @@ namespace ClosedXML.Tests.Excel.Saving
         public void BooleanValueSavesAsZeroOrOne()
         {
             // When a cell evaluates to a boolean value, the text in the XML has to be true/false (lowercase only) or 0/1
-            TestHelper.CreateAndCompare(() =>
+            TestHelper.CreateAndCompare(wb =>
             {
-                var wb = new XLWorkbook();
                 var ws = wb.AddWorksheet();
                 ws.FirstCell().FormulaA1 = "=TRUE";
-                return wb;
             }, @"Other\Formulas\BooleanFormulaValues.xlsx", evaluateFormulae: true);
         }
 
@@ -322,34 +320,26 @@ namespace ClosedXML.Tests.Excel.Saving
         [Test]
         public void PreserveChartsWhenSaving()
         {
-            using (var stream = TestHelper.GetStreamFromResource(TestHelper.GetResourcePath(@"Other\Charts\PreserveCharts\inputfile.xlsx")))
-            using (var ms = new MemoryStream())
-            {
-                TestHelper.CreateAndCompare(() =>
-                {
-                    var wb = new XLWorkbook(stream);
-                    wb.SaveAs(ms);
-                    return wb;
-                }, @"Other\Charts\PreserveCharts\outputfile.xlsx");
-            }
+            TestHelper.LoadSaveAndCompare(
+                @"Other\Charts\PreserveCharts\inputfile.xlsx",
+                @"Other\Charts\PreserveCharts\outputfile.xlsx");
         }
 
         [Test]
         public void DeletingAllPicturesRemovesDrawingPart()
         {
-            TestHelper.CreateAndCompare(() =>
-            {
-                var stream = TestHelper.GetStreamFromResource(TestHelper.GetResourcePath(@"Examples\ImageHandling\ImageAnchors.xlsx"));
-                var wb = new XLWorkbook(stream);
-                foreach (var ws in wb.Worksheets)
+            TestHelper.LoadModifyAndCompare(
+                @"Examples\ImageHandling\ImageAnchors.xlsx",
+                wb =>
                 {
-                    var pictureNames = ws.Pictures.Select(pic => pic.Name).ToArray();
-                    foreach (var name in pictureNames)
-                        ws.Pictures.Delete(name);
-                }
-
-                return wb;
-            }, @"Other\Drawings\NoDrawings\outputfile.xlsx");
+                    foreach (var ws in wb.Worksheets)
+                    {
+                        var pictureNames = ws.Pictures.Select(pic => pic.Name).ToArray();
+                        foreach (var name in pictureNames)
+                            ws.Pictures.Delete(name);
+                    }
+                },
+                @"Other\Drawings\NoDrawings\outputfile.xlsx");
         }
 
         [Test]
@@ -584,34 +574,28 @@ namespace ClosedXML.Tests.Excel.Saving
         [Test]
         public void RemoveExistingInlineStringsIfRequired()
         {
-            using (var stream = TestHelper.GetStreamFromResource(TestHelper.GetResourcePath(@"Other\InlineStrings\inputfile.xlsx")))
-            using (var ms = new MemoryStream())
-            {
-                TestHelper.CreateAndCompare(() =>
+            TestHelper.LoadModifyAndCompare(
+                @"Other\InlineStrings\inputfile.xlsx",
+                wb =>
                 {
-                    var wb = new XLWorkbook(stream);
                     var ws = wb.Worksheet(1);
-
+                
                     var numericCells = ws.CellsUsed(c => double.TryParse(c.GetString(), out double _));
                     var textCells = ws.CellsUsed(c => !double.TryParse(c.GetString(), out double _));
-
+                
                     foreach (var cell in numericCells)
                     {
                         cell.Clear(XLClearOptions.AllFormats);
                         Assert.True(cell.Value.TryConvert(out double val, CultureInfo.CurrentCulture));
                         cell.Value = val;
                     }
-
+                
                     foreach (var cell in textCells)
                     {
                         cell.ShareString = true;
                     }
-
-                    wb.SaveAs(ms);
-
-                    return wb;
-                }, @"Other\InlineStrings\outputfile.xlsx");
-            }
+                },
+                @"Other\InlineStrings\outputfile.xlsx");
         }
 
         [Test]
