@@ -582,7 +582,7 @@ internal class StylesReaderTests
                 var dxf = styles.DifferentialFormats.Single().Value;
                 Assert.IsTrue(dxf.Font.IsEmpty());
                 Assert.IsNull(dxf.NumberFormat);
-                Assert.IsNull(dxf.Fill);
+                Assert.AreSame(XLDifferentialFillValue.Empty, dxf.Fill);
                 Assert.IsNull(dxf.Border);
             });
     }
@@ -606,7 +606,7 @@ internal class StylesReaderTests
     }
 
     [Test]
-    public void Differential_formats_use_background_color_for_solid_fill_color()
+    public void Differential_formats_use_foreground_color_for_solid_fill_color()
     {
         AssertDxf(
             """
@@ -623,8 +623,8 @@ internal class StylesReaderTests
             {
                 var dxf = styles.DifferentialFormats.Single().Value;
                 Assert.AreEqual(XLFillPatternValues.Solid, dxf.Fill?.Pattern?.PatternType);
-                Assert.AreEqual(XLColor.FromRgb(0x800000), dxf.Fill?.Pattern?.PatternColor);
-                Assert.AreEqual(XLColor.FromRgb(0x00FF00), dxf.Fill?.Pattern?.BackgroundColor);
+                Assert.AreEqual(XLColor.FromRgb(0x00FF00), dxf.Fill?.Pattern?.PatternColor);
+                Assert.AreEqual(XLColor.FromRgb(0x800000), dxf.Fill?.Pattern?.BackgroundColor);
             });
     }
 
@@ -1027,7 +1027,7 @@ internal class StylesReaderTests
             Assert.AreSame(XLBorderFormatValue.None, style.Border);
             Assert.AreSame(XLBorderFormatValue.None, styles.Borders[1]);
 
-            Assert.AreSame(styles.DefaultNormalStyle.Alignment, style.Alignment);
+            Assert.AreSame(XLAlignmentFormatValue.Default, style.Alignment);
             Assert.AreSame(styles.DefaultNormalStyle.Protection, style.Protection);
         }, xml);
     }
@@ -1075,7 +1075,7 @@ internal class StylesReaderTests
             Assert.AreSame(XLBorderFormatValue.None, format.Border);
             Assert.AreSame(XLBorderFormatValue.None, styles.Borders[1]);
 
-            Assert.AreSame(styles.DefaultNormalStyle.Alignment, format.Alignment);
+            Assert.AreSame(XLAlignmentFormatValue.Default, format.Alignment);
             Assert.AreSame(styles.DefaultNormalStyle.Protection, format.Protection);
         }, xml);
     }

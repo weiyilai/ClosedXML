@@ -429,8 +429,8 @@ internal partial class StylesReader
     private XLFillFormatValue OnPatternFillParsed(XLColor? fgColor, XLColor? bgColor, XLFillPatternValues? patternType)
     {
         // There is a discrepancy between <fill> interpretation for a solid fill:
-        // * cell fill: Pattern color is the one used for fill, the background color is ignored
-        // * dxf fill: Pattern color is ignored, the background color is used for fill
+        // * cell fill: Pattern color is ignored, the background color is used for fill
+        // * dxf fill: Pattern color is the one used for fill, the background color is ignored
         // The GUI in both cases says that the background color is the one that is used. Therefore
         // use background is correct per GUI. The problem is that ClosedXML historically says
         // the pattern color is the one that is used. This sucks, I have to live with it.
@@ -440,35 +440,27 @@ internal partial class StylesReader
         // OI-29500 is silent, but Excel uses solid fill for dxf and none for cell fill.
         if (_reader.Context[^2] == "dxf")
         {
-            var pattern = patternType ?? XLFillPatternValues.Solid;
-            if (pattern == XLFillPatternValues.Solid)
+            var patternFill = new XLPatternFill
             {
-                // Fix solid pattern discrepancy for dxf
-                var solidFill = new XLPatternFill
-                {
-                    PatternColor = bgColor ?? XLColor.NoColor,
-                    BackgroundColor = fgColor ?? XLColor.NoColor,
-                    PatternType = XLFillPatternValues.Solid,
-                };
-                return new XLFillFormatValue(solidFill);
-            }
+                PatternColor = fgColor ?? XLColor.NoColor,
+                BackgroundColor = bgColor ?? XLColor.NoColor,
+                PatternType = patternType ?? XLFillPatternValues.Solid,
+            };
+            return new XLFillFormatValue(patternFill);
+        }
+        else
+        {
+            var pattern = patternType ?? XLFillPatternValues.None;
+
+            // Fix solid pattern discrepancy for cell fill
+            if (pattern == XLFillPatternValues.Solid)
+                (bgColor, fgColor) = (fgColor, bgColor);
 
             var patternFill = new XLPatternFill
             {
                 PatternColor = fgColor ?? XLColor.NoColor,
                 BackgroundColor = bgColor ?? XLColor.NoColor,
                 PatternType = pattern,
-            };
-            return new XLFillFormatValue(patternFill);
-        }
-        else
-        {
-            // Pattern for cell style fill
-            var patternFill = new XLPatternFill
-            {
-                PatternColor = fgColor ?? XLColor.NoColor,
-                BackgroundColor = bgColor ?? XLColor.NoColor,
-                PatternType = patternType ?? XLFillPatternValues.None,
             };
             return new XLFillFormatValue(patternFill);
         }

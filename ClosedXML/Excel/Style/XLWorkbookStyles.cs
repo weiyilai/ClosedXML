@@ -427,7 +427,7 @@ internal class XLWorkbookStyles
             styles.AddNumberFormat(numFmtId, formatCode);
 
         var normalStyle = styles.DefaultNormalStyle;
-        styles.AddFontFormat(normalStyle.Font!);
+        styles.AddFontFormat(normalStyle.Font);
         styles.AddFillFormat(XLFillFormatValue.None);
         styles.AddFillFormat(XLFillFormatValue.Gray125);
         styles.AddBorderFormat(XLBorderFormatValue.None);

@@ -9,7 +9,7 @@ internal record XLAlignmentFormatValue
     /// <summary>
     /// Default values of alignment properties in XML part. If a value is missing in XML this one is used instead.
     /// </summary>
-    internal static XLAlignmentFormatValue Default => new()
+    internal static XLAlignmentFormatValue Default { get; } = new()
     {
         Horizontal = XLAlignmentHorizontalValues.General,
         Vertical = XLAlignmentVerticalValues.Bottom,

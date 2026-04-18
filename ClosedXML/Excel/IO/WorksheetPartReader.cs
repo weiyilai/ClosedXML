@@ -622,32 +622,32 @@ internal class WorksheetPartReader
     // TODO Styles: Move methods to strongly typed number format
     private static XLDataType GetNumberDataType(XLNumberFormat numberFormat)
     {
-        if (!XLPredefinedFormat.NumberFormatIds.TryGetValue(numberFormat, out var formatId))
+        if (XLPredefinedFormat.NumberFormatIds.TryGetValue(numberFormat, out var formatId))
         {
+            var numberFormatId = (XLPredefinedFormat.DateTime)formatId;
+            var isTimeOnlyFormat = numberFormatId is
+                Hour12MinutesAmPm or
+                Hour12MinutesSecondsAmPm or
+                Hour24Minutes or
+                Hour24MinutesSeconds or
+                MinutesSeconds or
+                Hour12MinutesSeconds or
+                MinutesSecondsMillis1;
+
+            if (isTimeOnlyFormat)
+                return XLDataType.TimeSpan;
+
+            var isDateTimeFormat = numberFormatId is
+                    DayMonthYear4WithSlashes or
+                    DayMonthAbbrYear2WithDashes or
+                    DayMonthAbbrWithDash or
+                    MonthDayYear4WithDashesHour24Minutes;
+
+            if (isDateTimeFormat)
+                return XLDataType.DateTime;
+
             return XLDataType.Number;
         }
-
-        var numberFormatId = (XLPredefinedFormat.DateTime)formatId;
-        var isTimeOnlyFormat = numberFormatId is
-            Hour12MinutesAmPm or
-            Hour12MinutesSecondsAmPm or
-            Hour24Minutes or
-            Hour24MinutesSeconds or
-            MinutesSeconds or
-            Hour12MinutesSeconds or
-            MinutesSecondsMillis1;
-
-        if (isTimeOnlyFormat)
-            return XLDataType.TimeSpan;
-
-        var isDateTimeFormat = numberFormatId is
-                DayMonthYear4WithSlashes or
-                DayMonthAbbrYear2WithDashes or
-                DayMonthAbbrWithDash or
-                MonthDayYear4WithDashesHour24Minutes;
-
-        if (isDateTimeFormat)
-            return XLDataType.DateTime;
 
         if (!String.IsNullOrWhiteSpace(numberFormat))
         {
