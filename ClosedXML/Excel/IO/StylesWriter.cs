@@ -616,7 +616,7 @@ internal class StylesWriter
         xml.WriteAttributeDefault("relativeIndent", alignment.RelativeIndent, XLAlignmentFormatValue.Default.RelativeIndent);
         xml.WriteAttributeDefault("justifyLastLine", alignment.JustifyLastLine, XLAlignmentFormatValue.Default.JustifyLastLine);
         xml.WriteAttributeDefault("shrinkToFit", alignment.ShrinkToFit, XLAlignmentFormatValue.Default.ShrinkToFit);
-        xml.WriteAttributeDefault("readingOrder", alignment.ReadingOrder, XLAlignmentFormatValue.Default.ReadingOrder);
+        xml.WriteAttributeDefault("readingOrder", (uint)alignment.ReadingOrder, (uint)XLAlignmentFormatValue.Default.ReadingOrder);
         xml.WriteEndElement();
     }
 
