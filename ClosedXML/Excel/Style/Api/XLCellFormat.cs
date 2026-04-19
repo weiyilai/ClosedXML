@@ -36,7 +36,7 @@ internal partial class XLCellFormat
     internal bool IncludeQuotePrefix
     {
         get => Resolve(static format => format.IncludeQuotePrefix);
-        set => Modify(format => format with { IncludeQuotePrefix = value });
+        set => ModifyFormat((format, includeQuotePrefix) => format with { IncludeQuotePrefix = includeQuotePrefix }, value);
     }
 
     /// <summary>
@@ -214,6 +214,12 @@ internal partial class XLCellFormat
     {
         var format = _formatValue.Resolve();
         return selector(format);
+    }
+
+    internal void ModifyFormat<TProperty>(Func<XLCellFormatValue, TProperty, XLCellFormatValue> modifyFormat, TProperty value)
+    {
+        var styles = _workbook.Styles;
+        Modify(format => styles.GetRegisteredCellFormat(format, cellFormat => modifyFormat(cellFormat, value));
     }
 
     internal void ModifyNumberFormat(XLNumberFormat numberFormat)
