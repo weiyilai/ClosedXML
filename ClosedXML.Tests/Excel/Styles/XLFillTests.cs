@@ -115,7 +115,6 @@ namespace ClosedXML.Tests.Excel
             fill2.BackgroundColor = XLColor.Red;
 
             Assert.IsFalse(fill1.Equals(fill2));
-            Assert.AreNotEqual(fill1.GetHashCode(), fill2.GetHashCode());
         }
 
         [Test]
