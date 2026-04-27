@@ -583,7 +583,7 @@ internal class StylesReaderTests
                 Assert.IsTrue(dxf.Font.IsEmpty());
                 Assert.IsNull(dxf.NumberFormat);
                 Assert.AreSame(XLDifferentialFillValue.Empty, dxf.Fill);
-                Assert.IsNull(dxf.Border);
+                Assert.AreSame(XLDifferentialBorderValue.Empty, dxf.Border);
             });
     }
 
