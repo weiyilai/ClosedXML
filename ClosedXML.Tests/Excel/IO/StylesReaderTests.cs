@@ -566,9 +566,9 @@ internal class StylesReaderTests
                 Assert.AreEqual(XLColor.FromRgb(0x00FF00), dxf.Fill.Pattern.BackgroundColor);
                 Assert.AreEqual(XLBorderStyleValues.Thin, dxf.Border?.Right.Value.Style);
                 Assert.AreEqual(XLColor.FromRgb(0x00FF00), dxf.Border?.Right.Value.Color);
-                Assert.AreEqual(XLBorderLine.None, dxf.Border.Left);
-                Assert.AreEqual(XLBorderLine.None, dxf.Border.Top);
-                Assert.AreEqual(XLBorderLine.None, dxf.Border.Bottom);
+                Assert.IsNull(dxf.Border.Left);
+                Assert.IsNull(dxf.Border.Top);
+                Assert.IsNull(dxf.Border.Bottom);
             });
     }
 
