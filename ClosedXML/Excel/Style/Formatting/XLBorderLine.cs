@@ -5,6 +5,9 @@ namespace ClosedXML.Excel.Formatting;
 /// </summary>
 internal readonly record struct XLBorderLine(XLColor Color, XLBorderStyleValues Style)
 {
+    /// <summary>
+    /// Default XML attribute values.
+    /// </summary>
     internal static readonly XLBorderLine None = new(XLColor.Auto, XLBorderStyleValues.None);
 
     /// <summary>

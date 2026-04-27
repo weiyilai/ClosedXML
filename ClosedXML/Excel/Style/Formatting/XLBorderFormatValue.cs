@@ -3,6 +3,9 @@ namespace ClosedXML.Excel.Formatting;
 /// <summary>
 /// A border format master record.
 /// </summary>
+/// <remarks>
+/// Many XML attributes are used only for dxf and thus are not represented in this structure (vertical, horizontal, outline).
+/// </remarks>
 internal record XLBorderFormatValue
 {
     internal static readonly XLBorderFormatValue None = new()
@@ -12,11 +15,8 @@ internal record XLBorderFormatValue
         Top = XLBorderLine.None,
         Bottom = XLBorderLine.None,
         Diagonal = XLBorderLine.None,
-        Vertical = XLBorderLine.None,
-        Horizontal = XLBorderLine.None,
         DiagonalUp = false,
         DiagonalDown = false,
-        Outline = false
     };
 
     public required XLBorderLine Left { get; init; }
@@ -33,19 +33,21 @@ internal record XLBorderFormatValue
     /// </summary>
     public required XLBorderLine Diagonal { get; init; }
 
-    /// <summary>
-    /// For pivot tables only.
-    /// </summary>
-    public required XLBorderLine Vertical { get; init; }
-
-    /// <summary>
-    /// For pivot tables only.
-    /// </summary>
-    public required XLBorderLine Horizontal { get; init; }
-
     public required bool DiagonalUp { get; init; }
 
     public required bool DiagonalDown { get; init; }
 
-    public required bool Outline { get; init; }
+    internal static XLBorderFormatValue FromDxf(XLDifferentialBorderValue dxfBorder)
+    {
+        return new XLBorderFormatValue
+        {
+            Left = dxfBorder.Left ?? XLBorderLine.None,
+            Right = dxfBorder.Right ?? XLBorderLine.None,
+            Top = dxfBorder.Top ?? XLBorderLine.None,
+            Bottom = dxfBorder.Bottom ?? XLBorderLine.None,
+            Diagonal = dxfBorder.Diagonal ?? XLBorderLine.None,
+            DiagonalUp = dxfBorder.DiagonalUp,
+            DiagonalDown = dxfBorder.DiagonalDown,
+        };
+    }
 }

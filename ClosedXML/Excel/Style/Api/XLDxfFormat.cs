@@ -22,6 +22,8 @@ internal partial class XLDxFormat
 
     private XLDxfFillFormat Fill => new(this);
 
+    private XLDxfBorderFormat Border => new(this);
+
     internal TProperty? Resolve<TComponent, TProperty>(Func<XLDxfValue, TComponent> getComponent, Func<TComponent, TProperty?> getProperty)
         where TProperty : struct
     {
@@ -64,6 +66,17 @@ internal partial class XLDxFormat
         {
             var modifiedAlignment = modify(dxf.Alignment, value);
             var modifiedDxf = dxf with { Alignment = modifiedAlignment };
+            return modifiedDxf;
+        });
+        _container.FormatValue = modifiedDxf;
+    }
+
+    internal void ModifyBorder<T>(Func<XLDifferentialBorderValue, T, XLDifferentialBorderValue> modify, T value)
+    {
+        var modifiedDxf = _styles.GetRegisteredDxFormat(Dxf, dxf =>
+        {
+            var modifiedBorder = modify(dxf.Border, value);
+            var modifiedDxf = dxf with { Border = modifiedBorder };
             return modifiedDxf;
         });
         _container.FormatValue = modifiedDxf;

@@ -219,7 +219,7 @@ internal partial class XLCellFormat
     internal void ModifyFormat<TProperty>(Func<XLCellFormatValue, TProperty, XLCellFormatValue> modifyFormat, TProperty value)
     {
         var styles = _workbook.Styles;
-        Modify(format => styles.GetRegisteredCellFormat(format, cellFormat => modifyFormat(cellFormat, value));
+        Modify(format => styles.GetRegisteredCellFormat(format, cellFormat => modifyFormat(cellFormat, value)));
     }
 
     internal void ModifyNumberFormat(XLNumberFormat numberFormat)

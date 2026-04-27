@@ -564,8 +564,8 @@ internal class StylesReaderTests
                 Assert.AreEqual(XLFillPatternValues.LightGrid, dxf.Fill?.Pattern?.PatternType);
                 Assert.AreEqual(XLColor.FromRgb(0x0000FF), dxf.Fill.Pattern.PatternColor);
                 Assert.AreEqual(XLColor.FromRgb(0x00FF00), dxf.Fill.Pattern.BackgroundColor);
-                Assert.AreEqual(XLBorderStyleValues.Thin, dxf.Border?.Right.Style);
-                Assert.AreEqual(XLColor.FromRgb(0x00FF00), dxf.Border?.Right.Color);
+                Assert.AreEqual(XLBorderStyleValues.Thin, dxf.Border?.Right.Value.Style);
+                Assert.AreEqual(XLColor.FromRgb(0x00FF00), dxf.Border?.Right.Value.Color);
                 Assert.AreEqual(XLBorderLine.None, dxf.Border.Left);
                 Assert.AreEqual(XLBorderLine.None, dxf.Border.Top);
                 Assert.AreEqual(XLBorderLine.None, dxf.Border.Bottom);

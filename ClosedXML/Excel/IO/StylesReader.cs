@@ -497,23 +497,28 @@ internal partial class StylesReader
         return (position, color);
     }
 
-    private XLBorderFormatValue OnBorderParsed(XLBorderLine? left, XLBorderLine? right, XLBorderLine? top, XLBorderLine? bottom, XLBorderLine? diagonal, XLBorderLine? vertical, XLBorderLine? horizontal, bool? diagonalUp, bool? diagonalDown, bool outline)
+    private XLDifferentialBorderValue OnBorderParsed(XLBorderLine? left, XLBorderLine? right, XLBorderLine? top, XLBorderLine? bottom, XLBorderLine? diagonal, XLBorderLine? vertical, XLBorderLine? horizontal, bool? diagonalUp, bool? diagonalDown, bool outline)
     {
-        var borderFormat = new XLBorderFormatValue
+        var dxfBorder = new XLDifferentialBorderValue
         {
-            Left = left ?? XLBorderLine.None,
-            Right = right ?? XLBorderLine.None,
-            Top = top ?? XLBorderLine.None,
-            Bottom = bottom ?? XLBorderLine.None,
-            Diagonal = diagonal ?? XLBorderLine.None,
-            Vertical = vertical ?? XLBorderLine.None,
-            Horizontal = horizontal ?? XLBorderLine.None,
-            DiagonalUp = diagonalUp ?? false, // OI-29500: Excel uses false as default value
-            DiagonalDown = diagonalDown ?? false, // OI-29500: Excel uses false as default value
+            Left = left,
+            Right = right,
+            Top = top,
+            Bottom = bottom,
+            Diagonal = diagonal,
+            Vertical = vertical,
+            Horizontal = horizontal,
+            DiagonalUp = diagonalUp ?? false,
+            DiagonalDown = diagonalDown ?? false,
             Outline = outline
         };
-        _styles.AddBorderFormat(borderFormat);
-        return borderFormat;
+        if (_reader.Context[^1] == "borders")
+        {
+            var cellBorder = XLBorderFormatValue.FromDxf(dxfBorder);
+            _styles.AddBorderFormat(cellBorder);
+        }
+
+        return dxfBorder;
     }
 
     private XLBorderLine OnBorderPrParsed(XLColor? color, XLBorderStyleValues style)
@@ -699,7 +704,7 @@ internal partial class StylesReader
         };
     }
 
-    partial void OnDxfParsed(XLDifferentialFontValue? font, (int NumFmtId, string FormatCode)? numFmt, XLFillFormatValue? fill, XLDifferentialAlignmentValue? alignment, XLBorderFormatValue? border, XLProtectionFormatValue? protection)
+    partial void OnDxfParsed(XLDifferentialFontValue? font, (int NumFmtId, string FormatCode)? numFmt, XLFillFormatValue? fill, XLDifferentialAlignmentValue? alignment, XLDifferentialBorderValue? border, XLProtectionFormatValue? protection)
     {
         var dxf = new XLDxfValue
         {
@@ -707,7 +712,7 @@ internal partial class StylesReader
             Font = font ?? XLDifferentialFontValue.Empty,
             Fill = fill is not null ? new XLDifferentialFillValue(fill) : XLDifferentialFillValue.Empty,
             Alignment = alignment ?? XLDifferentialAlignmentValue.Empty,
-            Border = border,
+            Border = border ?? XLDifferentialBorderValue.Empty,
             Protection = protection,
         };
         _styles.AddDifferentialFormat(dxf);

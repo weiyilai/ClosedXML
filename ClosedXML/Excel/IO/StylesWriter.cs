@@ -473,47 +473,72 @@ internal class StylesWriter
         xml.WriteStartElement("borders", _ns);
         xml.WriteAttribute("count", idMap.Count);
         foreach (var (_, border) in idMap.GetActual())
-            WriteBorder(xml, "border", border, false);
+            WriteBorder(xml, "border", border);
 
         xml.WriteEndElement();
     }
 
-    private void WriteBorder(XmlTreeWriter xml, string elementName, XLBorderFormatValue border, bool isDxf)
+    private void WriteBorder(XmlTreeWriter xml, string elementName, XLBorderFormatValue border)
+    {
+        xml.WriteStartElement(elementName, _ns);
+        xml.WriteAttributeDefault("diagonalUp", border.DiagonalUp, false);
+        xml.WriteAttributeDefault("diagonalDown", border.DiagonalDown, false);
+
+        // ISO should be "start"+"end", but Excel uses "left"+"right"
+        WriteBorderPr(xml, "left", border.Left);
+        WriteBorderPr(xml, "right", border.Right);
+        WriteBorderPr(xml, "top", border.Top);
+        WriteBorderPr(xml, "bottom", border.Bottom);
+        WriteBorderPr(xml, "diagonal", border.Diagonal);
+
+        xml.WriteEndElement();
+    }
+
+    private void WriteBorder(XmlTreeWriter xml, string elementName, XLDifferentialBorderValue border)
     {
         xml.WriteStartElement(elementName, _ns);
         xml.WriteAttributeDefault("diagonalUp", border.DiagonalUp, false);
         xml.WriteAttributeDefault("diagonalDown", border.DiagonalDown, false);
 
         // Outline has no meaning for cell styles, it is only for dxf - tables and such.
-        if (isDxf)
-            xml.WriteAttributeDefault("outline", border.Outline, true);
+        xml.WriteAttributeDefault("outline", border.Outline, true);
 
         // ISO should be "start"+"end", but Excel uses "left"+"right"
-        WriteBorderPr("left", border.Left);
-        WriteBorderPr("right", border.Right);
-        WriteBorderPr("top", border.Top);
-        WriteBorderPr("bottom", border.Bottom);
-        WriteBorderPr("diagonal", border.Diagonal);
+        if (border.Left is { } left)
+            WriteBorderPr(xml, "left", left);
 
-        // Pivot borders are written only if necessary
-        if (border.Vertical.Style != XLBorderStyleValues.None)
-            WriteBorderPr("vertical", border.Vertical);
+        if (border.Right is { } right)
+            WriteBorderPr(xml, "right", right);
 
-        if (border.Horizontal.Style != XLBorderStyleValues.None)
-            WriteBorderPr("horizontal", border.Horizontal);
+        if (border.Top is {} top)
+            WriteBorderPr(xml, "top", top);
+
+        if (border.Bottom is {} bottom)
+            WriteBorderPr(xml, "bottom", bottom);
+
+        if (border.Diagonal is {} diagonal)
+            WriteBorderPr(xml, "diagonal", diagonal);
+
+        if (border.Vertical is { } vertical)
+            WriteBorderPr(xml, "vertical", vertical);
+
+        if (border.Horizontal is { } horizontal)
+            WriteBorderPr(xml, "horizontal", horizontal);
 
         xml.WriteEndElement();
-        return;
+    }
 
-        void WriteBorderPr(string name, XLBorderLine borderLine)
+    private void WriteBorderPr(XmlTreeWriter xml, string name, XLBorderLine borderLine)
+    {
+        xml.WriteStartElement(name, _ns);
+        xml.WriteAttributeDefault("style", borderLine.Style, XLBorderStyleValues.None);
+        if (borderLine.Style != XLBorderStyleValues.None)
         {
-            xml.WriteStartElement(name, _ns);
-            xml.WriteAttributeDefault("style", borderLine.Style, XLBorderStyleValues.None);
-            if (borderLine.Style != XLBorderStyleValues.None)
-                xml.WriteColor("color", _ns, borderLine.Color);
-
-            xml.WriteEndElement();
+            // Color for border is always written and default value is automatic color.
+            xml.WriteColor("color", _ns, borderLine.Color);
         }
+
+        xml.WriteEndElement();
     }
 
     private void WriteCellStyleXfs(
@@ -729,7 +754,7 @@ internal class StylesWriter
                 WriteAlignment(xml, "alignment", alignment);
 
             if (dxf.Border is { } border)
-                WriteBorder(xml, "border", border, true);
+                WriteBorder(xml, "border", border);
 
             if (dxf.Protection is { } protection)
                 WriteProtection(xml, "protection", protection);
