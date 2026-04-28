@@ -33,9 +33,9 @@ namespace ClosedXML.Excel
         }
 
         private IXLRangeAddress _lastRangeAddress;
-        private Dictionary<String, IXLTableField> _fieldNames = null;
+        private Dictionary<String, XLTableField> _fieldNames = null;
 
-        public Dictionary<String, IXLTableField> FieldNames
+        internal Dictionary<String, XLTableField> FieldNames
         {
             get
             {
@@ -68,9 +68,9 @@ namespace ClosedXML.Excel
                     var cellValue = cell.CachedValue;
                     var name = cellValue.ToString(CultureInfo.CurrentCulture);
 
-                    if (oldFieldNames.TryGetValue(name, out IXLTableField tableField))// && tableField.Column.ColumnNumber() == cell.Address.ColumnNumber)
+                    if (oldFieldNames.TryGetValue(name, out var tableField))// && tableField.Column.ColumnNumber() == cell.Address.ColumnNumber)
                     {
-                        (tableField as XLTableField).Index = cellPos;
+                        tableField.Index = cellPos;
                         _fieldNames.Add(name, tableField);
                         cellPos++;
                         continue;
@@ -123,7 +123,7 @@ namespace ClosedXML.Excel
 
         internal void RenameField(String oldName, String newName)
         {
-            if (!_fieldNames.TryGetValue(oldName, out IXLTableField field))
+            if (!_fieldNames.TryGetValue(oldName, out var field))
                 throw new ArgumentException("The field does not exist in this table", "oldName");
 
             _fieldNames.Remove(oldName);
@@ -561,9 +561,9 @@ namespace ClosedXML.Excel
             }
         }
 
-        private static Dictionary<string, IXLTableField> CreateFieldNames()
+        private static Dictionary<string, XLTableField> CreateFieldNames()
         {
-            return new Dictionary<string, IXLTableField>(StringComparer.CurrentCultureIgnoreCase);
+            return new Dictionary<string, XLTableField>(StringComparer.CurrentCultureIgnoreCase);
         }
 
         private String GetUniqueName(String originalName, Int32 initialOffset, Boolean enforceOffset)
@@ -589,7 +589,7 @@ namespace ClosedXML.Excel
             // The entry in the table definition will contain \r\n
             // but the shared string value of the actual cell will contain only \n
             name = name.Replace("\r\n", "\n");
-            if (FieldNames.TryGetValue(name, out IXLTableField tableField))
+            if (FieldNames.TryGetValue(name, out var tableField))
                 return tableField.Index;
 
             throw new ArgumentOutOfRangeException("The header row doesn't contain field name '" + name + "'.");
