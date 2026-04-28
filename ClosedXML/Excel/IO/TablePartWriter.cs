@@ -78,10 +78,23 @@ namespace ClosedXML.Excel.IO
                     Name = fieldName.Replace("_x000a_", "_x005f_x000a_").Replace(Environment.NewLine, "_x000a_")
                 };
 
+                // OI-29500: the headerRowDxfId attribute shall be absent if the enclosing table element's headerRow
+                // attribute value is greater than or equal to 1. The header dxf stores the format while the table
+                // doesn't have a header, but user might want to add it back.
+                if (xlField.HeaderFormatValue is { } headerDfx)
+                    tableColumn.HeaderRowDifferentialFormattingId = context.GetDxfId(headerDfx);
+
+                if (xlField.DataFormatValue is { } dataDfx)
+                    tableColumn.DataFormatId = context.GetDxfId(dataDfx);
+
+                if (xlField.TotalFormatValue is { } totalsDfx)
+                    tableColumn.TotalsRowDifferentialFormattingId = context.GetDxfId(totalsDfx);
+
+                // TODO Styles: Deal with this behavior, either remove or make it work.
+                /*
                 // https://github.com/ClosedXML/ClosedXML/issues/513
                 if (xlField.IsConsistentStyle())
                 {
-                    // TODO Styles: This is not a great way to determine data format id, because cell uses fullformat, not dxf.
                     var firstDataCell = (XLCell)xlField.Column.Cells()
                         .Skip(xlTable.ShowHeaderRow ? 1 : 0)
                         .First();
@@ -91,6 +104,7 @@ namespace ClosedXML.Excel.IO
                 }
                 else
                     tableColumn.DataFormatId = null;
+                */
 
                 if (xlField.IsConsistentFormula())
                 {

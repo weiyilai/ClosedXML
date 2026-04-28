@@ -275,11 +275,25 @@ namespace ClosedXML.Excel
                     var xlTable = ws.Range(reference).CreateTable(tableName, false) as XLTable;
                     xlTable.RelId = relId;
 
+                    // Add columns to the table
+                    foreach (TableColumn tableColumn in dTable.TableColumns)
+                    {
+                        var fieldName = GetTableColumnName(tableColumn.Name.Value);
+                        var xlField = xlTable.AddField(fieldName);
+
+                        if (tableColumn.HeaderRowDifferentialFormattingId is { } headerDxfId)
+                            xlField.HeaderFormatValue = Styles.DifferentialFormats[checked((int)headerDxfId.Value)];
+
+                        if (tableColumn.DataFormatId is { } dataDxfId)
+                            xlField.DataFormatValue = Styles.DifferentialFormats[checked((int)dataDxfId.Value)];
+
+                        if (tableColumn.TotalsRowDifferentialFormattingId is { } totalsDxfId)
+                            xlField.TotalFormatValue = Styles.DifferentialFormats[checked((int)totalsDxfId.Value)];
+                    }
+
                     if (dTable.HeaderRowCount != null && dTable.HeaderRowCount == 0)
                     {
                         xlTable._showHeaderRow = false;
-                        //foreach (var tableColumn in dTable.TableColumns.Cast<TableColumn>())
-                        xlTable.AddFields(dTable.TableColumns.Cast<TableColumn>().Select(t => GetTableColumnName(t.Name.Value)));
                     }
                     else
                     {
@@ -287,7 +301,7 @@ namespace ClosedXML.Excel
                     }
 
                     if (dTable.TotalsRowCount != null && dTable.TotalsRowCount.Value > 0)
-                        ((XLTable)xlTable)._showTotalsRow = true;
+                        xlTable._showTotalsRow = true;
 
                     if (dTable.TableStyleInfo != null)
                     {

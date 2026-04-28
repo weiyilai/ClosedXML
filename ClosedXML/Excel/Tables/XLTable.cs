@@ -33,7 +33,7 @@ namespace ClosedXML.Excel
         }
 
         private IXLRangeAddress _lastRangeAddress;
-        private Dictionary<String, XLTableField> _fieldNames = null;
+        private Dictionary<String, XLTableField> _fieldNames = CreateFieldNames();
 
         internal Dictionary<String, XLTableField> FieldNames
         {
@@ -110,15 +110,11 @@ namespace ClosedXML.Excel
             }
         }
 
-        internal void AddFields(IEnumerable<String> fieldNames)
+        internal XLTableField AddField(string fieldName)
         {
-            _fieldNames = CreateFieldNames();
-
-            Int32 cellPos = 0;
-            foreach (var name in fieldNames)
-            {
-                _fieldNames.Add(name, new XLTableField(this, name) { Index = cellPos++ });
-            }
+            var field = new XLTableField(this, fieldName) { Index = _fieldNames.Count };
+            _fieldNames.Add(fieldName, field);
+            return field;
         }
 
         internal void RenameField(String oldName, String newName)
@@ -278,12 +274,19 @@ namespace ClosedXML.Excel
             return Field(GetFieldIndex(fieldName));
         }
 
-        public IXLTableField Field(Int32 fieldIndex)
+        IXLTableField IXLTable.Field(Int32 fieldIndex)
+        {
+            return Field(fieldIndex);
+        }
+
+        internal XLTableField Field(Int32 fieldIndex)
         {
             return FieldNames.Values.First(f => f.Index == fieldIndex);
         }
 
-        public IEnumerable<IXLTableField> Fields
+        IEnumerable<IXLTableField> IXLTable.Fields => Fields;
+
+        internal IEnumerable<XLTableField> Fields
         {
             get
             {

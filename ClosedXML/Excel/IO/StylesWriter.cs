@@ -94,10 +94,25 @@ internal class StylesWriter
         // Create dxfMap from used dxfs in cfs, tables, pivot tables and so on
         var usedDxf = new HashSet<XLDxfValue>();
         foreach (var ws in workbook.WorksheetsInternal)
-        {            
+        {
+            foreach (var table in ws.Tables)
+            {
+                foreach (var field in table.Fields)
+                {
+                    if (field.HeaderFormatValue is { } headerDxf)
+                        usedDxf.Add(headerDxf);
+
+                    if (field.DataFormatValue is { } dataDxf)
+                        usedDxf.Add(dataDxf);
+
+                    if (field.TotalFormatValue is { } totalsDxf)
+                        usedDxf.Add(totalsDxf);
+                }
+            }
+
             foreach (var pt in ws.PivotTables)
             {
-                foreach(var format in pt.Formats)
+                foreach (var format in pt.Formats)
                 {
                     if (format.FormatValue is { } dxFormat)
                         usedDxf.Add(dxFormat);
@@ -524,13 +539,13 @@ internal class StylesWriter
         if (border.Right is { } right)
             WriteBorderPr(xml, "right", right);
 
-        if (border.Top is {} top)
+        if (border.Top is { } top)
             WriteBorderPr(xml, "top", top);
 
-        if (border.Bottom is {} bottom)
+        if (border.Bottom is { } bottom)
             WriteBorderPr(xml, "bottom", bottom);
 
-        if (border.Diagonal is {} diagonal)
+        if (border.Diagonal is { } diagonal)
             WriteBorderPr(xml, "diagonal", diagonal);
 
         if (border.Vertical is { } vertical)

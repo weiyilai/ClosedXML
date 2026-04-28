@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using ClosedXML.Excel.Formatting;
 
 namespace ClosedXML.Excel
 {
@@ -146,6 +147,21 @@ namespace ClosedXML.Excel
                 totalsRowLabel = value;
             }
         }
+
+        /// <summary>
+        /// Dxf of header row cells of the fields column.
+        /// </summary>
+        internal XLDxfValue? HeaderFormatValue { get; set; }
+
+        /// <summary>
+        /// Dxf of total data cells of the fields column.
+        /// </summary>
+        internal XLDxfValue? DataFormatValue { get; set; }
+
+        /// <summary>
+        /// Dxf of total row cells of the fields column.
+        /// </summary>
+        internal XLDxfValue? TotalFormatValue { get; set; }
 
         public void Delete()
         {
