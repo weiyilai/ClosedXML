@@ -52,7 +52,7 @@ internal class StylesWriter
 
     private readonly string _ns = Main2006SsNs;
 
-    internal void WriteContent(WorkbookStylesPart stylesPart, IEnumMapper mapper, XLWorkbookStyles styles, XLWorkbook.SaveContext context)
+    internal void WriteContent(WorkbookStylesPart stylesPart, IEnumMapper mapper, XLWorkbookStyles styles, XLWorkbook workbook, XLWorkbook.SaveContext context)
     {
         // Determine which format components are used and thus should be saved.
         // TODO Styles: For now just assume everything in styles is used
@@ -89,6 +89,26 @@ internal class StylesWriter
 
             if (cellStyle.Border is { } border)
                 usedBorders.Add(border);
+        }
+
+        // Create dxfMap from used dxfs in cfs, tables, pivot tables and so on
+        var usedDxf = new HashSet<XLDxfValue>();
+        foreach (var ws in workbook.WorksheetsInternal)
+        {            
+            foreach (var pt in ws.PivotTables)
+            {
+                foreach(var format in pt.Formats)
+                {
+                    if (format.FormatValue is { } dxFormat)
+                        usedDxf.Add(dxFormat);
+                }
+
+                foreach (var field in pt.PivotFields)
+                {
+                    if (field.NumberFormatValue is { } fieldNumFmt)
+                        usedNumberFormats.Add(fieldNumFmt);
+                }
+            }
         }
 
         var settings = new XmlWriterSettings
@@ -151,13 +171,7 @@ internal class StylesWriter
         if (cellStylesMap.Count > 0)
             WriteCellStyles(xml, cellStylesMap);
 
-        // TODO: Create dxfMap from used dxfs in tables, pivot tables and so on
-        var dxfMap = new SequentialMap<int, XLDxfValue>(styles.DifferentialFormats);
-        foreach (var dxfId in styles.DifferentialFormats.Keys)
-            dxfMap.Add(dxfId);
-
-        dxfMap.Sort();
-
+        var dxfMap = SequentialMap<int, XLDxfValue>.Create(usedDxf, styles.DifferentialFormats);
         WriteDxfs(xml, dxfMap, numberFormatMap.Count);
 
         var hasTableStyles = styles.TableStyles.Count > 0 ||
@@ -738,8 +752,8 @@ internal class StylesWriter
         {
             xml.WriteStartElement("dxf", _ns);
 
-            if (dxf.Font is { } font)
-                WriteFont(xml, "font", font);
+            if (dxf.Font != XLDifferentialFontValue.Empty)
+                WriteFont(xml, "font", dxf.Font);
 
             if (dxf.NumberFormat is { } numberFormat)
             {
@@ -747,14 +761,14 @@ internal class StylesWriter
                 WriteNumFmt(xml, "numFmt", ++lastNumFmtId, numberFormat);
             }
 
-            if (dxf.Fill is { } fill)
-                WriteFill(xml, "fill", fill.Pattern, fill.LinearGradient, fill.PathGradient, true);
+            if (dxf.Fill != XLDifferentialFillValue.Empty)
+                WriteFill(xml, "fill", dxf.Fill.Pattern, dxf.Fill.LinearGradient, dxf.Fill.PathGradient, true);
 
-            if (dxf.Alignment is { } alignment)
-                WriteAlignment(xml, "alignment", alignment);
+            if (dxf.Alignment != XLDifferentialAlignmentValue.Empty)
+                WriteAlignment(xml, "alignment", dxf.Alignment);
 
-            if (dxf.Border is { } border)
-                WriteBorder(xml, "border", border);
+            if (dxf.Border != XLDifferentialBorderValue.Empty)
+                WriteBorder(xml, "border", dxf.Border);
 
             if (dxf.Protection is { } protection)
                 WriteProtection(xml, "protection", protection);
