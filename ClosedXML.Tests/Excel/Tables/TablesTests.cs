@@ -1,4 +1,4 @@
-﻿using ClosedXML.Attributes;
+using ClosedXML.Attributes;
 using ClosedXML.Excel;
 using ClosedXML.Excel.Exceptions;
 using NUnit.Framework;
@@ -1194,7 +1194,7 @@ namespace ClosedXML.Tests.Excel
         [Test]
         public void Save_totals_row_label_cell_with_sst_id_matching_the_label()
         {
-            // Issue #2602 test. The totals row  wasn't saved with compact SST ID from file, but with a memory SST that has holes.
+            // Issue #2602 test. The totals row wasn't saved with compact SST ID from file, but with a memory SST that has holes.
             TestHelper.CreateAndCompare(wb =>
             {
                 var ws = wb.AddWorksheet();
@@ -1202,7 +1202,7 @@ namespace ClosedXML.Tests.Excel
                 ws.Cell("A2").Value = "Dummy2"; // Second inserted text - index=1, reference count = 1
                 ws.Cell("A3").Value = "Dummy3"; // Third inserted text - index=2, reference count = 1
                 ws.Cell("A4").Value = "Text"; // Fourth inserted text - index=3, reference count = 1
-                var table = ws.Cell("A5").InsertTable(new [] { ("Text", 17) }); // Also inserts header Item1 and Item2.
+                var table = ws.Cell("A5").InsertTable([("Text", 17)]); // Also inserts header Item1 and Item2.
                 table.ShowTotalsRow = true;
                 table.Field(0).TotalsRowLabel = "Text"; // reference count = 3
 
