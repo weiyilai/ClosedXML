@@ -137,8 +137,8 @@ namespace ClosedXML.Tests.Excel.ConditionalFormats
         [Test]
         public void ConsolidatePreservesPriorities2()
         {
-            var wb = new XLWorkbook();
-            IXLWorksheet ws = wb.Worksheets.Add("Sheet");
+            using var wb = new XLWorkbook();
+            var ws = wb.Worksheets.Add();
 
             SetFormat1(ws.Range("A1:A1").AddConditionalFormat());
             SetFormat2(ws.Range("A2:A3").AddConditionalFormat());
@@ -148,12 +148,15 @@ namespace ClosedXML.Tests.Excel.ConditionalFormats
             ((XLConditionalFormats)ws.ConditionalFormats).Consolidate();
 
             Assert.AreEqual(3, ws.ConditionalFormats.Count());
-            Assert.AreEqual((ws.ConditionalFormats.First().Style as XLStyle).Value, (ws.ConditionalFormats.Last().Style as XLStyle).Value);
-            Assert.AreNotEqual((ws.ConditionalFormats.First().Style as XLStyle).Value, (ws.ConditionalFormats.ElementAt(1).Style as XLStyle).Value);
+            var cf1 = ws.ConditionalFormats.ElementAt(0);
+            var cf2 = ws.ConditionalFormats.ElementAt(1);
+            var cf3 = ws.ConditionalFormats.ElementAt(2);
+            Assert.That(cf1, Is.EqualTo(cf3).Using(new CfFormatComaparer()));
+            Assert.That(cf1, Is.Not.EqualTo(cf2).Using(new CfFormatComaparer()));
             Assert.IsTrue(ws.ConditionalFormats.All(cf => cf.Ranges.Count == 1), "Number of ranges in consolidated conditional formats is expected to be 1");
-            Assert.AreEqual("A1:A1", ws.ConditionalFormats.ElementAt(0).Ranges.Single().RangeAddress.ToString());
-            Assert.AreEqual("A2:A3", ws.ConditionalFormats.ElementAt(1).Ranges.Single().RangeAddress.ToString());
-            Assert.AreEqual("A2:A8", ws.ConditionalFormats.ElementAt(2).Ranges.Single().RangeAddress.ToString());
+            Assert.AreEqual("A1:A1", cf1.Ranges.Single().RangeAddress.ToString());
+            Assert.AreEqual("A2:A3", cf2.Ranges.Single().RangeAddress.ToString());
+            Assert.AreEqual("A2:A8", cf3.Ranges.Single().RangeAddress.ToString());
         }
 
         [Test]
