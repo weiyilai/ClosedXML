@@ -1,6 +1,9 @@
+using System;
+using System.Linq;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using ClosedXML.Excel;
 using NUnit.Framework;
-using System.Linq;
 
 namespace ClosedXML.Tests.Excel.ConditionalFormats
 {
@@ -111,9 +114,11 @@ namespace ClosedXML.Tests.Excel.ConditionalFormats
         [Test]
         public void ConsolidatePreservesPriorities()
         {
-            var wb = new XLWorkbook();
-            IXLWorksheet ws = wb.Worksheets.Add("Sheet");
+            using var wb = new XLWorkbook();
+            var ws = wb.Worksheets.Add();
 
+            // Format2 A1:A5 and A6:A10 can be consolidated without changing a priority if other CF rules.
+            // Format1 A1:A5 and A6:A10 can't be consolidated, because there is a CF rule between them.
             SetFormat1(ws.Range("A1:A5").AddConditionalFormat());
             SetFormat2(ws.Range("A1:A5").AddConditionalFormat());
             SetFormat2(ws.Range("A6:A10").AddConditionalFormat());
@@ -122,8 +127,11 @@ namespace ClosedXML.Tests.Excel.ConditionalFormats
             ((XLConditionalFormats)ws.ConditionalFormats).Consolidate();
 
             Assert.AreEqual(3, ws.ConditionalFormats.Count());
-            Assert.AreEqual((ws.ConditionalFormats.First().Style as XLStyle).Value, (ws.ConditionalFormats.Last().Style as XLStyle).Value);
-            Assert.AreNotEqual((ws.ConditionalFormats.First().Style as XLStyle).Value, (ws.ConditionalFormats.ElementAt(1).Style as XLStyle).Value);
+            var cf1 = ws.ConditionalFormats.First();
+            var cf2 = ws.ConditionalFormats.ElementAt(1);
+            var cf3 = ws.ConditionalFormats.Last();
+            Assert.That(cf1, Is.EqualTo(cf3).Using(new CfFormatComaparer()));
+            Assert.That(cf1, Is.Not.EqualTo(cf2).Using(new CfFormatComaparer()));
         }
 
         [Test]
@@ -198,6 +206,21 @@ namespace ClosedXML.Tests.Excel.ConditionalFormats
         private static void SetFormat2(IXLConditionalFormat format)
         {
             format.WhenEquals(5).Fill.SetBackgroundColor(XLColor.AliceBlue);
+        }
+
+        private class CfFormatComaparer : IEqualityComparer<IXLConditionalFormat>
+        {
+            public bool Equals(IXLConditionalFormat x, IXLConditionalFormat y)
+            {
+                var lhs = (XLConditionalFormat)x;
+                var rhs = (XLConditionalFormat)y;
+                return lhs.FormatValue == rhs.FormatValue;
+            }
+
+            public int GetHashCode([DisallowNull] IXLConditionalFormat obj)
+            {
+                return HashCode.Combine(((XLConditionalFormat)obj).FormatValue);
+            }
         }
     }
 }
