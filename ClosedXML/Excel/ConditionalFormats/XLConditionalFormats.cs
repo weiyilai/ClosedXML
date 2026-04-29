@@ -35,9 +35,14 @@ namespace ClosedXML.Excel
             _conditionalFormats.Add((XLConditionalFormat)conditionalFormat);
         }
 
-        public IEnumerator<IXLConditionalFormat> GetEnumerator()
+        public IEnumerator<XLConditionalFormat> GetEnumerator()
         {
             return _conditionalFormats.GetEnumerator();
+        }
+
+        IEnumerator<IXLConditionalFormat> IEnumerable<IXLConditionalFormat>.GetEnumerator()
+        {
+            return GetEnumerator();
         }
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()

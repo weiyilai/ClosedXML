@@ -95,6 +95,12 @@ internal class StylesWriter
         var usedDxf = new HashSet<XLDxfValue>();
         foreach (var ws in workbook.WorksheetsInternal)
         {
+            foreach (var cf in ws.ConditionalFormats)
+            {
+                if (cf.FormatValue is { } dxf)
+                    usedDxf.Add(dxf);
+            }
+
             foreach (var table in ws.Tables)
             {
                 foreach (var field in table.Fields)
