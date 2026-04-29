@@ -162,8 +162,8 @@ namespace ClosedXML.Tests.Excel.ConditionalFormats
         [Test]
         public void ConsolidateShiftsFormulaRelativelyToTopMostCell()
         {
-            var wb = new XLWorkbook();
-            IXLWorksheet ws = wb.Worksheets.Add("Sheet");
+            using var wb = new XLWorkbook();
+            var ws = wb.Worksheets.Add();
 
             var ranges = ws.Ranges("B3:B8,C3:C4,A3:A4,C5:C8,A5:A8").Cast<XLRange>();
             var cf = new XLConditionalFormat((XLWorksheet)ws, ranges);
@@ -174,10 +174,11 @@ namespace ClosedXML.Tests.Excel.ConditionalFormats
             ((XLConditionalFormats)ws.ConditionalFormats).Consolidate();
 
             Assert.AreEqual(1, ws.ConditionalFormats.Count());
-            Assert.AreEqual((ws.ConditionalFormats.Single().Style as XLStyle).Value, (cf.Style as XLStyle).Value);
-            Assert.AreEqual("A3:C8", ws.ConditionalFormats.Single().Ranges.Single().RangeAddress.ToString());
-            Assert.IsTrue(ws.ConditionalFormats.Single().Values.Single().Value.IsFormula);
-            Assert.AreEqual("A3=$D3", ws.ConditionalFormats.Single().Values.Single().Value.Value);
+            var consolidatedCf = ws.ConditionalFormats.Single();
+            Assert.That(consolidatedCf, Is.EqualTo(cf).Using (new CfFormatComaparer()));
+            Assert.AreEqual("A3:C8", consolidatedCf.Ranges.Single().RangeAddress.ToString());
+            Assert.IsTrue(consolidatedCf.Values.Single().Value.IsFormula);
+            Assert.AreEqual("A3=$D3", consolidatedCf.Values.Single().Value.Value);
         }
 
         [Test]
