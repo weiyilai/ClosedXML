@@ -1,7 +1,6 @@
+using System.IO;
 using ClosedXML.Utils;
 using NUnit.Framework;
-using System.IO;
-using ClosedXML.Excel;
 
 namespace ClosedXML.Tests.Excel
 {
@@ -21,16 +20,13 @@ namespace ClosedXML.Tests.Excel
             using var sr = new StreamReader(TestHelper.GetStreamFromResource(TestHelper.GetResourcePath(@"Other\Unicode\let_it_go_in_emoji.txt")));
             var surrogateEmoji = sr.ReadToEnd();
 
-            TestHelper.CreateAndCompare(() =>
+            TestHelper.CreateAndCompare(wb =>
             {
-                var wb = new XLWorkbook();
                 var ws = wb.AddWorksheet();
 
                 var cell = ws.FirstCell();
                 cell.Value = "This emoji version of Let It Go from Frozen:";
                 cell.CellBelow().Value = surrogateEmoji;
-
-                return wb;
             }, @"Other\Unicode\let_it_go_in_emoji-outputfile.xlsx");
         }
     }
