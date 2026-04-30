@@ -579,13 +579,13 @@ namespace ClosedXML.Tests
 
             void AssertStylesAreEqual(IXLWorksheet ws1, IXLWorksheet ws2)
             {
-                Assert.AreEqual((ws1.Style as XLStyle).Value, (ws2.Style as XLStyle).Value,
+                Assert.That(((XLWorksheet)ws1).FormatValue, Is.Not.Null.And.EqualTo(((XLWorksheet)ws2).FormatValue),
                     "Worksheet styles differ");
                 var cellsUsed = ws1.Range(ws1.FirstCell(), ws1.LastCellUsed()).Cells();
                 foreach (var cell in cellsUsed)
                 {
-                    var style1 = (cell.Style as XLStyle).Value;
-                    var style2 = (ws2.Cell(cell.Address.ToString()).Style as XLStyle).Value;
+                    var style1 = ((XLCell)cell).FormatValue;
+                    var style2 = ((XLCell)ws2.Cell(cell.Address.ToString())).FormatValue;
                     Assert.AreEqual(style1, style2, $"Cell {cell.Address} styles differ");
                 }
             }
@@ -1406,7 +1406,7 @@ namespace ClosedXML.Tests
             var found = wb.Worksheets.TryGetWorksheet(searchedSheetName, out var foundSheet);
 
             Assert.AreEqual(expectedFound, found);
-            Assert.That(foundSheet, found ? Is.SameAs(sheet): Is.Null);
+            Assert.That(foundSheet, found ? Is.SameAs(sheet) : Is.Null);
         }
     }
 }
