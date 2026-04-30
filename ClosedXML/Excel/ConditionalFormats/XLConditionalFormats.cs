@@ -32,7 +32,10 @@ namespace ClosedXML.Excel
 
         public void Add(IXLConditionalFormat conditionalFormat)
         {
-            _conditionalFormats.Add((XLConditionalFormat)conditionalFormat);
+            var addedCf = (XLConditionalFormat)conditionalFormat;
+            _conditionalFormats.Add(addedCf);
+            if (addedCf.FormatValue is { } dxf)
+                _worksheet.Workbook.Styles.RegisteredDxFormat(dxf);
         }
 
         public IEnumerator<XLConditionalFormat> GetEnumerator()

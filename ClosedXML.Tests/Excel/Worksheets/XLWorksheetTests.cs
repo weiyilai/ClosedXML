@@ -619,9 +619,12 @@ namespace ClosedXML.Tests
                             copy.Ranges.ElementAt(j).RangeAddress.ToString(XLReferenceStyle.A1, false));
                     }
 
-                    Assert.AreEqual((original.Style as XLStyle).Value, (copy.Style as XLStyle).Value);
+                    Assert.AreEqual(((XLConditionalFormat)original).FormatValue, ((XLConditionalFormat)copy).FormatValue);
                     Assert.AreEqual(original.Values.Single().Value.Value, copy.Values.Single().Value.Value);
                 }
+
+                // Make sure the copy can be saved
+                wb2.SaveAs(new MemoryStream());
             }
         }
 

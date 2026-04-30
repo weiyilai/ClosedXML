@@ -405,11 +405,16 @@ internal class XLWorkbookStyles
     internal XLDxfValue GetRegisteredDxFormat(XLDxfValue original, Func<XLDxfValue, XLDxfValue> modify)
     {
         var modified = modify(original);
-        if (_differentialFormats.TryGetValue(modified, out var existingDxf))
+        return RegisteredDxFormat(modified);
+    }
+
+    internal XLDxfValue RegisteredDxFormat(XLDxfValue dxf)
+    {
+        if (_differentialFormats.TryGetValue(dxf, out var existingDxf))
             return existingDxf;
 
-        AddDifferentialFormat(modified);
-        return modified;
+        AddDifferentialFormat(dxf);
+        return dxf;
     }
 
     /// <summary>
