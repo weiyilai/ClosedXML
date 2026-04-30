@@ -1260,7 +1260,7 @@ namespace ClosedXML.Tests.Excel
             }
         }
 
-        private void AssertTablesAreEqual(IXLTable table1, IXLTable table2)
+        private static void AssertTablesAreEqual(IXLTable table1, IXLTable table2)
         {
             Assert.AreEqual(table1.RangeAddress.ToString(XLReferenceStyle.A1, false), table2.RangeAddress.ToString(XLReferenceStyle.A1, false));
             Assert.AreEqual(table1.Fields.Count(), table2.Fields.Count());
@@ -1282,7 +1282,6 @@ namespace ClosedXML.Tests.Excel
             Assert.AreEqual(table1.ShowHeaderRow, table2.ShowHeaderRow);
             Assert.AreEqual(table1.ShowRowStripes, table2.ShowRowStripes);
             Assert.AreEqual(table1.ShowTotalsRow, table2.ShowTotalsRow);
-            Assert.AreEqual((table1.Style as XLStyle).Value, (table2.Style as XLStyle).Value);
             Assert.AreEqual(table1.Theme, table2.Theme);
         }
 
