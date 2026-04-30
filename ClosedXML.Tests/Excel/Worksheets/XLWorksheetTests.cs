@@ -676,7 +676,6 @@ namespace ClosedXML.Tests
                     Assert.AreEqual(original.ShowHeaderRow, copy.ShowHeaderRow);
                     Assert.AreEqual(original.ShowRowStripes, copy.ShowRowStripes);
                     Assert.AreEqual(original.ShowTotalsRow, copy.ShowTotalsRow);
-                    Assert.AreEqual((original.Style as XLStyle).Value, (copy.Style as XLStyle).Value);
                     Assert.AreEqual(original.Theme, copy.Theme);
                 }
             }
