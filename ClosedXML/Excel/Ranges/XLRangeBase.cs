@@ -330,14 +330,59 @@ namespace ClosedXML.Excel
                 }
                 else
                 {
-                    // Merging removes borders, even on the first cell
+                    // Merging removes borders that are not consistent across the whole border, even on the first cell
+                    var area = SheetRange;
+                    var leftBorder = GetVerticalBorder(area.LeftColumn, area.TopRow, area.BottomRow, static b => b.Left);
+                    var topBorder = GetHorizontalBorder(area.TopRow, area.LeftColumn, area.RightColumn, static b => b.Top);
+                    var rightBorder = GetVerticalBorder(area.RightColumn, area.TopRow, area.BottomRow, static b => b.Right);
+                    var bottomBorder = GetHorizontalBorder(area.BottomRow, area.LeftColumn, area.RightColumn, static b => b.Bottom);
+
+                    var cellsCollection = Worksheet.Internals.CellsCollection;
                     var borderlessFormat = Worksheet.Workbook.Styles.GetModifiedFormat(firstCell.FormatValue, _ => XLBorderFormatValue.None);
-                    Worksheet.Internals.CellsCollection.FormatSlice.SetAll(SheetRange, borderlessFormat);
+                    cellsCollection.FormatSlice.SetAll(SheetRange, borderlessFormat);
+
+                    if (leftBorder is not null)
+                        cellsCollection.ApplyFormatOnAll(SheetRange.SliceFromLeft(1), b => b with { Left = leftBorder.Value });
+
+                    if (topBorder is not null)
+                        cellsCollection.ApplyFormatOnAll(SheetRange.SliceFromTop(1), b => b with { Top = topBorder.Value });
+
+                    if (rightBorder is not null)
+                        cellsCollection.ApplyFormatOnAll(SheetRange.SliceFromRight(1), b => b with { Right = rightBorder.Value });
+
+                    if (bottomBorder is not null)
+                        cellsCollection.ApplyFormatOnAll(SheetRange.SliceFromBottom(1), b => b with { Bottom = bottomBorder.Value });
                 }
             }
 
             Worksheet.Internals.MergedRanges.Add(asRange);
             return asRange;
+        }
+
+        private XLBorderLine? GetHorizontalBorder(int row, int minColumn, int maxColumn, Func<XLBorderFormatValue, XLBorderLine> borderSide)
+        {
+            var initialSide = borderSide(Worksheet.GetStyleValue(new XLSheetPoint(row, minColumn)).Border);
+            for (var column = minColumn + 1; column <= maxColumn; ++column)
+            {
+                var currentSide = borderSide(Worksheet.GetStyleValue(new XLSheetPoint(row, column)).Border);
+                if (currentSide != initialSide)
+                    return null;
+            }
+
+            return initialSide;
+        }
+
+        private XLBorderLine? GetVerticalBorder(int column, int minRow, int maxRow, Func<XLBorderFormatValue, XLBorderLine> borderSide)
+        {
+            var initialSide = borderSide(Worksheet.GetStyleValue(new XLSheetPoint(minRow, column)).Border);
+            for (var row = minRow + 1; row <= maxRow; ++row)
+            {
+                var currentSide = borderSide(Worksheet.GetStyleValue(new XLSheetPoint(row, column)).Border);
+                if (currentSide != initialSide)
+                    return null;
+            }
+
+            return initialSide;
         }
 
         public IXLRange Unmerge()
