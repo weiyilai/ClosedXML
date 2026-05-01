@@ -675,10 +675,9 @@ namespace ClosedXML.Tests
         [Test]
         public void TwoPivotWithOneSourceTest()
         {
-            using (var stream = TestHelper.GetStreamFromResource(TestHelper.GetResourcePath(@"Other\PivotTableReferenceFiles\TwoPivotTablesWithSingleSource\input.xlsx")))
-                TestHelper.CreateAndCompare(() =>
+            TestHelper.LoadModifyAndCompare(@"Other\PivotTableReferenceFiles\TwoPivotTablesWithSingleSource\input.xlsx",
+                wb =>
                 {
-                    var wb = new XLWorkbook(stream);
                     var srcRange = wb.Range("Sheet1!$B$2:$H$207");
 
                     var pivotSource = wb.PivotCaches.Add(srcRange);
@@ -687,8 +686,6 @@ namespace ClosedXML.Tests
                     {
                         pt.PivotCache = pivotSource;
                     }
-
-                    return wb;
                 }, @"Other\PivotTableReferenceFiles\TwoPivotTablesWithSingleSource\output.xlsx");
         }
 
