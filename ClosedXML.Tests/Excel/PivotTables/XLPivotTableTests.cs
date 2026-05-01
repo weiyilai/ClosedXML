@@ -35,24 +35,18 @@ namespace ClosedXML.Tests
         public void TestPivotTableVersioningAttributes()
         {
             // Pivot cache definitions in input file has created and refreshed version attributes = 3
-            using (var stream = TestHelper.GetStreamFromResource(TestHelper.GetResourcePath(@"Other\PivotTableReferenceFiles\VersioningAttributes\inputfile.xlsx")))
+            TestHelper.LoadModifyAndCompare(@"Other\PivotTableReferenceFiles\VersioningAttributes\inputfile.xlsx", wb =>
             {
-                TestHelper.CreateAndCompare(() =>
-                {
-                    var wb = new XLWorkbook(stream);
+                var data = wb.Worksheet("Data");
 
-                    var data = wb.Worksheet("Data");
+                var pt = data.RangeUsed().CreatePivotTable(wb.AddWorksheet("pvt2").FirstCell(), "pvt2");
 
-                    var pt = data.RangeUsed().CreatePivotTable(wb.AddWorksheet("pvt2").FirstCell(), "pvt2");
+                pt.ColumnLabels.Add("Sex");
+                pt.RowLabels.Add("FullName");
+                pt.Values.Add("Id", "Count of Id").SetSummaryFormula(XLPivotSummary.Count);
 
-                    pt.ColumnLabels.Add("Sex");
-                    pt.RowLabels.Add("FullName");
-                    pt.Values.Add("Id", "Count of Id").SetSummaryFormula(XLPivotSummary.Count);
-
-                    return wb;
-                    // Pivot cache definitions in output file has created and refreshed version attributes = 5
-                }, @"Other\PivotTableReferenceFiles\VersioningAttributes\outputfile.xlsx");
-            }
+                // Pivot cache definitions in output file has created and refreshed version attributes = 5
+            }, @"Other\PivotTableReferenceFiles\VersioningAttributes\outputfile.xlsx");
         }
 
         [Test]
