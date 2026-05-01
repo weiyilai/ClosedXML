@@ -436,10 +436,8 @@ namespace ClosedXML.Tests
         {
             // Check that pivot source reference for a sheet name with whitespaces
             // is not saved to the file with escaped quotes, issue #955.
-            TestHelper.CreateAndCompare(() =>
+            TestHelper.CreateAndCompare(wb =>
             {
-                var wb = new XLWorkbook();
-
                 // Worksheet name contains whitespaces that shouldn't be quoted in the file.
                 var sheet = wb.Worksheets.Add("Pastry Sales Data");
                 var range = sheet.Cell(1, 1).InsertData(new object[]
@@ -455,8 +453,6 @@ namespace ClosedXML.Tests
                 var pt = ptSheet.PivotTables.Add("pvt", ptSheet.Cell(1, 1), range);
                 pt.RowLabels.Add("Name");
                 pt.Values.Add("Sold count");
-
-                return wb;
             }, @"Other\PivotTableReferenceFiles\SourceSheetWithWhitespace\outputfile.xlsx");
         }
 
