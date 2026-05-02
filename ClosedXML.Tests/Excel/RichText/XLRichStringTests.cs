@@ -168,7 +168,8 @@ namespace ClosedXML.Tests
         [Test]
         public void Substring_All_From_OneString()
         {
-            IXLWorksheet ws = new XLWorkbook().Worksheets.Add("Sheet1");
+            using var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet();
             IXLRichText richString = ws.Cell(1, 1).GetRichText();
 
             richString.AddText("Hello");
@@ -187,7 +188,8 @@ namespace ClosedXML.Tests
         [Test]
         public void Substring_All_From_ThreeStrings()
         {
-            IXLWorksheet ws = new XLWorkbook().Worksheets.Add("Sheet1");
+            using var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet();
             IXLRichText richString = ws.Cell(1, 1).GetRichText();
 
             richString.AddText("Good Morning");

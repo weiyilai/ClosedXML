@@ -90,19 +90,6 @@ namespace ClosedXML.Excel
             return sb.ToString();
         }
 
-
-#if STYLES_REWORK
-        // TODO Styles: Implement
-        public IXLFormattedText<T> Substring(Int32 index)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IXLFormattedText<T> Substring(Int32 index, Int32 length)
-        {
-            throw new NotImplementedException();
-        }
-#else
         public IXLFormattedText<T> Substring(Int32 index)
         {
             return Substring(index, Length - index);
@@ -114,9 +101,9 @@ namespace ClosedXML.Excel
                 throw new IndexOutOfRangeException("Index and length must refer to a location within the string.");
 
             var newRichTexts = new List<XLRichString>();
-            var retVal = new XLFormattedText<T>(_defaultFont);
+            var retVal = new XLFormattedText<T>(_defaultFont, Styles);
 
-            Int32 lastPosition = 0;
+            var lastPosition = 0;
             foreach (var rt in _richTexts)
             {
                 if (lastPosition >= index + 1 + length) // We already have what we need
@@ -125,23 +112,23 @@ namespace ClosedXML.Excel
                 }
                 else if (lastPosition + rt.Text.Length >= index + 1) // Eureka!
                 {
-                    Int32 startIndex = index - lastPosition;
+                    var startIndex = index - lastPosition;
 
                     if (startIndex > 0)
-                        newRichTexts.Add(new XLRichString(rt.Text.Substring(0, startIndex), rt, this, OnContentChanged));
+                        newRichTexts.Add(new XLRichString(rt.Text[..startIndex], rt.Font, this, Styles, OnContentChanged));
                     else if (startIndex < 0)
                         startIndex = 0;
 
-                    Int32 leftToTake = length - retVal.Length;
+                    var leftToTake = length - retVal.Length;
                     if (leftToTake > rt.Text.Length - startIndex)
                         leftToTake = rt.Text.Length - startIndex;
 
-                    var newRt = new XLRichString(rt.Text.Substring(startIndex, leftToTake), rt, this, OnContentChanged);
+                    var newRt = new XLRichString(rt.Text.Substring(startIndex, leftToTake), rt.Font, this, Styles, OnContentChanged);
                     newRichTexts.Add(newRt);
                     retVal.AddText(newRt);
 
                     if (startIndex + leftToTake < rt.Text.Length)
-                        newRichTexts.Add(new XLRichString(rt.Text.Substring(startIndex + leftToTake), rt, this, OnContentChanged));
+                        newRichTexts.Add(new XLRichString(rt.Text.Substring(startIndex + leftToTake), rt.Font, this, Styles, OnContentChanged));
                 }
                 else // We haven't reached the desired position yet
                 {
@@ -149,11 +136,12 @@ namespace ClosedXML.Excel
                 }
                 lastPosition += rt.Text.Length;
             }
-            _richTexts = newRichTexts;
+
+            _richTexts.Clear();
+            _richTexts.AddRange(newRichTexts);
             OnContentChanged();
             return retVal;
         }
-#endif
 
         public IXLFormattedText<T> CopyFrom(IXLFormattedText<T> original)
         {
