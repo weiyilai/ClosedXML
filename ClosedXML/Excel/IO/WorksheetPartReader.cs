@@ -573,6 +573,7 @@ internal class WorksheetPartReader
     /// <param name="element">The element (either a shared string or inline string)</param>
     private void SetCellText(XLCell xlCell, RstType element)
     {
+        // TODO Styles: Create XLImmutableRichText and assign directly instead of using the API.
         var runs = element.Elements<Run>();
         var hasRuns = false;
         foreach (Run run in runs)
@@ -602,12 +603,29 @@ internal class WorksheetPartReader
         var pp = phoneticProperties.FirstOrDefault();
         if (pp != null)
         {
-            if (pp.Alignment != null)
-                xlCell.GetRichText().Phonetics.Alignment = pp.Alignment.Value.ToClosedXml();
-            if (pp.Type != null)
-                xlCell.GetRichText().Phonetics.Type = pp.Type.Value.ToClosedXml();
+            var xlPhoneticPr = xlCell.GetRichText().Phonetics;
 
-            OpenXmlHelper.LoadFont(pp, xlCell.GetRichText().Phonetics);
+            if (pp.Alignment != null)
+                xlPhoneticPr.Alignment = pp.Alignment.Value.ToClosedXml();
+            if (pp.Type != null)
+                xlPhoneticPr.Type = pp.Type.Value.ToClosedXml();
+            if (pp.FontId?.Value is { } fontId)
+            {
+                var phoneticsFont = xlCell.Worksheet.Workbook.Styles.Fonts[checked((int)fontId)];
+
+                xlPhoneticPr.Bold = phoneticsFont.Bold;
+                xlPhoneticPr.Italic = phoneticsFont.Italic;
+                xlPhoneticPr.Underline = phoneticsFont.Underline;
+                xlPhoneticPr.Strikethrough = phoneticsFont.Strikethrough;
+                xlPhoneticPr.VerticalAlignment = phoneticsFont.VerticalAlignment;
+                xlPhoneticPr.Shadow = phoneticsFont.Shadow;
+                xlPhoneticPr.FontSize = phoneticsFont.Size.Points;
+                xlPhoneticPr.FontColor = phoneticsFont.Color;
+                xlPhoneticPr.FontName = phoneticsFont.Name.Text;
+                xlPhoneticPr.FontFamilyNumbering = phoneticsFont.Family;
+                xlPhoneticPr.FontCharSet = phoneticsFont.Charset;
+                xlPhoneticPr.FontScheme = phoneticsFont.Scheme;
+            }
         }
 
         // Load phonetic runs
