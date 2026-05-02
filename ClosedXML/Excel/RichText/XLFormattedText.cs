@@ -70,8 +70,7 @@ namespace ClosedXML.Excel
 
         public IXLFormattedText<T> ClearText()
         {
-            _richTexts.Clear();
-            Length = 0;
+            ClearContent();
             OnContentChanged();
             return this;
         }
@@ -79,7 +78,7 @@ namespace ClosedXML.Excel
         public IXLFormattedText<T> ClearFont()
         {
             String text = Text;
-            ClearText();
+            ClearContent();
             AddText(text);
             return this;
         }
@@ -100,10 +99,6 @@ namespace ClosedXML.Excel
         }
 
         public IXLFormattedText<T> Substring(Int32 index, Int32 length)
-        {
-            throw new NotImplementedException();
-        }
-        public IXLFormattedText<T> CopyFrom(IXLFormattedText<T> original)
         {
             throw new NotImplementedException();
         }
@@ -158,16 +153,21 @@ namespace ClosedXML.Excel
             OnContentChanged();
             return retVal;
         }
+#endif
 
         public IXLFormattedText<T> CopyFrom(IXLFormattedText<T> original)
         {
-            ClearText();
+            ClearContent();
             foreach (var richText in original)
-                AddText(new XLRichString(richText.Text, richText, this, OnContentChanged));
+            {
+                var copyFont = XLFontFormatValue.FromFontBase(richText, Styles);
+                var copyText = new XLRichString(richText.Text, copyFont, this, Styles, OnContentChanged);
+                AddText(copyText);
+            }
 
+            OnContentChanged();
             return this;
         }
-#endif
 
         public List<XLRichString>.Enumerator GetEnumerator() => _richTexts.GetEnumerator();
 
@@ -231,6 +231,12 @@ namespace ClosedXML.Excel
         protected virtual void OnContentChanged()
         {
             // Do nothing, intended to be overriden.
+        }
+
+        private void ClearContent()
+        {
+            _richTexts.Clear();
+            Length = 0;
         }
     }
 }
