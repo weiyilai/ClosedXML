@@ -198,12 +198,6 @@ namespace ClosedXML.Excel
 
             WorkbookPartWriter.GenerateContent(workbookPart, this, options, context);
 
-            var sharedStringTablePart = workbookPart.SharedStringTablePart ??
-                                        workbookPart.AddNewPart<SharedStringTablePart>(
-                                            context.RelIdGenerator.GetNext(RelType.Workbook));
-
-            SharedStringTableWriter.GenerateSharedStringTablePartContent(this, sharedStringTablePart, context);
-
             var workbookStylesPart = workbookPart.WorkbookStylesPart ??
                                      workbookPart.AddNewPart<WorkbookStylesPart>(
                                          context.RelIdGenerator.GetNext(RelType.Workbook));
@@ -213,6 +207,12 @@ namespace ClosedXML.Excel
 #else
             WorkbookStylesPartWriter.GenerateContent(workbookStylesPart, this, context);
 #endif
+
+            var sharedStringTablePart = workbookPart.SharedStringTablePart ??
+                                        workbookPart.AddNewPart<SharedStringTablePart>(
+                                            context.RelIdGenerator.GetNext(RelType.Workbook));
+
+            SharedStringTableWriter.GenerateSharedStringTablePartContent(this, sharedStringTablePart, context);
 
             var cacheRelIds = PivotCachesInternal
                   .Select<XLPivotCache, String>(ps => ps.WorkbookCacheRelId)

@@ -91,6 +91,10 @@ internal class StylesWriter
                 usedBorders.Add(border);
         }
 
+        // SST writes fonts as ids, unlike other format properties which are inlined next to a rich text
+        foreach (var phoneticsFont in workbook.SharedStringTable.GetUsedPhoneticFonts())
+            usedFonts.Add(phoneticsFont);
+
         // Create dxfMap from used dxfs in cfs, tables, pivot tables and so on
         var usedDxf = new HashSet<XLDxfValue>();
         foreach (var ws in workbook.WorksheetsInternal)
