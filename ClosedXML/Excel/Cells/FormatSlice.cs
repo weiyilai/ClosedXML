@@ -73,5 +73,16 @@ internal class FormatSlice : ISlice
         return _slice[point].Format;
     }
 
+    // TODO Styles: FormatSlice should keep track of used format values so we don't have to go over all of them.
+    internal void AddUsedFormat(HashSet<XLCellFormatValue> usedCellFormats)
+    {
+        var enumerator = GetEnumerator(XLSheetRange.Full);
+        while (enumerator.MoveNext())
+        {
+            if (_slice[enumerator.Current].Format is { } format)
+                usedCellFormats.Add(format);
+        }
+    }
+
     private readonly record struct SliceValue(XLCellFormatValue? Format);
 }

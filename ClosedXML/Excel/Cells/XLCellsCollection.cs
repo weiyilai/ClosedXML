@@ -403,7 +403,11 @@ namespace ClosedXML.Excel
             Func<XLCellFormatValue, XLCellFormatValue> modifyFormat = format =>
             {
                 var modifiedBorder = styles.GetRegisteredBorderFormat(format.Border, modififyBorder);
-                var modifiedFormat = format with { Border = modifiedBorder };
+                var modifiedFormat = format with
+                {
+                    Border = modifiedBorder,
+                    CustomFormat = format.CustomFormat | CellFormatComponents.Border
+                };
                 return styles.GetRegisteredCellFormat(modifiedFormat, static f => f);
             };
             ApplyFormatOnAll(area, modifyFormat, point => Worksheet.GetStyleValue(point));

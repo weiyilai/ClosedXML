@@ -222,13 +222,20 @@ internal partial class XLCellFormat
         Modify(format => styles.GetRegisteredCellFormat(format, cellFormat => modifyFormat(cellFormat, value)));
     }
 
+    // TODO Styles: Move modification methods of each component to the XLCellCollection. Modification
+    // of component should always update CustomFormat and to make sure that is done, it should be done
+    // in a one place.
     internal void ModifyNumberFormat(XLNumberFormat numberFormat)
     {
         var styles = _workbook.Styles;
         Modify(format =>
         {
             var modifiedNumberFormat = styles.GetRegisteredNumberFormat(numberFormat);
-            var modifiedFormat = styles.GetRegisteredCellFormat(format, cellFormat => cellFormat with { NumberFormat = modifiedNumberFormat });
+            var modifiedFormat = styles.GetRegisteredCellFormat(format, cellFormat => cellFormat with
+            {
+                NumberFormat = modifiedNumberFormat,
+                CustomFormat = format.CustomFormat | CellFormatComponents.NumberFormat
+            });
             return modifiedFormat;
         });
     }
@@ -239,7 +246,11 @@ internal partial class XLCellFormat
         Modify(format =>
         {
             var modifiedFont = styles.GetRegisteredFontFormat(format.Font, font => modifyFont(font, value));
-            var modifiedFormat = styles.GetRegisteredCellFormat(format, cellFormat => cellFormat with { Font = modifiedFont });
+            var modifiedFormat = styles.GetRegisteredCellFormat(format, cellFormat => cellFormat with
+            {
+                Font = modifiedFont,
+                CustomFormat = format.CustomFormat | CellFormatComponents.Font
+            });
             return modifiedFormat;
         });
     }
@@ -250,7 +261,11 @@ internal partial class XLCellFormat
         Modify(format =>
         {
             var modifiedFill = styles.GetRegisteredFillFormat(format.Fill, fill => modifyFill(fill, value));
-            var modifiedFormat = styles.GetRegisteredCellFormat(format, cellFormat => cellFormat with { Fill = modifiedFill });
+            var modifiedFormat = styles.GetRegisteredCellFormat(format, cellFormat => cellFormat with
+            {
+                Fill = modifiedFill,
+                CustomFormat = format.CustomFormat | CellFormatComponents.Fill
+            });
             return modifiedFormat;
         });
     }
@@ -267,7 +282,11 @@ internal partial class XLCellFormat
         Modify(format =>
         {
             var modifiedAlignment = modifyAlignment(format.Alignment, value);
-            var modifiedFormat = styles.GetRegisteredCellFormat(format, cellFormat => cellFormat with { Alignment = modifiedAlignment });
+            var modifiedFormat = styles.GetRegisteredCellFormat(format, cellFormat => cellFormat with
+            {
+                Alignment = modifiedAlignment,
+                CustomFormat = format.CustomFormat | CellFormatComponents.Alignment
+            });
             return modifiedFormat;
         });
     }
@@ -278,7 +297,11 @@ internal partial class XLCellFormat
         Modify(format =>
         {
             var modifiedProtection = modifyProtection(format.Protection, value);
-            var modifiedFormat = styles.GetRegisteredCellFormat(format, cellFormat => cellFormat with { Protection = modifiedProtection });
+            var modifiedFormat = styles.GetRegisteredCellFormat(format, cellFormat => cellFormat with
+            {
+                Protection = modifiedProtection,
+                CustomFormat = format.CustomFormat | CellFormatComponents.Protection
+            });
             return modifiedFormat;
         });
     }
@@ -421,7 +444,11 @@ internal partial class XLCellFormat
 
                 return modified;
             });
-            var modifiedFormat = styles.GetRegisteredCellFormat(format, cellFormat => cellFormat with { Border = modifiedBorder });
+            var modifiedFormat = styles.GetRegisteredCellFormat(format, cellFormat => cellFormat with
+            {
+                Border = modifiedBorder,
+                CustomFormat = format.CustomFormat | CellFormatComponents.Border
+            });
             return modifiedFormat;
         };
     }

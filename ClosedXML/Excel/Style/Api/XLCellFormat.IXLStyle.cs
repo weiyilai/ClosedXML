@@ -94,12 +94,11 @@ internal partial class XLCellFormat : IXLStyle
     /// </summary>
     internal void SetStyle(IXLStyle value)
     {
-        NumberFormat.SetNumberFormat(value.NumberFormat.Format);
-        Font.SetFont(value.Font);
-        IncludeQuotePrefix = value.IncludeQuotePrefix;
-        Fill.SetValue(value.Fill);
-        Border.SetValue(value.Border);
-        Alignment.SetValue(value.Alignment);
-        Protection.SetValue(value.Protection);
+        if (value is not XLCellFormat cellFormat)
+            throw new NotSupportedException("Can only copy cell format style.");
+
+        var otherCellFormat = cellFormat._formatValue.Resolve();
+        var registeredCellFormat = _workbook.Styles.GetRegisteredCellFormat(otherCellFormat);
+        ModifyFormat((_, cellForamt) => cellForamt, registeredCellFormat);
     }
 }

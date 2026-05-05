@@ -341,16 +341,16 @@ namespace ClosedXML.Excel
                     var borderlessFormat = Worksheet.Workbook.Styles.GetModifiedFormat(firstCell.FormatValue, _ => XLBorderFormatValue.None);
                     cellsCollection.FormatSlice.SetAll(SheetRange, borderlessFormat);
 
-                    if (leftBorder is not null)
+                    if (leftBorder is not null && leftBorder.Value.IsVisible)
                         cellsCollection.ApplyFormatOnAll(SheetRange.SliceFromLeft(1), b => b with { Left = leftBorder.Value });
 
-                    if (topBorder is not null)
+                    if (topBorder is not null && topBorder.Value.IsVisible)
                         cellsCollection.ApplyFormatOnAll(SheetRange.SliceFromTop(1), b => b with { Top = topBorder.Value });
 
-                    if (rightBorder is not null)
+                    if (rightBorder is not null && rightBorder.Value.IsVisible)
                         cellsCollection.ApplyFormatOnAll(SheetRange.SliceFromRight(1), b => b with { Right = rightBorder.Value });
 
-                    if (bottomBorder is not null)
+                    if (bottomBorder is not null && bottomBorder.Value.IsVisible)
                         cellsCollection.ApplyFormatOnAll(SheetRange.SliceFromBottom(1), b => b with { Bottom = bottomBorder.Value });
                 }
             }

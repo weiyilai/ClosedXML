@@ -55,8 +55,30 @@ internal class StylesWriter
     internal void WriteContent(WorkbookStylesPart stylesPart, IEnumMapper mapper, XLWorkbookStyles styles, XLWorkbook workbook, XLWorkbook.SaveContext context)
     {
         // Determine which format components are used and thus should be saved.
-        // TODO Styles: For now just assume everything in styles is used
-        var usedCellFormats = styles.CellFormats.Select(x => x.Value).ToHashSet();
+        var usedCellFormats = new HashSet<XLCellFormatValue>
+        {
+            styles.DefaultCellFormat
+        };
+        foreach (var sheet in workbook.WorksheetsInternal)
+        {
+            if (sheet.FormatValue is { } sheetFormat)
+                usedCellFormats.Add(sheetFormat);
+
+            foreach (var column in sheet.Internals.ColumnsCollection.Values)
+            {
+                if (column.FormatValue is { } columnFormat)
+                    usedCellFormats.Add(columnFormat);
+            }
+
+            foreach (var row in sheet.Internals.RowsCollection.Values)
+            {
+                if (row.FormatValue is { } rowFormat)
+                    usedCellFormats.Add(rowFormat);
+            }
+
+            sheet.Internals.CellsCollection.FormatSlice.AddUsedFormat(usedCellFormats);
+        }
+
         var usedNumberFormats = new HashSet<XLNumberFormat>();
         var usedFonts = new HashSet<XLFontFormatValue>();
         var usedFills = new HashSet<XLFillFormatValue>();
