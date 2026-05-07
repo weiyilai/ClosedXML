@@ -1,46 +1,10 @@
 using System;
 using ClosedXML.Excel;
 
-
 namespace ClosedXML.Examples.Rows
 {
     public class RowCollection : IXLExample
     {
-        #region Variables
-
-        // Public
-
-        // Private
-
-
-        #endregion
-
-        #region Properties
-
-        // Public
-
-        // Private
-
-        // Override
-
-
-        #endregion
-
-
-        #region Events
-
-        // Public
-
-        // Private
-
-        // Override
-
-
-        #endregion
-
-        #region Methods
-
-        // Public
         public void Create(String filePath)
         {
             var workbook = new XLWorkbook();
@@ -85,12 +49,5 @@ namespace ClosedXML.Examples.Rows
 
             workbook.SaveAs(filePath);
         }
-
-        // Private
-
-        // Override
-
-
-        #endregion
     }
 }
