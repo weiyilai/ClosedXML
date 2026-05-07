@@ -23,7 +23,22 @@ internal sealed partial class XLAlignmentCellFormat : IXLAlignment
     int IXLAlignment.Indent
     {
         get => Resolve(static format => format.Alignment.Indent);
-        set => Modify(static (alignment, indent) => alignment with { Indent = indent }, value);
+        set => Modify(static (alignment, indent) =>
+        {
+            if (alignment.Horizontal == XLAlignmentHorizontalValues.General)
+                alignment = alignment with { Horizontal = XLAlignmentHorizontalValues.Left };
+
+            if (indent > 0 && !(
+                               alignment.Horizontal == XLAlignmentHorizontalValues.Left
+                            || alignment.Horizontal == XLAlignmentHorizontalValues.Right
+                            || alignment.Horizontal == XLAlignmentHorizontalValues.Distributed
+                        ))
+            {
+                throw new InvalidOperationException("For indents, only left, right, and distributed horizontal alignments are supported.");
+            }
+
+            return alignment with { Indent = indent };
+        }, value);
     }
 
     bool IXLAlignment.JustifyLastLine

@@ -28,6 +28,10 @@ IXLAlignment
 The ``IXLAlignment.TextRotation`` now throws ``ArgumentOutOfRangeException`` on invalid rotation
 instead of original ``ArgumentException``.
 
+The ``IXLAlignment.Indent`` now throws ``InvalidOperationException`` instead of original
+``ArgumentException`` when trying to set indent on format with horizontal alignment that doesn't
+support indent.
+
 *************
 IXLWorksheets
 *************
