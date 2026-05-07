@@ -1487,7 +1487,7 @@ namespace ClosedXML.Excel
             }
         }
 
-        public XLRow Row(Int32 rowNumber, Boolean pingCells)
+        internal XLRow Row(Int32 rowNumber, Boolean pingCells)
         {
             if (rowNumber <= 0 || rowNumber > XLHelper.MaxRowNumber)
                 throw new ArgumentOutOfRangeException(nameof(rowNumber), $"Row number must be between 1 and {XLHelper.MaxRowNumber}");

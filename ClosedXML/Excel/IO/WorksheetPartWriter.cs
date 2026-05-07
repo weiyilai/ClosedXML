@@ -421,7 +421,7 @@ namespace ClosedXML.Excel.IO
                     var outlineLevel = 0;
                     if (xlWorksheet.Internals.ColumnsCollection.TryGetValue(co, out XLColumn col))
                     {
-                        styleId = context.GetStyleId(col.FormatValue);
+                        styleId = col.FormatValue is null ? worksheetStyleId : context.GetStyleId(col.FormatValue);
                         columnWidth = GetColumnWidth(col.Width).SaveRound();
                         isHidden = col.IsHidden;
                         collapsed = col.Collapsed;
