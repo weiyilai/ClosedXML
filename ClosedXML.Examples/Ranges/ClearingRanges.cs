@@ -2,14 +2,10 @@ using System;
 using System.Linq;
 using ClosedXML.Excel;
 
-
 namespace ClosedXML.Examples.Ranges
 {
     public class ClearingRanges : IXLExample
     {
-        #region Methods
-
-        // Public
         public void Create(String filePath)
         {
             var workbook = new XLWorkbook();
@@ -43,12 +39,5 @@ namespace ClosedXML.Examples.Ranges
 
             workbook.SaveAs(filePath);
         }
-
-        // Private
-
-        // Override
-
-
-        #endregion
     }
 }
