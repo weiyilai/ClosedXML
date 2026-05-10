@@ -19,7 +19,8 @@ namespace ClosedXML.Excel
                 {
                     Name = "Tahoma",
                     Size = XLFontSize.FromPoints(9),
-                    Family = XLFontFamilyNumberingValues.Swiss
+                    Family = XLFontFamilyNumberingValues.Swiss,
+                    Color = XLColor.Black
                 };
 
                 return defaultCommentFont;
