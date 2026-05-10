@@ -42,6 +42,13 @@ namespace ClosedXML.Examples.PageSetup
             ws.PageSetup.Footer.Center.AddText(" / ", XLHFOccurrence.AllPages);
             ws.PageSetup.Footer.Center.AddText(XLHFPredefinedText.NumberOfPages, XLHFOccurrence.AllPages);
 
+            // Needed to display different header with XLHFOccurrence.FirstPage (i.e. The first colorful page).
+            ws.PageSetup.DifferentFirstPageOnHF = true;
+
+            // Needed to display different footer with XLHFOccurrence.OddPages (i.e. the full path). The odd footer is
+            // displayed only from page 3 onwards, because first page has different setting.
+            ws.PageSetup.DifferentOddEvenPagesOnHF = true;
+
             // Don't align headers and footers with the margins
             ws.PageSetup.AlignHFWithMargins = false;
 

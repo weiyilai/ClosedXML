@@ -307,10 +307,28 @@ namespace ClosedXML.Excel
         IXLPageSetup SetShowComments(XLShowCommentsValues value);
         IXLPageSetup SetPrintErrorValue(XLPrintErrorValues value);
 
-
+        /// <summary>
+        /// Should sheet display header/footer values with <see cref="XLHFOccurrence.FirstPage"/>? Default is
+        /// <c>false</c>.
+        /// </summary>
         Boolean DifferentFirstPageOnHF { get; set; }
-        IXLPageSetup SetDifferentFirstPageOnHF(); IXLPageSetup SetDifferentFirstPageOnHF(Boolean value);
+
+        /// <inheritdoc cref="DifferentFirstPageOnHF"/>
+        IXLPageSetup SetDifferentFirstPageOnHF();
+
+        /// <inheritdoc cref="DifferentFirstPageOnHF"/>
+        IXLPageSetup SetDifferentFirstPageOnHF(Boolean value);
+
+        /// <summary>
+        /// Should sheet display header/footer values with <see cref="XLHFOccurrence.OddPages"/> or
+        /// <see cref="XLHFOccurrence.EvenPages"/>? Default is <c>false</c>.
+        /// </summary>
         Boolean DifferentOddEvenPagesOnHF { get; set; }
-        IXLPageSetup SetDifferentOddEvenPagesOnHF(); IXLPageSetup SetDifferentOddEvenPagesOnHF(Boolean value);
+
+        /// <inheritdoc cref="DifferentOddEvenPagesOnHF"/>
+        IXLPageSetup SetDifferentOddEvenPagesOnHF();
+
+        /// <inheritdoc cref="DifferentOddEvenPagesOnHF"/>
+        IXLPageSetup SetDifferentOddEvenPagesOnHF(Boolean value);
     }
 }
