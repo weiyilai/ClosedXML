@@ -6,46 +6,11 @@ namespace ClosedXML.Examples
 {
     public class DeletingColumns : IXLExample
     {
-        #region Variables
-
-        // Public
-
-        // Private
-
-
-        #endregion
-
-        #region Properties
-
-        // Public
-
-        // Private
-
-        // Override
-
-
-        #endregion
-
-        #region Events
-
-        // Public
-
-        // Private
-
-        // Override
-
-
-        #endregion
-
-        #region Methods
-
-        // Public
         public void Create(String filePath)
         {
             var workbook = new XLWorkbook();
             var ws = workbook.Worksheets.Add("Deleting Columns");
 
-            var rngTitles = ws.Range("B2:D2");
             ws.Row(1).InsertRowsBelow(2);
 
             var rng1 = ws.Range("B2:D2");
@@ -64,12 +29,5 @@ namespace ClosedXML.Examples
 
             workbook.SaveAs(filePath);
         }
-
-        // Private
-
-        // Override
-
-
-        #endregion
     }
 }
