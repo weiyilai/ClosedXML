@@ -6,44 +6,10 @@ namespace ClosedXML.Examples.Misc
 {
     public class WorkbookProperties : IXLExample
     {
-        #region Variables
-
-        // Public
-
-        // Private
-
-
-        #endregion
-
-        #region Properties
-
-        // Public
-
-        // Private
-
-        // Override
-
-
-        #endregion
-
-        #region Events
-
-        // Public
-
-        // Private
-
-        // Override
-
-
-        #endregion
-
-        #region Methods
-
-        // Public
         public void Create(String filePath)
         {
-            var wb = new XLWorkbook();
-            var ws = wb.Worksheets.Add("Workbook Properties");
+            using var wb = new XLWorkbook();
+            wb.Worksheets.Add("Workbook Properties");
 
             wb.Properties.Author = "theAuthor";
             wb.Properties.Title = "theTitle";
@@ -64,12 +30,5 @@ namespace ClosedXML.Examples.Misc
 
             wb.SaveAs(filePath);
         }
-
-        // Private
-
-        // Override
-
-
-        #endregion
     }
 }
