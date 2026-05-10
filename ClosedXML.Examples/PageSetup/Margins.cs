@@ -1,14 +1,10 @@
 using System;
 using ClosedXML.Excel;
 
-
 namespace ClosedXML.Examples.PageSetup
 {
     public class Margins : IXLExample
     {
-        #region Methods
-
-        // Public
         public void Create(String filePath)
         {
             var workbook = new XLWorkbook();
@@ -25,12 +21,5 @@ namespace ClosedXML.Examples.PageSetup
 
             workbook.SaveAs(filePath);
         }
-
-        // Private
-
-        // Override
-
-
-        #endregion
     }
 }
