@@ -1,17 +1,13 @@
 using System;
 using ClosedXML.Excel;
 
-
 namespace ClosedXML.Examples.PageSetup
 {
     public class HeaderFooters : IXLExample
     {
-        #region Methods
-
-        // Public
         public void Create(String filePath)
         {
-            var workbook = new XLWorkbook();
+            using var workbook = new XLWorkbook();
             var ws = workbook.Worksheets.Add("Headers and Footers");
             
             // Simple left header to be placed on all pages
@@ -54,12 +50,5 @@ namespace ClosedXML.Examples.PageSetup
 
             workbook.SaveAs(filePath);
         }
-
-        // Private
-
-        // Override
-
-
-        #endregion
     }
 }
