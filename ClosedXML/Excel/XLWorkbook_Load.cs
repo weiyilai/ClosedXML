@@ -186,7 +186,7 @@ namespace ClosedXML.Excel
             }
 
             // TODO Styles: Verify the column width is same as DefaultColumnWidth even if normal style is missing
-            ColumnWidth = XLHelper.CalculateColumnWidth(8, Style.Font, this);
+            ColumnWidth = XLHelper.CalculateColumnWidth(8, Format.Font, this);
 
             // We loop through the sheets in 2 passes: first just to add the sheets and second to add all the data for the sheets.
             // We do this mainly because it skips a very costly calculation invalidation step, but it also make things more consistent,

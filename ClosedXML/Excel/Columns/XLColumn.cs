@@ -163,7 +163,7 @@ namespace ClosedXML.Excel
             var columnWidthPx = CalculateMinColumnWidth(startRow, endRow, engine, dpi);
 
             // Maximum digit width, rounded to pixels, so Calibri at 11 pts returns 7 pixels MDW (the correct value)
-            var mdw = (int)Math.Round(engine.GetMaxDigitWidth(Worksheet.Workbook.Style.Font, dpi.X));
+            var mdw = (int)Math.Round(engine.GetMaxDigitWidth(Worksheet.Workbook.Format.Font, dpi.X));
 
             var minWidthInPx = Math.Ceiling(XLHelper.NoCToPixels(minWidthNoC, mdw));
             if (columnWidthPx < minWidthInPx)

@@ -172,10 +172,7 @@ namespace ClosedXML.Excel
         /// </summary>
         public IXLPivotCaches PivotCaches => PivotCachesInternal;
 
-        /// <summary>
-        ///   Gets or sets the default style for the workbook.
-        ///   <para>All new worksheets will use this style.</para>
-        /// </summary>
+        /// <inheritdoc/>
         public IXLStyle Style
         {
             get => Format;

@@ -85,15 +85,11 @@ namespace ClosedXML.Examples.Misc
             ws.Range(6, 6, 6, 8).Merge().AddToNamed("Titles");
             ws.Cell(7, 6).InsertData(people);
 
-
-            // Prepare the style for the titles
-            var titlesStyle = wb.Style;
-            titlesStyle.Font.Bold = true;
-            titlesStyle.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-            titlesStyle.Fill.BackgroundColor = XLColor.Cyan;
-
             // Format all titles in one shot
-            wb.DefinedNames.DefinedName("Titles").Ranges.Style = titlesStyle;
+            wb.DefinedNames.DefinedName("Titles").Ranges.Style
+                .Font.SetBold()
+                .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center)
+                .Fill.SetBackgroundColor(XLColor.Cyan);
 
             ws.Columns().AdjustToContents();
 

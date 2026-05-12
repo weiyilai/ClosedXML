@@ -74,3 +74,12 @@ IXLCell
 
 An obsolete method ``IXLRangeBase.SetDataValidation`` has been removed. Use ``GetDataValidation()``
 to access the existing rule, or ``CreateDataValidation()`` to create a new one.
+
+
+*****************
+XLWorkbook.Style
+*****************
+
+The ``XLWorksheet.Style`` now represents the default format of a workbook. That means all cells
+without explicit format will use the default format. Previously, it was only storing style that
+was used for newly created worksheets.
