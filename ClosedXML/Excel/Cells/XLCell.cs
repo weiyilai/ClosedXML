@@ -806,14 +806,16 @@ namespace ClosedXML.Excel
             if (hyperlink is null)
                 return;
 
-            if (FormatValue is not { } currentFormat)
-                currentFormat = GetFormat();
-
-            FormatValue = Styles.GetModifiedFormat(currentFormat, font => font with
+            var cellFormat = GetFormat();
+            var sheetFormat = Worksheet.GetFormat();
+            if (ReferenceEquals(cellFormat, sheetFormat))
             {
-                Color = XLColor.FromTheme(XLThemeColor.Hyperlink),
-                Underline = XLFontUnderlineValues.Single
-            });
+                FormatValue = Styles.GetModifiedFormat(cellFormat, font => font with
+                {
+                    Color = XLColor.FromTheme(XLThemeColor.Hyperlink),
+                    Underline = XLFontUnderlineValues.Single
+                });
+            }
         }
 
         internal void SetCellHyperlink(XLHyperlink hyperlink)
