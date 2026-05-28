@@ -6,9 +6,6 @@ namespace ClosedXML.Examples.Tables
 {
     public class UsingTables : IXLExample
     {
-        #region Methods
-
-        // Public
         public void Create(String filePath)
         {
             string tempFile = ExampleHelper.GetTempFilePath(filePath);
@@ -106,11 +103,5 @@ namespace ClosedXML.Examples.Tables
                 }
             }
         }
-
-        // Private
-
-        // Override
-
-        #endregion Methods
     }
 }
