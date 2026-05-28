@@ -9,9 +9,6 @@ namespace ClosedXML.Examples.Tables
 {
     public class InsertingTables : IXLExample
     {
-        #region Methods
-
-        // Public
         public void Create(String filePath)
         {
             using (var wb = new XLWorkbook())
@@ -36,7 +33,7 @@ namespace ClosedXML.Examples.Tables
                 ws.Cell(2, 3).InsertTable(listOfArr);
 
                 // From a DataTable
-                var dataTable = GetTable();
+                var dataTable = InsertingTables.GetTable();
                 ws.Cell(7, 1).Value = "From DataTable";
                 ws.Range(7, 1, 7, 4).Merge().AddToNamed("Titles");
                 ws.Cell(8, 1).InsertTable(dataTable);
@@ -83,8 +80,7 @@ namespace ClosedXML.Examples.Tables
             public static String ClassType { get { return nameof(Person); } }
         }
 
-        // Private
-        private DataTable GetTable()
+        private static DataTable GetTable()
         {
             DataTable table = new DataTable();
             table.Columns.Add("Dosage", typeof(int));
@@ -99,9 +95,5 @@ namespace ClosedXML.Examples.Tables
             table.Rows.Add(100, "Dilantin", "Melanie", new DateTime(2000, 1, 5));
             return table;
         }
-
-        // Override
-
-        #endregion Methods
     }
 }
