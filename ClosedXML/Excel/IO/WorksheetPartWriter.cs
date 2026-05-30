@@ -2099,7 +2099,7 @@ namespace ClosedXML.Excel.IO
             {
                 return xlRow.HeightChanged ||
                     xlRow.IsHidden ||
-                    xlRow.FormatValue is not null && xlRow.FormatValue != xlRow.Worksheet.Workbook.Styles.DefaultCellFormat ||
+                    xlRow.FormatValue is not null ||
                     xlRow.Collapsed ||
                     xlRow.OutlineLevel > 0;
             }
@@ -2139,13 +2139,7 @@ namespace ClosedXML.Excel.IO
                     w.WriteAttributeString("hidden", TrueValue);
                 }
 
-                var rowHasCustomFormat =
-#if STYLES_REWORK
-                    xlRow.FormatValue is not null && xlRow.FormatValue != xlRow.Worksheet.Workbook.Styles.DefaultFormat;
-#else
-                    xlRow.StyleValue != xlRow.Worksheet.StyleValue;
-#endif
-
+                var rowHasCustomFormat = xlRow.FormatValue is not null;
                 if (rowHasCustomFormat)
                 {
                     var formatIndex = context.GetStyleId(xlRow.FormatValue);

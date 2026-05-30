@@ -479,8 +479,11 @@ namespace ClosedXML.Excel
             var newRow = (XLRow)row;
             newRow._height = _height;
             newRow.HeightChanged = HeightChanged;
-            newRow.FormatValue = newRow.Worksheet.Workbook.Styles.GetRegisteredCellFormat(GetFormat());
             newRow.IsHidden = IsHidden;
+            if (FormatValue is not null)
+            {
+                newRow.FormatValue = newRow.Worksheet.Workbook.Styles.GetRegisteredCellFormat(GetFormat());
+            }
 
             AsRange().CopyTo(row);
 

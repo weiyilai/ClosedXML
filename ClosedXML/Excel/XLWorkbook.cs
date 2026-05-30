@@ -48,15 +48,6 @@ namespace ClosedXML.Excel
     {
         #region Static
 
-        public static IXLStyle DefaultStyle
-        {
-            get
-            {
-                // TODO Styles: Deal with this, only used in tests. Maybe delete?
-                throw new NotImplementedException();
-            }
-        }
-
         public static Double DefaultRowHeight { get; private set; }
         public static Double DefaultColumnWidth { get; private set; }
 

@@ -194,7 +194,7 @@ internal class WorksheetPartReader
                 xlColumns.ForEach(c => c.OutlineLevel = outlineLevel);
             }
 
-            if (col.Style?.Value is { } styleIndex && styleIndex > 0)
+            if (col.Style?.Value is { } styleIndex)
             {
                 ApplyStyle(xlColumns, checked((int)styleIndex), ws.Workbook.Styles);
             }
@@ -250,7 +250,7 @@ internal class WorksheetPartReader
         if (customFormat)
         {
             var styleIndex = attributes.GetIntAttribute("s");
-            if (styleIndex is not null && styleIndex > 0)
+            if (styleIndex is not null)
             {
                 ApplyStyle(xlRow, styleIndex.Value, ws.Workbook.Styles);
             }
@@ -300,10 +300,7 @@ internal class WorksheetPartReader
 
         var xfId = attributes.GetIntAttribute("s") ?? 0;
         var cellFormat = ws.Workbook.Styles.CellFormats[xfId];
-        if (xfId != 0)
-        {
-            xlCell.FormatValue = cellFormat;
-        }
+        xlCell.FormatValue = cellFormat;
 
         var showPhonetic = attributes.GetBoolAttribute("ph", false);
         if (showPhonetic)

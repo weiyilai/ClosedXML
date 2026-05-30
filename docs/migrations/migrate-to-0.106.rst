@@ -83,3 +83,7 @@ XLWorkbook.Style
 The ``XLWorksheet.Style`` now represents the default format of a workbook. That means all cells
 without explicit format will use the default format. Previously, it was only storing style that
 was used for newly created worksheets.
+
+The ``XLWorksheet.DefaultStyle`` static property has been removed. The style is now an API object
+that only access data structures behind. Use ``XLWorksheet.Style`` to set format of elements back
+to the default format of a workbook (e.g. ``ws.Cell("A1").Style = wb.Style``).
