@@ -36,7 +36,7 @@ namespace ClosedXML.Tests.Excel
             yield return FormatTestCase<IXLFill>.ForFill(fill => fill.PatternType, (fill, value) => fill.PatternType = value, patternValues);
             yield return FormatTestCase<IXLFill>.ForFill(fill => fill.PatternType, (fill, value) => fill.SetPatternType(value), patternValues);
 
-            var colors = new[] { XLColor.Black, XLColor.Red, XLColor.Auto, XLColor.Transparent };
+            var colors = new[] { XLColor.Black, XLColor.Red, XLColor.Automatic, XLColor.Transparent };
             yield return FormatTestCase<IXLFill>.ForFill(fill => fill.BackgroundColor, (fill, value) => fill.BackgroundColor = value, colors);
             yield return FormatTestCase<IXLFill>.ForFill(fill => fill.BackgroundColor, (fill, value) => fill.SetBackgroundColor(value), colors);
 
@@ -80,7 +80,7 @@ namespace ClosedXML.Tests.Excel
             fill.BackgroundColor = XLColor.Red;
             Assert.AreEqual(XLFillPatternValues.Solid, fill.PatternType);
 
-            fill.BackgroundColor = XLColor.NoColor;
+            fill.BackgroundColor = XLColor.Automatic;
 
             Assert.AreEqual(XLFillPatternValues.None, fill.PatternType);
         }
@@ -118,22 +118,19 @@ namespace ClosedXML.Tests.Excel
         }
 
         [Test]
-        public void FillsWithTransparentColorEqual()
+        public void FillsWithStyleNoneAreEqualToFillWithAutomaticColor()
         {
             using var wb = new XLWorkbook();
             var ws = wb.AddWorksheet();
 
             var fill1 = ws.Cell("A1").Style.Fill.SetBackgroundColor(XLColor.ElectricUltramarine).Fill.SetPatternType(XLFillPatternValues.None).Fill;
             var fill2 = ws.Cell("A2").Style.Fill.SetBackgroundColor(XLColor.EtonBlue).Fill.SetPatternType(XLFillPatternValues.None).Fill;
-            var fill3 = ws.Cell("A3").Style.Fill.SetBackgroundColor(XLColor.FromIndex(64));
-            var fill4 = ws.Cell("A4").Style.Fill.SetBackgroundColor(XLColor.NoColor);
+            var fill3 = ws.Cell("A3").Style.Fill.SetBackgroundColor(XLColor.Automatic).Fill;
 
             Assert.IsTrue(fill1.Equals(fill2));
             Assert.IsTrue(fill1.Equals(fill3));
-            Assert.IsTrue(fill1.Equals(fill4));
             Assert.AreEqual(fill1.GetHashCode(), fill2.GetHashCode());
             Assert.AreEqual(fill1.GetHashCode(), fill3.GetHashCode());
-            Assert.AreEqual(fill1.GetHashCode(), fill4.GetHashCode());
         }
 
         [Test]
@@ -180,11 +177,14 @@ namespace ClosedXML.Tests.Excel
         }
 
         [Test]
-        public void LoadAndSaveTransparentBackgroundFill()
+        public void LoadAndSaveDxfBackgroundFill()
         {
+            // The cells in test file have default format with a white background. Then, there are two CF:
+            // * If value = 5, apply with automatic color background (=white)
+            // * If value <> 5, apply red background
             TestHelper.LoadSaveAndCompare(
-                @"Other\StyleReferenceFiles\TransparentBackgroundFill\inputfile.xlsx",
-                @"Other\StyleReferenceFiles\TransparentBackgroundFill\TransparentBackgroundFill.xlsx");
+                @"Other\StyleReferenceFiles\DxfBackgroundFill\inputfile.xlsx",
+                @"Other\StyleReferenceFiles\DxfBackgroundFill\output.xlsx");
         }
 
         [Test]

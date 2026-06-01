@@ -41,7 +41,7 @@ internal record XLFontFormatValue
         Shadow = false,
         Condense = false,
         Extend = false,
-        Color = XLColor.Auto,
+        Color = XLColor.Automatic,
         Size = XLFontSize.FromPoints(11),
         Underline = XLFontUnderlineValues.None,
         VerticalAlignment = XLFontVerticalTextAlignmentValues.Baseline,

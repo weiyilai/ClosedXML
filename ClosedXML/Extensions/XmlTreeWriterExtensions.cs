@@ -70,10 +70,12 @@ internal static class XmlTreeWriterExtensions
         xml.WriteStartElement(elName, ns);
         switch (color.ColorType)
         {
+            case XLColorType.Automatic:
+                xml.WriteAttribute("auto", 1);
+                break;
+
             case XLColorType.Color:
-                // Excel doesn't support transparent colors and always saves color as fully opaque
-                var nonTransparentColor = System.Drawing.Color.FromArgb(0xFF, color.Color);
-                xml.WriteAttribute("rgb", nonTransparentColor.ToHex());
+                xml.WriteAttribute("rgb", color.Color.ToHex());
                 break;
 
             case XLColorType.Indexed:

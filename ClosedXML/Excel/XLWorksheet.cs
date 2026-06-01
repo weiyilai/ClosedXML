@@ -95,7 +95,7 @@ namespace ClosedXML.Excel
             ShowWhiteSpace = workbook.ShowWhiteSpace;
             ShowZeros = workbook.ShowZeros;
             RightToLeft = workbook.RightToLeft;
-            TabColor = XLColor.NoColor;
+            TabColor = XLColor.Automatic;
             _selectedRanges = new XLRanges(this);
 
             Author = workbook.Author;

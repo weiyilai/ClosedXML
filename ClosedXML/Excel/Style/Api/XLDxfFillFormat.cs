@@ -11,8 +11,8 @@ internal class XLDxfFillFormat : IXLFill
     private static readonly XLPatternFill _default = new()
     {
         PatternType = XLFillPatternValues.None,
-        BackgroundColor = XLColor.NoColor,
-        PatternColor = XLColor.NoColor
+        BackgroundColor = XLColor.Automatic,
+        PatternColor = XLColor.Automatic
     };
 
     private readonly XLDxFormat _parent;

@@ -15,8 +15,8 @@ internal sealed partial class XLFillCellFormat
     private static readonly XLPatternFill PatternNone = new()
     {
         PatternType = XLFillPatternValues.None,
-        PatternColor = XLColor.Auto,
-        BackgroundColor = XLColor.Auto
+        PatternColor = XLColor.Automatic,
+        BackgroundColor = XLColor.Automatic
     };
 
     private readonly XLCellFormat _parent;

@@ -168,8 +168,8 @@ namespace ClosedXML.Tests.Excel.Styles
             yield return FormatTestCase<IXLFont>.ForFont(font => font.FontSize, (font, value) => font.FontSize = value, 1, 15, 409.55);
             yield return FormatTestCase<IXLFont>.ForFont(font => font.FontSize, (font, value) => font.SetFontSize(value), 1, 15, 409.55);
 
-            yield return FormatTestCase<IXLFont>.ForFont(font => font.FontColor, (font, value) => font.FontColor = value, XLColor.Black, XLColor.Red, XLColor.Auto);
-            yield return FormatTestCase<IXLFont>.ForFont(font => font.FontColor, (font, value) => font.SetFontColor(value), XLColor.Black, XLColor.Red, XLColor.Auto);
+            yield return FormatTestCase<IXLFont>.ForFont(font => font.FontColor, (font, value) => font.FontColor = value, XLColor.Black, XLColor.Red, XLColor.Automatic);
+            yield return FormatTestCase<IXLFont>.ForFont(font => font.FontColor, (font, value) => font.SetFontColor(value), XLColor.Black, XLColor.Red, XLColor.Automatic);
 
             yield return FormatTestCase<IXLFont>.ForFont(font => font.FontName, (font, value) => font.FontName = value, "Calibri", "Arial", "Consolas");
             yield return FormatTestCase<IXLFont>.ForFont(font => font.FontName, (font, value) => font.SetFontName(value), "Calibri", "Arial", "Consolas");

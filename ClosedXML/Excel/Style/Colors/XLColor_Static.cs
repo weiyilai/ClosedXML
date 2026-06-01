@@ -290,27 +290,20 @@ namespace ClosedXML.Excel
             return FromName(vmlColor);
         }
 
-        internal static bool IsNullOrTransparent(XLColor color)
-        {
-            return color == null
-                || !color.HasValue
-                || IsTransparent(color.Key);
-        }
-
-        internal static bool IsTransparent(in XLColorKey colorKey)
-        {
-            return colorKey == NoColor.Key
-                || (colorKey.ColorType == XLColorType.Indexed && colorKey.Indexed == 64);
-        }
-
         /// <summary>
         /// Automatic color. The color is selected by the Excel depending on a context of usage.
         /// Example: black for font color, white for background and black for pattern in a pattern
         /// fill.
         /// </summary>
-        internal static XLColor Auto => NoColor;
+        public static XLColor Automatic { get; } = new XLColor();
 
-        public static XLColor NoColor { get; } = new XLColor();
+        /// <summary>
+        /// An alias for <see cref="Automatic"/> color. In some Excel color pickers (e.g. sheet tab
+        /// color picker or fill background color), the GUI displays "No Color" option instead of
+        /// "Automatic" button for the automatic color. That is only GUI convention, the stored
+        /// value is automatic color.
+        /// </summary>
+        public static XLColor NoColor => Automatic;
 
         public static XLColor AliceBlue { get { return FromColor(Color.AliceBlue); } }
 

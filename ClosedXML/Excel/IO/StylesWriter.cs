@@ -326,7 +326,7 @@ internal class StylesWriter
 
         WriteFontSize(xml, font.Size);
 
-        if (!font.Color.IsArgbZero)
+        if (!font.Color.IsAuto)
             xml.WriteColor("color", _ns, font.Color);
 
         WriteFontName(xml, font.Name);
@@ -372,7 +372,7 @@ internal class StylesWriter
         if (font.Size is { } size)
             WriteFontSize(xml, size);
 
-        if (font.Color is { } color)
+        if (font.Color is { } color && !color.IsAuto)
             xml.WriteColor("color", _ns, color);
 
         if (font.Name is { } name)

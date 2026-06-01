@@ -8,7 +8,7 @@ internal readonly record struct XLBorderLine(XLColor Color, XLBorderStyleValues 
     /// <summary>
     /// Default XML attribute values.
     /// </summary>
-    internal static readonly XLBorderLine None = new(XLColor.Auto, XLBorderStyleValues.None);
+    internal static readonly XLBorderLine None = new(XLColor.Automatic, XLBorderStyleValues.None);
 
     /// <summary>
     /// Is the border line visible?

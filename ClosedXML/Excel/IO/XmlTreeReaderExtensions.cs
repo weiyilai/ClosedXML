@@ -54,7 +54,7 @@ internal static class XmlTreeReaderExtensions
         var indexed = reader.GetOptionalUintAsInt("indexed");
         if (indexed is not null)
         {
-            var indexedColor = indexed <= XLColor.IndexedColors.Count ? XLColor.FromIndex(indexed.Value) : XLColor.NoColor;
+            var indexedColor = indexed <= XLColor.IndexedColors.Count ? XLColor.FromIndex(indexed.Value) : XLColor.Automatic;
             reader.Close(colorElementName, ns);
             return indexedColor;
         }
@@ -62,8 +62,7 @@ internal static class XmlTreeReaderExtensions
         var auto = reader.GetOptionalBool("auto");
         if (auto is not null)
         {
-            // TODO: I have no idea what to do with auto
-            var autoColor = XLColor.NoColor;
+            var autoColor = XLColor.Automatic;
             reader.Close(colorElementName, ns);
             return autoColor;
         }

@@ -4,7 +4,7 @@ public partial class XLColor
 {
     internal XLColorKey Key { get; }
 
-    private XLColor() : this(new XLColorKey())
+    private XLColor() : this(new XLColorKey() { ColorType = XLColorType.Automatic })
     {
         HasValue = false;
     }
@@ -16,7 +16,7 @@ public partial class XLColor
     }
 
     /// <summary>
-    /// Is the color zero-value? Zero value structures can in some cases be omitted from saving to a file.
+    /// Lower case color type for exception messages.
     /// </summary>
-    internal bool IsArgbZero => ColorType == XLColorType.Color && Key.Color.ToArgb() == 0x000000;
+    private string LcColorType => ColorType.ToString().ToLowerInvariant();
 }

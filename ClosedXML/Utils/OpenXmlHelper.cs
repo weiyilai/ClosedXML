@@ -253,7 +253,7 @@ namespace ClosedXML.Utils
                     ? XLColor.FromTheme((XLThemeColor)openXMLColor.Theme.Value, openXMLColor.Tint.Value)
                     : XLColor.FromTheme((XLThemeColor)openXMLColor.Theme.Value);
             }
-            return retVal ?? XLColor.NoColor;
+            return retVal ?? XLColor.Automatic;
         }
 
         /// <summary>

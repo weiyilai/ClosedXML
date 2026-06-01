@@ -75,6 +75,14 @@ IXLCell
 An obsolete method ``IXLRangeBase.SetDataValidation`` has been removed. Use ``GetDataValidation()``
 to access the existing rule, or ``CreateDataValidation()`` to create a new one.
 
+*******
+XLColor
+*******
+
+There is now a ``XLColor.Automatic`` color. It represents the automatic color from the color
+picker. The actual value of a color is determined by an application based on a use, generally
+either a black (e.g. font name) or white (e.g. fill). There is also a new enum member
+``XLColorType.Automatic`` for the color.
 
 *****************
 XLWorkbook.Style
@@ -87,3 +95,6 @@ was used for newly created worksheets.
 The ``XLWorksheet.DefaultStyle`` static property has been removed. The style is now an API object
 that only access data structures behind. Use ``XLWorksheet.Style`` to set format of elements back
 to the default format of a workbook (e.g. ``ws.Cell("A1").Style = wb.Style``).
+
+Default color of fill and border colors ``IXLStyle`` elements is now ``XLColor.Automatic``.
+Previously, it was (``XLColor.FromIndex(64)``).

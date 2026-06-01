@@ -165,7 +165,7 @@ internal class StylesReaderTests
             var fill = styles.Fills[0];
             Assert.NotNull(fill.Pattern);
             Assert.AreEqual(XLFillPatternValues.LightGrid, fill.Pattern.PatternType);
-            Assert.AreEqual(XLColor.NoColor, fill.Pattern.PatternColor);
+            Assert.AreEqual(XLColor.Automatic, fill.Pattern.PatternColor);
             Assert.AreEqual(XLColor.FromRgb(0x804000), fill.Pattern.BackgroundColor);
         });
     }

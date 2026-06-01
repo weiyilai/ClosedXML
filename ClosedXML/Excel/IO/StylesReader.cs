@@ -442,8 +442,8 @@ internal partial class StylesReader
         {
             var patternFill = new XLPatternFill
             {
-                PatternColor = fgColor ?? XLColor.NoColor,
-                BackgroundColor = bgColor ?? XLColor.NoColor,
+                PatternColor = fgColor ?? XLColor.Automatic,
+                BackgroundColor = bgColor ?? XLColor.Automatic,
                 PatternType = patternType ?? XLFillPatternValues.Solid,
             };
             return new XLFillFormatValue(patternFill);
@@ -458,8 +458,8 @@ internal partial class StylesReader
 
             var patternFill = new XLPatternFill
             {
-                PatternColor = fgColor ?? XLColor.NoColor,
-                BackgroundColor = bgColor ?? XLColor.NoColor,
+                PatternColor = fgColor ?? XLColor.Automatic,
+                BackgroundColor = bgColor ?? XLColor.Automatic,
                 PatternType = pattern,
             };
             return new XLFillFormatValue(patternFill);
@@ -523,7 +523,7 @@ internal partial class StylesReader
 
     private XLBorderLine OnBorderPrParsed(XLColor? color, XLBorderStyleValues style)
     {
-        return new XLBorderLine(color ?? XLColor.NoColor, style);
+        return new XLBorderLine(color ?? XLColor.Automatic, style);
     }
 
     partial void OnCellStyleXfsParsed(List<(XLCellFormatValue Format, int? CellStyleXfId)> xf, uint? count)

@@ -365,17 +365,17 @@ namespace ClosedXML.Tests.Excel.Styles
 
             if (color is not null)
             {
-                Assert.AreEqual((sides & Left) != 0 ? color : XLColor.Auto, border.LeftBorderColor);
-                Assert.AreEqual((sides & Right) != 0 ? color : XLColor.Auto, border.RightBorderColor);
-                Assert.AreEqual((sides & Top) != 0 ? color : XLColor.Auto, border.TopBorderColor);
-                Assert.AreEqual((sides & Bottom) != 0 ? color : XLColor.Auto, border.BottomBorderColor);
+                Assert.AreEqual((sides & Left) != 0 ? color : XLColor.Automatic, border.LeftBorderColor);
+                Assert.AreEqual((sides & Right) != 0 ? color : XLColor.Automatic, border.RightBorderColor);
+                Assert.AreEqual((sides & Top) != 0 ? color : XLColor.Automatic, border.TopBorderColor);
+                Assert.AreEqual((sides & Bottom) != 0 ? color : XLColor.Automatic, border.BottomBorderColor);
             }
         }
 
         private static IEnumerable<object> BorderApiSetters()
         {
             var styleValues = EnumPolyfill.GetValues<XLBorderStyleValues>();
-            var colors = new[] { XLColor.Red, XLColor.Black, XLColor.Auto };
+            var colors = new[] { XLColor.Red, XLColor.Black, XLColor.Automatic };
 
             // Outside border style - check that once set, all outer borders are set to the style
             yield return FormatTestCase<IXLBorder>.ForBorder(border => border.LeftBorder, (border, value) => border.OutsideBorder = value, styleValues);
