@@ -183,7 +183,7 @@ namespace ClosedXML.Excel
 #nullable enable
 
         /// <summary>
-        /// A format of a cell. If cell has no explicitely set format, the value is <c>null</c>.
+        /// A format of a cell. If cell format depends on inherited format, the value is <c>null</c>.
         /// </summary>
         public XLCellFormatValue? FormatValue
         {
