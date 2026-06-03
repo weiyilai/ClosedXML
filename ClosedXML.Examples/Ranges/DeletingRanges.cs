@@ -6,9 +6,6 @@ namespace ClosedXML.Examples.Ranges
 {
     public class DeletingRanges : IXLExample
     {
-        #region Methods
-
-        // Public
         public void Create(String filePath)
         {
             var workbook = new XLWorkbook();
@@ -58,12 +55,5 @@ namespace ClosedXML.Examples.Ranges
 
             workbook.SaveAs(filePath);
         }
-
-        // Private
-
-        // Override
-
-
-        #endregion
     }
 }

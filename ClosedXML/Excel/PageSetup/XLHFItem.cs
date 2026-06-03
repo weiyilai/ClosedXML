@@ -42,7 +42,8 @@ namespace ClosedXML.Excel
 
         public IXLRichString AddText(String text, XLHFOccurrence occurrence)
         {
-            var richText = new XLRichString(text, HeaderFooter.Worksheet.Style.Font, this, null);
+            // TODO Styles: This doesn't update source when API object changes
+            var richText = new XLRichString(text, HeaderFooter.Worksheet.GetFormat().Font, this, HeaderFooter.Worksheet.Workbook.Styles, null);
 
             var hfText = new XLHFText(richText, this);
             if (occurrence == XLHFOccurrence.AllPages)

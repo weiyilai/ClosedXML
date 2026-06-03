@@ -383,12 +383,34 @@ namespace ClosedXML.Excel
         /// styles, it only sets values in the slice.
         /// </remarks>
         /// <param name="area">Area that is used to check for used cells.</param>
-        /// <param name="modification">A deterministic modification.</param>
+        /// <param name="modification">A deterministic modification. It should ensure the returned formats are registered in workbook styles.</param>
         /// <param name="resolver">A provider of format for non-materialized cells (e.g. column has a format and thus non-materialized cells should use column format).</param>
         internal void ApplyFormatOnUsed(XLSheetRange area, Func<XLCellFormatValue, XLCellFormatValue> modification, Func<XLSheetPoint, XLCellFormatValue> resolver)
         {
             var enumerator = new SlicesEnumerator(area, this);
             ApplyFormat(enumerator, modification, resolver);
+        }
+
+        /// <inheritdoc cref="ApplyFormatOnAll(XLSheetRange, Func{XLCellFormatValue, XLCellFormatValue}, Func{XLSheetPoint, XLCellFormatValue})"/>
+        /// <remarks>Unlike general purpose method, the modification function of this one doesn't require explicit
+        /// registration of format into the <see cref="XLWorkbookStyles"/>.
+        /// </remarks>
+        /// <param name="area">Area that will have its format modified.</param>
+        /// <param name="modififyBorder">Return a modified border of a format. Must be deterministic.</param>
+        internal void ApplyFormatOnAll(XLSheetRange area, Func<XLBorderFormatValue, XLBorderFormatValue> modififyBorder)
+        {
+            var styles = Worksheet.Workbook.Styles;
+            Func<XLCellFormatValue, XLCellFormatValue> modifyFormat = format =>
+            {
+                var modifiedBorder = styles.GetRegisteredBorderFormat(format.Border, modififyBorder);
+                var modifiedFormat = format with
+                {
+                    Border = modifiedBorder,
+                    CustomFormat = format.CustomFormat | CellFormatComponents.Border
+                };
+                return styles.GetRegisteredCellFormat(modifiedFormat, static f => f);
+            };
+            ApplyFormatOnAll(area, modifyFormat, point => Worksheet.GetStyleValue(point));
         }
 
         /// <summary>

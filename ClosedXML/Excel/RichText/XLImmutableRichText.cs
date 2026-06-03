@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using ClosedXML.Excel.Formatting;
 
 namespace ClosedXML.Excel
 {
@@ -15,7 +16,7 @@ namespace ClosedXML.Excel
     {
         private readonly RichTextRun[] _runs;
         private readonly PhoneticRun[] _phoneticRuns;
-        
+
         private XLImmutableRichText(string text, RichTextRun[] runs, PhoneticRun[] phoneticRuns, PhoneticProperties? phoneticsProps)
         {
             Text = text;
@@ -92,7 +93,7 @@ namespace ClosedXML.Excel
             var charStartIdx = 0;
             foreach (var richString in formattedText)
             {
-                runs[runIdx++] = new RichTextRun(richString, charStartIdx, richString.Text.Length);
+                runs[runIdx++] = new RichTextRun(richString.Font, charStartIdx, richString.Text.Length);
                 charStartIdx += richString.Text.Length;
             }
 
@@ -129,17 +130,16 @@ namespace ClosedXML.Excel
 
             return new XLImmutableRichText(text, runs, phoneticRuns, phoneticProps);
         }
-        
+
         internal readonly struct RichTextRun : IEquatable<RichTextRun>
         {
             internal readonly int StartIndex;
             internal readonly int Length;
-            internal readonly XLFontValue Font;
+            internal readonly XLFontFormatValue Font;
 
-            internal RichTextRun(XLRichString richString, int startIndex, int length)
+            internal RichTextRun(XLFontFormatValue font, int startIndex, int length)
             {
-                var key = XLFont.GenerateKey(richString);
-                Font = XLFontValue.FromKey(ref key);
+                Font = font;
                 StartIndex = startIndex;
                 Length = length;
             }
@@ -233,7 +233,7 @@ namespace ClosedXML.Excel
             /// Font used for text of phonetic runs. All phonetic runs use same font. There can be no phonetic runs,
             /// but with specified font (e.g. the mutable API has only specified font, but no text yet).
             /// </summary>
-            public readonly XLFontValue Font;
+            public readonly XLFontFormatValue Font;
 
             /// <summary>
             /// Type of phonetics. Default is <see cref="XLPhoneticType.FullWidthKatakana"/>
@@ -245,10 +245,9 @@ namespace ClosedXML.Excel
             /// </summary>
             public readonly XLPhoneticAlignment Alignment;
 
-            public PhoneticProperties(XLPhonetics rtPhonetics)
+            internal PhoneticProperties(XLPhonetics rtPhonetics)
             {
-                var fontKey = XLFont.GenerateKey(rtPhonetics);
-                Font = XLFontValue.FromKey(ref fontKey);
+                Font = rtPhonetics.Font;
                 Type = rtPhonetics.Type;
                 Alignment = rtPhonetics.Alignment;
             }

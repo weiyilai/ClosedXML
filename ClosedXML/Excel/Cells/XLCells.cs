@@ -14,18 +14,18 @@ internal class XLCells :
     private readonly XLWorkbook _workbook;
     private readonly List<XLRangeAddress> _rangeAddresses = new();
     private readonly bool _usedCellsOnly;
-    private readonly Func<IXLCell, Boolean> _predicate;
+    private readonly Func<XLCell, Boolean> _predicate;
     private readonly XLCellsUsedOptions _options;
 #if !STYLES_REWORK
     private bool _styleInitialized = false;
 #endif
 
-    public XLCells(XLWorksheet worksheet, bool usedCellsOnly, XLCellsUsedOptions options, Func<IXLCell, Boolean>? predicate = null)
+    public XLCells(XLWorksheet worksheet, bool usedCellsOnly, XLCellsUsedOptions options, Func<XLCell, Boolean>? predicate = null)
         : this(worksheet.Workbook, usedCellsOnly, options, predicate)
     {
     }
 
-    public XLCells(XLWorkbook workbook, bool usedCellsOnly, XLCellsUsedOptions options, Func<IXLCell, Boolean>? predicate = null)
+    public XLCells(XLWorkbook workbook, bool usedCellsOnly, XLCellsUsedOptions options, Func<XLCell, Boolean>? predicate = null)
 #if !STYLES_REWORK
         : base(XLStyle.Default.Value)
 #endif

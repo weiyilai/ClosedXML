@@ -1,10 +1,10 @@
+using System;
+using System.Globalization;
+using System.Threading;
 using ClosedXML.Excel;
 using ClosedXML.Utils;
 using DocumentFormat.OpenXml.Spreadsheet;
 using NUnit.Framework;
-using System.Globalization;
-using System.Threading;
-using Color = System.Drawing.Color;
 using X14 = DocumentFormat.OpenXml.Office2010.Excel;
 
 namespace ClosedXML.Tests.Excel
@@ -31,14 +31,17 @@ namespace ClosedXML.Tests.Excel
         }
 
         [Test]
-        public void DefaultColorIndex64isTransparentWhite()
+        public void DefaultStyleColorIsAutomatic()
         {
-            var wb = new XLWorkbook();
-            IXLWorksheet ws = wb.AddWorksheet("Sheet1");
-            XLColor color = ws.FirstCell().Style.Fill.BackgroundColor;
-            Assert.AreEqual(XLColorType.Indexed, color.ColorType);
-            Assert.AreEqual(64, color.Indexed);
-            Assert.AreEqual(Color.Transparent, color.Color);
+            using var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet();
+            Assert.AreEqual(XLColor.Automatic, ws.FirstCell().Style.Fill.BackgroundColor);
+        }
+
+        [Test]
+        public void AutomaticColorCantBeResolvedToColor()
+        {
+            Assert.That(() => _ = XLColor.Automatic.Color, Throws.TypeOf<InvalidOperationException>().With.Message.EqualTo("Cannot convert automatic color to Color."));
         }
 
         [Test]

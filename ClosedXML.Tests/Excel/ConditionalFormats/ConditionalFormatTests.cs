@@ -1,4 +1,4 @@
-﻿using ClosedXML.Excel;
+using ClosedXML.Excel;
 using NUnit.Framework;
 using System.Globalization;
 using System.IO;
@@ -13,16 +13,10 @@ namespace ClosedXML.Tests.Excel.ConditionalFormats
         [Test]
         public void MaintainConditionalFormattingOrder()
         {
-            using (var stream = TestHelper.GetStreamFromResource(TestHelper.GetResourcePath(@"Other\StyleReferenceFiles\ConditionalFormattingOrder\inputfile.xlsx")))
-            using (var ms = new MemoryStream())
-            {
-                TestHelper.CreateAndCompare(() =>
-                {
-                    var wb = new XLWorkbook(stream);
-                    wb.SaveAs(ms);
-                    return wb;
-                }, @"Other\StyleReferenceFiles\ConditionalFormattingOrder\ConditionalFormattingOrder.xlsx");
-            }
+            // The input file contains duplicates of same dxf and thus the output also contains some duplicate dxf.
+            TestHelper.LoadSaveAndCompare(
+                @"Other\StyleReferenceFiles\ConditionalFormattingOrder\inputfile.xlsx",
+                @"Other\StyleReferenceFiles\ConditionalFormattingOrder\ConditionalFormattingOrder.xlsx");            
         }
 
         [TestCase(true, 7)]

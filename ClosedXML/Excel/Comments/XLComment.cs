@@ -1,6 +1,8 @@
-#nullable disable
+#nullable disable warnings
 
 using System;
+using System.Diagnostics;
+using ClosedXML.Excel.Formatting;
 
 namespace ClosedXML.Excel
 {
@@ -8,22 +10,31 @@ namespace ClosedXML.Excel
     {
         private XLCell _cell;
 
-        public XLComment(XLCell cell, IXLFontBase defaultFont = null, int? shapeId = null)
-            : base(defaultFont ?? XLFont.DefaultCommentFont)
+        private static XLFontFormatValue DefaultCommentFont
         {
-            Initialize(cell, shapeId: shapeId);
+            get
+            {
+                // MS Excel uses Tahoma 9 Swiss no matter what current style font
+                var defaultCommentFont = XLFontFormatValue.Default with
+                {
+                    Name = "Tahoma",
+                    Size = XLFontSize.FromPoints(9),
+                    Family = XLFontFamilyNumberingValues.Swiss,
+                    Color = XLColor.Black
+                };
+
+                return defaultCommentFont;
+            }
         }
 
-        public XLComment(XLCell cell, XLFormattedText<IXLComment> defaultComment, IXLFontBase defaultFont, IXLDrawingStyle style)
-            : base(defaultComment, defaultFont)
+        private XLComment(XLFontFormatValue defaultFont, XLWorkbookStyles styles, XLFontFormatValue? phoneticsFont)
+            : base(defaultFont, styles)
         {
-            Initialize(cell, style);
-        }
-
-        public XLComment(XLCell cell, String text, IXLFontBase defaultFont)
-            : base(text, defaultFont)
-        {
-            Initialize(cell);
+            if (phoneticsFont is not null)
+            {
+                Debug.Assert(styles.Fonts.ContainsValue(phoneticsFont));
+                Phonetics = new XLPhonetics(phoneticsFont, defaultFont, styles, OnContentChanged);
+            }
         }
 
         #region IXLComment Members
@@ -141,6 +152,32 @@ namespace ClosedXML.Excel
         }
 
         #endregion IXLDrawing
+
+        internal static XLComment Create(XLCell cell, int? shapeId)
+        {
+            var styles = cell.Worksheet.Workbook.Styles;
+            var defaultFont = styles.GetRegisteredFontFormat(DefaultCommentFont);
+            var comment = new XLComment(defaultFont, styles, null);
+            comment.Initialize(cell, shapeId: shapeId);
+            return comment;
+        }
+
+        internal static XLComment CreateAsCopy(XLCell targetCell, XLCell sourceCell, XLComment originalComment)
+        {
+            // source cell could be from different workbook, so register formats
+            var styles = targetCell.Worksheet.Workbook.Styles;
+            var defaultFont = styles.GetRegisteredFontFormat(sourceCell.GetFormat().Font);
+            var phoneticsFont = originalComment.HasPhonetics
+                ? styles.GetRegisteredFontFormat(XLFontFormatValue.FromFontBase(originalComment.Phonetics, styles))
+                : null;
+            var comment = new XLComment(defaultFont, styles, phoneticsFont);
+
+            foreach (XLRichString rt in originalComment)
+                comment.AddText(rt.Text, rt);
+
+            comment.Initialize(targetCell, originalComment.Style);
+            return comment;
+        }
 
         private void Initialize(XLCell cell, IXLDrawingStyle style = null, int? shapeId = null)
         {

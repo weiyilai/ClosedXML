@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
 using ClosedXML.Excel.Formatting;
 
 namespace ClosedXML.Excel;
@@ -34,7 +33,7 @@ internal readonly record struct XLFontName : IEquatable<string>
         return Text.GetHashCode(Comparison);
     }
 
-    public bool Equal(XLFontName other)
+    public bool Equals(XLFontName other)
     {
         return Equals(other.Text);
     }

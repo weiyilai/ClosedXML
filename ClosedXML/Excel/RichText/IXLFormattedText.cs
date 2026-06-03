@@ -32,6 +32,7 @@ namespace ClosedXML.Excel
         IXLRichString AddText(String text, IXLFontBase font);
         IXLFormattedText<T> ClearText();
         IXLFormattedText<T> ClearFont();
+
         IXLFormattedText<T> Substring(Int32 index);
         IXLFormattedText<T> Substring(Int32 index, Int32 length);
 

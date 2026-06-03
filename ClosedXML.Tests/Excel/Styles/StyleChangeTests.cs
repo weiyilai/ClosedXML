@@ -1,4 +1,4 @@
-﻿using ClosedXML.Excel;
+using ClosedXML.Excel;
 using NUnit.Framework;
 
 namespace ClosedXML.Tests.Excel.Styles
@@ -52,9 +52,11 @@ namespace ClosedXML.Tests.Excel.Styles
         }
 
         [Test]
-        public void ChangeDetachedStyleAlignment()
+        public void ChangeStyleAlignment()
         {
-            var style = XLStyle.Default;
+            using var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet();
+            var style = ws.Style;
 
             style.Alignment.Horizontal = XLAlignmentHorizontalValues.Justify;
 
@@ -62,9 +64,11 @@ namespace ClosedXML.Tests.Excel.Styles
         }
 
         [Test]
-        public void ChangeDetachedStyleBorder()
+        public void ChangeStyleBorder()
         {
-            var style = XLStyle.Default;
+            using var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet();
+            var style = ws.Style;
 
             style.Border.DiagonalBorder = XLBorderStyleValues.Double;
 
@@ -72,9 +76,11 @@ namespace ClosedXML.Tests.Excel.Styles
         }
 
         [Test]
-        public void ChangeDetachedStyleFill()
+        public void ChangeStyleFill()
         {
-            var style = XLStyle.Default;
+            using var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet();
+            var style = ws.Style;
 
             style.Fill.BackgroundColor = XLColor.Red;
 
@@ -82,9 +88,11 @@ namespace ClosedXML.Tests.Excel.Styles
         }
 
         [Test]
-        public void ChangeDetachedStyleFont()
+        public void ChangeStyleFont()
         {
-            var style = XLStyle.Default;
+            using var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet();
+            var style = ws.Style;
 
             style.Font.FontSize = 50;
 
@@ -92,9 +100,11 @@ namespace ClosedXML.Tests.Excel.Styles
         }
 
         [Test]
-        public void ChangeDetachedStyleNumberFormat()
+        public void ChangeStyleNumberFormat()
         {
-            var style = XLStyle.Default;
+            using var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet();
+            var style = ws.Style;
 
             style.NumberFormat.Format = "YYYY";
 
@@ -102,9 +112,11 @@ namespace ClosedXML.Tests.Excel.Styles
         }
 
         [Test]
-        public void ChangeDetachedStyleProtection()
+        public void ChangeStyleProtection()
         {
-            var style = XLStyle.Default;
+            using var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet();
+            var style = ws.Style;
 
             style.Protection.Hidden = true;
 

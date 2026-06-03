@@ -8,9 +8,36 @@ namespace ClosedXML.Excel
     { 
         PageNumber, NumberOfPages, Date, Time, FullPath, Path, File, SheetName
     }
+
+    /// <summary>
+    /// An enum specifying pages where the content of the <see cref="IXLHFItem"/> be displayed.
+    /// </summary>
     public enum XLHFOccurrence
-    { 
-        AllPages, OddPages, EvenPages, FirstPage
+    {
+        /// <summary>
+        /// Header or footer on the all pages.
+        /// </summary>
+        AllPages,
+
+        /// <summary>
+        /// Header or footer on the odd pages. It is necessary to enable <see cref="IXLPageSetup.DifferentOddEvenPagesOnHF"/>
+        /// to display the different heading/footer on odd pages. If there is a different header/footer on the first
+        /// page and the <see cref="IXLPageSetup.DifferentFirstPageOnHF"/> is enabled, the first page will not use the odd
+        /// page setting.
+        /// </summary>
+        OddPages,
+
+        /// <summary>
+        /// Header or footer on the even pages. It is necessary to enable <see cref="IXLPageSetup.DifferentOddEvenPagesOnHF"/>
+        /// to display the different heading/footer on even pages.
+        /// </summary>
+        EvenPages,
+
+        /// <summary>
+        /// Header or footer on the first page. It is necessary to enable <see cref="IXLPageSetup.DifferentFirstPageOnHF"/>
+        /// to display the different heading/footer on the first page.
+        /// </summary>
+        FirstPage
     }
 
     public interface IXLHFItem: IXLWithRichString

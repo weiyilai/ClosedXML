@@ -173,39 +173,39 @@ namespace ClosedXML.Excel
             Text = 49
         }
 
-        internal static IReadOnlyDictionary<int, string> FormatCodes { get; } = new Dictionary<int, string>
+        internal static IReadOnlyDictionary<int, XLNumberFormat> FormatCodes { get; } = new Dictionary<int, XLNumberFormat>
         {
-            { 0, string.Empty },
-            { 1, "0" },
-            { 2, "0.00" },
-            { 3, "#,##0" },
-            { 4, "#,##0.00" },
-            { 7, "$#,##0.00_);($#,##0.00)" },
-            { 9, "0%" },
-            { 10, "0.00%" },
-            { 11, "0.00E+00" },
-            { 12, "# ?/?" },
-            { 13, "# ??/??" },
-            { 14, "M/d/yyyy" },
-            { 15, "d-MMM-yy" },
-            { 16, "d-MMM" },
-            { 17, "MMM-yy" },
-            { 18, "h:mm AM/PM" },
-            { 19, "h:mm:ss AM/PM" },
-            { 20, "H:mm" },
-            { 21, "H:mm:ss" },
-            { 22, "M/d/yyyy H:mm" },
-            { 37, "#,##0 ;(#,##0)" },
-            { 38, "#,##0 ;[Red](#,##0)" },
-            { 39, "#,##0.00;(#,##0.00)" },
-            { 40, "#,##0.00;[Red](#,##0.00)" },
-            { 45, "mm:ss" },
-            { 46, "[h]:mm:ss" },
-            { 47, "mm:ss.0" },
-            { 48, "##0.0E+0" },
-            { 49, "@" }
+            { 0, new XLNumberFormat(string.Empty) },
+            { 1, new XLNumberFormat("0") },
+            { 2, new XLNumberFormat("0.00") },
+            { 3, new XLNumberFormat("#,##0") },
+            { 4, new XLNumberFormat("#,##0.00") },
+            { 7, new XLNumberFormat("$#,##0.00_);($#,##0.00)") },
+            { 9, new XLNumberFormat("0%") },
+            { 10, new XLNumberFormat("0.00%") },
+            { 11, new XLNumberFormat("0.00E+00") },
+            { 12, new XLNumberFormat("# ?/?") },
+            { 13, new XLNumberFormat("# ??/??") },
+            { 14, new XLNumberFormat("M/d/yyyy") },
+            { 15, new XLNumberFormat("d-MMM-yy") },
+            { 16, new XLNumberFormat("d-MMM") },
+            { 17, new XLNumberFormat("MMM-yy") },
+            { 18, new XLNumberFormat("h:mm AM/PM") },
+            { 19, new XLNumberFormat("h:mm:ss AM/PM") },
+            { 20, new XLNumberFormat("H:mm") },
+            { 21, new XLNumberFormat("H:mm:ss") },
+            { 22, new XLNumberFormat("M/d/yyyy H:mm") },
+            { 37, new XLNumberFormat("#,##0 ;(#,##0)") },
+            { 38, new XLNumberFormat("#,##0 ;[Red](#,##0)") },
+            { 39, new XLNumberFormat("#,##0.00;(#,##0.00)") },
+            { 40, new XLNumberFormat("#,##0.00;[Red](#,##0.00)") },
+            { 45, new XLNumberFormat("mm:ss") },
+            { 46, new XLNumberFormat("[h]:mm:ss") },
+            { 47, new XLNumberFormat("mm:ss.0") },
+            { 48, new XLNumberFormat("##0.0E+0") },
+            { 49, new XLNumberFormat("@") },
         };
 
-        internal static IReadOnlyDictionary<string, int> NumberFormatIds { get; } = FormatCodes.ToDictionary(x => x.Value, x => x.Key);
+        internal static IReadOnlyDictionary<XLNumberFormat, int> NumberFormatIds { get; } = FormatCodes.ToDictionary(x => x.Value, x => x.Key);
     }
 }

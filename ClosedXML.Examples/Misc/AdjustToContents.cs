@@ -5,7 +5,6 @@ namespace ClosedXML.Examples.Misc
 {
     public class AdjustToContents : IXLExample
     {
-        // Public
         public void Create(String filePath)
         {
             using (var wb = new XLWorkbook())

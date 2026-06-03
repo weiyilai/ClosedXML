@@ -1,6 +1,9 @@
+using System;
+using System.Linq;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using ClosedXML.Excel;
 using NUnit.Framework;
-using System.Linq;
 
 namespace ClosedXML.Tests.Excel.ConditionalFormats
 {
@@ -111,9 +114,11 @@ namespace ClosedXML.Tests.Excel.ConditionalFormats
         [Test]
         public void ConsolidatePreservesPriorities()
         {
-            var wb = new XLWorkbook();
-            IXLWorksheet ws = wb.Worksheets.Add("Sheet");
+            using var wb = new XLWorkbook();
+            var ws = wb.Worksheets.Add();
 
+            // Format2 A1:A5 and A6:A10 can be consolidated without changing a priority if other CF rules.
+            // Format1 A1:A5 and A6:A10 can't be consolidated, because there is a CF rule between them.
             SetFormat1(ws.Range("A1:A5").AddConditionalFormat());
             SetFormat2(ws.Range("A1:A5").AddConditionalFormat());
             SetFormat2(ws.Range("A6:A10").AddConditionalFormat());
@@ -122,15 +127,18 @@ namespace ClosedXML.Tests.Excel.ConditionalFormats
             ((XLConditionalFormats)ws.ConditionalFormats).Consolidate();
 
             Assert.AreEqual(3, ws.ConditionalFormats.Count());
-            Assert.AreEqual((ws.ConditionalFormats.First().Style as XLStyle).Value, (ws.ConditionalFormats.Last().Style as XLStyle).Value);
-            Assert.AreNotEqual((ws.ConditionalFormats.First().Style as XLStyle).Value, (ws.ConditionalFormats.ElementAt(1).Style as XLStyle).Value);
+            var cf1 = ws.ConditionalFormats.First();
+            var cf2 = ws.ConditionalFormats.ElementAt(1);
+            var cf3 = ws.ConditionalFormats.Last();
+            Assert.That(cf1, Is.EqualTo(cf3).Using(new CfFormatComaparer()));
+            Assert.That(cf1, Is.Not.EqualTo(cf2).Using(new CfFormatComaparer()));
         }
 
         [Test]
         public void ConsolidatePreservesPriorities2()
         {
-            var wb = new XLWorkbook();
-            IXLWorksheet ws = wb.Worksheets.Add("Sheet");
+            using var wb = new XLWorkbook();
+            var ws = wb.Worksheets.Add();
 
             SetFormat1(ws.Range("A1:A1").AddConditionalFormat());
             SetFormat2(ws.Range("A2:A3").AddConditionalFormat());
@@ -140,19 +148,22 @@ namespace ClosedXML.Tests.Excel.ConditionalFormats
             ((XLConditionalFormats)ws.ConditionalFormats).Consolidate();
 
             Assert.AreEqual(3, ws.ConditionalFormats.Count());
-            Assert.AreEqual((ws.ConditionalFormats.First().Style as XLStyle).Value, (ws.ConditionalFormats.Last().Style as XLStyle).Value);
-            Assert.AreNotEqual((ws.ConditionalFormats.First().Style as XLStyle).Value, (ws.ConditionalFormats.ElementAt(1).Style as XLStyle).Value);
+            var cf1 = ws.ConditionalFormats.ElementAt(0);
+            var cf2 = ws.ConditionalFormats.ElementAt(1);
+            var cf3 = ws.ConditionalFormats.ElementAt(2);
+            Assert.That(cf1, Is.EqualTo(cf3).Using(new CfFormatComaparer()));
+            Assert.That(cf1, Is.Not.EqualTo(cf2).Using(new CfFormatComaparer()));
             Assert.IsTrue(ws.ConditionalFormats.All(cf => cf.Ranges.Count == 1), "Number of ranges in consolidated conditional formats is expected to be 1");
-            Assert.AreEqual("A1:A1", ws.ConditionalFormats.ElementAt(0).Ranges.Single().RangeAddress.ToString());
-            Assert.AreEqual("A2:A3", ws.ConditionalFormats.ElementAt(1).Ranges.Single().RangeAddress.ToString());
-            Assert.AreEqual("A2:A8", ws.ConditionalFormats.ElementAt(2).Ranges.Single().RangeAddress.ToString());
+            Assert.AreEqual("A1:A1", cf1.Ranges.Single().RangeAddress.ToString());
+            Assert.AreEqual("A2:A3", cf2.Ranges.Single().RangeAddress.ToString());
+            Assert.AreEqual("A2:A8", cf3.Ranges.Single().RangeAddress.ToString());
         }
 
         [Test]
         public void ConsolidateShiftsFormulaRelativelyToTopMostCell()
         {
-            var wb = new XLWorkbook();
-            IXLWorksheet ws = wb.Worksheets.Add("Sheet");
+            using var wb = new XLWorkbook();
+            var ws = wb.Worksheets.Add();
 
             var ranges = ws.Ranges("B3:B8,C3:C4,A3:A4,C5:C8,A5:A8").Cast<XLRange>();
             var cf = new XLConditionalFormat((XLWorksheet)ws, ranges);
@@ -163,10 +174,11 @@ namespace ClosedXML.Tests.Excel.ConditionalFormats
             ((XLConditionalFormats)ws.ConditionalFormats).Consolidate();
 
             Assert.AreEqual(1, ws.ConditionalFormats.Count());
-            Assert.AreEqual((ws.ConditionalFormats.Single().Style as XLStyle).Value, (cf.Style as XLStyle).Value);
-            Assert.AreEqual("A3:C8", ws.ConditionalFormats.Single().Ranges.Single().RangeAddress.ToString());
-            Assert.IsTrue(ws.ConditionalFormats.Single().Values.Single().Value.IsFormula);
-            Assert.AreEqual("A3=$D3", ws.ConditionalFormats.Single().Values.Single().Value.Value);
+            var consolidatedCf = ws.ConditionalFormats.Single();
+            Assert.That(consolidatedCf, Is.EqualTo(cf).Using (new CfFormatComaparer()));
+            Assert.AreEqual("A3:C8", consolidatedCf.Ranges.Single().RangeAddress.ToString());
+            Assert.IsTrue(consolidatedCf.Values.Single().Value.IsFormula);
+            Assert.AreEqual("A3=$D3", consolidatedCf.Values.Single().Value.Value);
         }
 
         [Test]
@@ -198,6 +210,21 @@ namespace ClosedXML.Tests.Excel.ConditionalFormats
         private static void SetFormat2(IXLConditionalFormat format)
         {
             format.WhenEquals(5).Fill.SetBackgroundColor(XLColor.AliceBlue);
+        }
+
+        private class CfFormatComaparer : IEqualityComparer<IXLConditionalFormat>
+        {
+            public bool Equals(IXLConditionalFormat x, IXLConditionalFormat y)
+            {
+                var lhs = (XLConditionalFormat)x;
+                var rhs = (XLConditionalFormat)y;
+                return lhs.FormatValue == rhs.FormatValue;
+            }
+
+            public int GetHashCode([DisallowNull] IXLConditionalFormat obj)
+            {
+                return HashCode.Combine(((XLConditionalFormat)obj).FormatValue);
+            }
         }
     }
 }

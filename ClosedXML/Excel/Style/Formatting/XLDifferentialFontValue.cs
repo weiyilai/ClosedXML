@@ -57,48 +57,6 @@ internal record XLDifferentialFontValue
 
     internal required XLFontScheme? Scheme { get; init; }
 
-    internal XLFontKey ApplyTo(XLFontKey key)
-    {
-        // XLFontKey doesn't contain outline, condense or extend
-        if (Name is not null)
-            key = key with { FontName = Name.Value.Text };
-
-        if (Charset is not null)
-            key = key with { FontCharSet = Charset.Value };
-
-        if (Family is not null)
-            key = key with { FontFamilyNumbering = Family.Value };
-
-        if (Bold is not null)
-            key = key with { Bold = Bold.Value };
-
-        if (Italic is not null)
-            key = key with { Italic = Italic.Value };
-
-        if (Strikethrough is not null)
-            key = key with { Strikethrough = Strikethrough.Value };
-
-        if (Shadow is not null)
-            key = key with { Shadow = Shadow.Value };
-
-        if (Color is not null)
-            key = key with { FontColor = Color.Key };
-
-        if (Size is not null)
-            key = key with { FontSize = Size.Value.Points };
-
-        if (Underline is not null)
-            key = key with { Underline = Underline.Value };
-
-        if (VerticalAlignment is not null)
-            key = key with { VerticalAlignment = VerticalAlignment.Value };
-
-        if (Scheme is not null)
-            key = key with { FontScheme = Scheme.Value };
-
-        return key;
-    }
-
     internal bool IsEmpty()
     {
         return Name is null &&

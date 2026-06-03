@@ -18,14 +18,7 @@ namespace ClosedXML.Excel
         public static ConditionalFormattingRule ConvertWithDxf(XLConditionalFormat cf, int priority, XLWorkbook.SaveContext context)
         {
             var cfRule = Convert(cf, priority);
-#if STYLES_REWORK
-            cfRule.FormatId = context.GetDxfId(cf.FormatValue);
-#else
-            var cfStyle = ((XLStyle)cf.Style).Value;
-            if (!cfStyle.Equals(XLWorkbook.DefaultStyleValue))
-                cfRule.FormatId = context.GetDxfId(cfStyle);
-#endif
-
+            cfRule.FormatId = cf.FormatValue is not null ? context.GetDxfId(cf.FormatValue) : null;
             return cfRule;
         }
     }

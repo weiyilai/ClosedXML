@@ -32,6 +32,20 @@ namespace ClosedXML.Excel
                 Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
                 var validator = new OpenXmlValidator();
                 errors = validator.Validate(package).ToArray();
+
+                // The styles part is written directly into the part stream, without intermediate OOXML SDK
+                // representation. The validation loads the written XML into a memory so it can validate it.
+                // But the loaded in-memory represenation from validation is then picked up by
+                // the SpreadsheetDocument saving code and the XML would be re-serialized and the original XML
+                // from part writer would be discarded. That is a problem for the following reasons:
+                // * XML of a part would be different when saved with a validation and without a validation
+                // * There is no control over XML serialization. The writer is attempting to mimic Excel for
+                //   easier comparison against Excel (e.g. default namespace doesn't have a prefix), but part
+                //   writer just uses default serialization setting.
+                // To solve this, we discard the in-memory represenation created by the validator. Thus the save
+                // code will not re-serialize the part that has already been written.
+                if (package.WorkbookPart.WorkbookStylesPart is { } stylesPart)
+                    stylesPart.UnloadRootElement();
             }
             finally
             {
@@ -184,21 +198,21 @@ namespace ClosedXML.Excel
 
             WorkbookPartWriter.GenerateContent(workbookPart, this, options, context);
 
-            var sharedStringTablePart = workbookPart.SharedStringTablePart ??
-                                        workbookPart.AddNewPart<SharedStringTablePart>(
-                                            context.RelIdGenerator.GetNext(RelType.Workbook));
-
-            SharedStringTableWriter.GenerateSharedStringTablePartContent(this, sharedStringTablePart, context);
-
             var workbookStylesPart = workbookPart.WorkbookStylesPart ??
                                      workbookPart.AddNewPart<WorkbookStylesPart>(
                                          context.RelIdGenerator.GetNext(RelType.Workbook));
 
 #if STYLES_REWORK
-            new StylesWriter().WriteContent(workbookStylesPart, XmlToEnumMapper.Instance, Styles, context);
+            new StylesWriter().WriteContent(workbookStylesPart, XmlToEnumMapper.Instance, Styles, this, context);
 #else
             WorkbookStylesPartWriter.GenerateContent(workbookStylesPart, this, context);
 #endif
+
+            var sharedStringTablePart = workbookPart.SharedStringTablePart ??
+                                        workbookPart.AddNewPart<SharedStringTablePart>(
+                                            context.RelIdGenerator.GetNext(RelType.Workbook));
+
+            SharedStringTableWriter.GenerateSharedStringTablePartContent(this, sharedStringTablePart, context);
 
             var cacheRelIds = PivotCachesInternal
                   .Select<XLPivotCache, String>(ps => ps.WorkbookCacheRelId)

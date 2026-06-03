@@ -185,17 +185,8 @@ namespace ClosedXML.Excel
                 stylesReader.Load();
             }
 
-            Stylesheet s = stylesPart?.Stylesheet;
-
-            // If the loaded workbook has a changed "Normal" style, it might affect the default width of a column.
-            var normalStyle = s?.CellStyles?.Elements<CellStyle>().FirstOrDefault(x => x.BuiltinId is not null && x.BuiltinId.Value == 0);
-            if (normalStyle != null)
-            {
-                var normalStyleKey = ((XLStyle)Style).Key;
-                LoadStyle(ref normalStyleKey, (Int32)normalStyle.FormatId.Value, Styles);
-                Style = new XLStyle(null, normalStyleKey);
-                ColumnWidth = XLHelper.CalculateColumnWidth(8, Style.Font, this);
-            }
+            // TODO Styles: Verify the column width is same as DefaultColumnWidth even if normal style is missing
+            ColumnWidth = XLHelper.CalculateColumnWidth(8, Format.Font, this);
 
             // We loop through the sheets in 2 passes: first just to add the sheets and second to add all the data for the sheets.
             // We do this mainly because it skips a very costly calculation invalidation step, but it also make things more consistent,
@@ -284,11 +275,25 @@ namespace ClosedXML.Excel
                     var xlTable = ws.Range(reference).CreateTable(tableName, false) as XLTable;
                     xlTable.RelId = relId;
 
+                    // Add columns to the table
+                    foreach (TableColumn tableColumn in dTable.TableColumns)
+                    {
+                        var fieldName = GetTableColumnName(tableColumn.Name.Value);
+                        var xlField = xlTable.AddField(fieldName);
+
+                        if (tableColumn.HeaderRowDifferentialFormattingId is { } headerDxfId)
+                            xlField.HeaderFormatValue = Styles.DifferentialFormats[checked((int)headerDxfId.Value)];
+
+                        if (tableColumn.DataFormatId is { } dataDxfId)
+                            xlField.DataFormatValue = Styles.DifferentialFormats[checked((int)dataDxfId.Value)];
+
+                        if (tableColumn.TotalsRowDifferentialFormattingId is { } totalsDxfId)
+                            xlField.TotalFormatValue = Styles.DifferentialFormats[checked((int)totalsDxfId.Value)];
+                    }
+
                     if (dTable.HeaderRowCount != null && dTable.HeaderRowCount == 0)
                     {
                         xlTable._showHeaderRow = false;
-                        //foreach (var tableColumn in dTable.TableColumns.Cast<TableColumn>())
-                        xlTable.AddFields(dTable.TableColumns.Cast<TableColumn>().Select(t => GetTableColumnName(t.Name.Value)));
                     }
                     else
                     {
@@ -296,7 +301,7 @@ namespace ClosedXML.Excel
                     }
 
                     if (dTable.TotalsRowCount != null && dTable.TotalsRowCount.Value > 0)
-                        ((XLTable)xlTable)._showTotalsRow = true;
+                        xlTable._showTotalsRow = true;
 
                     if (dTable.TableStyleInfo != null)
                     {
@@ -1161,28 +1166,6 @@ namespace ClosedXML.Excel
             Properties.Status = p.ContentStatus;
             Properties.Subject = p.Subject;
             Properties.Title = p.Title;
-        }
-
-        internal static void LoadStyle(ref XLStyleKey xlStyle, Int32 styleIndex, XLWorkbookStyles styles)
-        {
-            var xlCellFormat = styles.CellFormats[styleIndex];
-
-            var numberFormatKey = XLNumberFormatKey.ForFormat(xlCellFormat.NumberFormat);
-            var fontKey = xlCellFormat.Font.GetFontKey();
-            var fillKey = xlCellFormat.Fill.ApplyTo(xlStyle.Fill);
-            var borderKey = xlCellFormat.Border.ApplyTo(xlStyle.Border);
-            var alignmentKey = xlCellFormat.Alignment.ApplyTo(xlStyle.Alignment);
-            var protectionKey = xlCellFormat.Protection.ApplyTo(xlStyle.Protection);
-            xlStyle = new XLStyleKey
-            {
-                NumberFormat = numberFormatKey,
-                Font = fontKey,
-                Fill = fillKey,
-                Border = borderKey,
-                Alignment = alignmentKey,
-                Protection = protectionKey,
-                IncludeQuotePrefix = xlCellFormat.IncludeQuotePrefix
-            };
         }
 
         private XmlTreeReader CreateTreeReader(OpenXmlPart openXmlPart)

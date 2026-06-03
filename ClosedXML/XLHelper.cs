@@ -496,7 +496,7 @@ namespace ClosedXML.Excel
         /// Calculate expected column width as a number displayed in the column in Excel from
         /// number of characters that should fit into the width and a font.
         /// </summary>
-        internal static double CalculateColumnWidth(double charWidth, IXLFont font, XLWorkbook workbook)
+        internal static double CalculateColumnWidth(double charWidth, IXLFontBase font, XLWorkbook workbook)
         {
             // Convert width as a number of characters and translate it into a given number of pixels.
             int mdw = workbook.GraphicEngine.GetMaxDigitWidth(font, workbook.DpiX).RoundToInt();

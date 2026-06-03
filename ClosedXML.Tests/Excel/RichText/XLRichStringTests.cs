@@ -1,4 +1,4 @@
-﻿using ClosedXML.Excel;
+using ClosedXML.Excel;
 using NUnit.Framework;
 using System;
 using System.IO;
@@ -168,7 +168,8 @@ namespace ClosedXML.Tests
         [Test]
         public void Substring_All_From_OneString()
         {
-            IXLWorksheet ws = new XLWorkbook().Worksheets.Add("Sheet1");
+            using var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet();
             IXLRichText richString = ws.Cell(1, 1).GetRichText();
 
             richString.AddText("Hello");
@@ -187,7 +188,8 @@ namespace ClosedXML.Tests
         [Test]
         public void Substring_All_From_ThreeStrings()
         {
-            IXLWorksheet ws = new XLWorkbook().Worksheets.Add("Sheet1");
+            using var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet();
             IXLRichText richString = ws.Cell(1, 1).GetRichText();
 
             richString.AddText("Good Morning");
@@ -735,37 +737,33 @@ namespace ClosedXML.Tests
         [Test]
         public void ClearInlineRichTextWhenRelevant()
         {
-            using (var ms = new MemoryStream())
+            using var ms = new MemoryStream();
+            TestHelper.CreateAndCompare(() =>
             {
-                TestHelper.CreateAndCompare(() =>
+                using (var wb = new XLWorkbook())
                 {
-                    using (var wb = new XLWorkbook())
-                    {
-                        var ws = wb.AddWorksheet();
-                        var cell = ws.FirstCell();
+                    var ws = wb.AddWorksheet();
+                    var cell = ws.FirstCell();
 
-                        cell.GetRichText().AddText("Bold").SetBold().AddText(" and red").SetBold().SetFontColor(XLColor.Red);
-                        cell.ShareString = false;
+                    cell.GetRichText().AddText("Bold").SetBold().AddText(" and red").SetBold().SetFontColor(XLColor.Red);
+                    cell.ShareString = false;
 
-                        //wb.SaveAs(ms);
-                        wb.SaveAs(ms);
-                    }
-                    ms.Seek(0, SeekOrigin.Begin);
+                    wb.SaveAs(ms);
+                }
 
-                    var wb2 = new XLWorkbook(ms);
-                    {
-                        var ws = wb2.Worksheets.First();
-                        var cell = ws.FirstCell();
+                ms.Seek(0, SeekOrigin.Begin);
 
-                        cell.FormulaA1 = "=1 + 2";
-                        wb2.SaveAs(ms);
-                    }
+                var wb2 = new XLWorkbook(ms);
+                {
+                    var ws = wb2.Worksheets.First();
+                    var cell = ws.FirstCell();
 
-                    ms.Seek(0, SeekOrigin.Begin);
+                    cell.FormulaA1 = "1 + 2";
+                    wb2.SaveAs(ms);
+                }
 
-                    return wb2;
-                }, @"Other\InlinedRichText\ChangeRichTextToFormula\output.xlsx");
-            }
+                return wb2;
+            }, @"Other\InlinedRichText\ChangeRichTextToFormula\output.xlsx");
         }
 
         [Test]
@@ -809,27 +807,22 @@ namespace ClosedXML.Tests
         {
             const string textWithSpaces = "  元  気  ";
             const string phoneticsWithSpace = "  げ  ん  ";
-            using var ms = new MemoryStream();
-            using (var wb = new XLWorkbook())
-            {
-                var ws = wb.AddWorksheet();
-                var richTextCell = ws.Cell(1, 1);
-                var richText = richTextCell.GetRichText();
-                richText.AddText(textWithSpaces);
-                richText.Phonetics.Add(phoneticsWithSpace, 2, 3);
-
-                wb.SaveAs(ms);
-            }
-
-            ms.Position = 0;
-
-            using (var wb = new XLWorkbook(ms))
-            {
-                var ws = wb.Worksheets.First();
-                var richText = ws.Cell(1, 1).GetRichText();
-                Assert.AreEqual(textWithSpaces, richText.First().Text);
-                Assert.AreEqual(phoneticsWithSpace, richText.Phonetics.First().Text);
-            }
+            TestHelper.CreateSaveLoadAssert(
+                wb =>
+                {
+                    var ws = wb.AddWorksheet();
+                    var richTextCell = ws.Cell(1, 1);
+                    var richText = richTextCell.GetRichText();
+                    richText.AddText(textWithSpaces);
+                    richText.Phonetics.Add(phoneticsWithSpace, 2, 3);
+                },
+                wb =>
+                {
+                    var ws = wb.Worksheets.First();
+                    var richText = ws.Cell(1, 1).GetRichText();
+                    Assert.AreEqual(textWithSpaces, richText.First().Text);
+                    Assert.AreEqual(phoneticsWithSpace, richText.Phonetics.First().Text);
+                });
         }
 
         [Test]

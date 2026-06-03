@@ -113,7 +113,7 @@ public class Program
             .AddSimpleTypeEnum("ST_GradientType", "XLGradientType", "linear", "XLGradientType.Linear")
             .AddSimpleTypeEnum("ST_BorderStyle", "XLBorderStyleValues", "none", "XLBorderStyleValues.None")
             .AddSimpleTypeEnum("ST_HorizontalAlignment", "XLAlignmentHorizontalValues")
-            .AddSimpleTypeEnum("ST_VerticalAlignment", "XLAlignmentVerticalValues", "bottom", "XLAlignmentVerticalValues.Bottom")
+            .AddSimpleTypeEnum("ST_VerticalAlignment", "XLAlignmentVerticalValues", "bottom", "XLAlignmentFormatValue.Default.Vertical")
             .AddSimpleType(new SimpleTypeMapping
             {
                 Name = "ST_TableStyleType",
@@ -124,12 +124,12 @@ public class Program
             .AddComplexTypeMapping("CT_GradientStop", "(FractionOfOne Value, XLColor Color)")
             .AddComplexTypeMapping("CT_Font", "XLDifferentialFontValue")
             .AddComplexTypeMapping("CT_Fill", "XLFillFormatValue")
-            .AddComplexTypeMapping("CT_Border", "XLBorderFormatValue")
+            .AddComplexTypeMapping("CT_Border", "XLDifferentialBorderValue")
             .AddComplexTypeMapping("CT_BorderPr", "XLBorderLine")
             .AddComplexTypeMapping("CT_PatternFill", "XLFillFormatValue")
             .AddComplexTypeMapping("CT_GradientFill", "XLFillFormatValue")
-            .AddComplexTypeMapping("CT_NumFmt", "(int NumFmtId, string FormatCode)")
-            .AddComplexTypeMapping("CT_CellAlignment", "XLAlignmentFormatValue")
+            .AddComplexTypeMapping("CT_NumFmt", "(int NumFmtId, XLNumberFormat Format)")
+            .AddComplexTypeMapping("CT_CellAlignment", "XLDifferentialAlignmentValue")
             .AddComplexTypeMapping("CT_CellProtection", "XLProtectionFormatValue")
             .AddComplexTypeMapping("CT_Xf", "(XLCellFormatValue Format, int? CellStyleXfId)")
             .AddComplexTypeMapping("CT_CellXfs", "List<(XLCellFormatValue Format, int? CellStyleXfId)>")

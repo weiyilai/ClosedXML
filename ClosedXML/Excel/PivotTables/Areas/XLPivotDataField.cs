@@ -16,6 +16,7 @@ internal class XLPivotDataField : IXLPivotValue
 
     private readonly XLPivotTable _pivotTable;
 
+    private XLNumberFormat? _numberFormat;
     private int _baseField = BaseFieldDefaultValue;
     private uint _baseItem = BaseItemDefaultValue;
     private XLPivotCalculation _showDataAsFormat = XLPivotCalculation.Normal;
@@ -89,7 +90,16 @@ internal class XLPivotDataField : IXLPivotValue
     /// <summary>
     /// Formatting to apply to the data field. If <see cref="XLPivotFormat"/> disagree, this has precedence.
     /// </summary>
-    internal XLNumberFormatValue? NumberFormatValue { get; set; }
+    internal XLNumberFormat? NumberFormatValue
+    {
+        get => _numberFormat;
+        set
+        {
+            _numberFormat = value is not null
+                ? _pivotTable.Worksheet.Workbook.Styles.GetRegisteredNumberFormat(value.Value)
+                : null;
+        }
+    }
 
     #region IXLPivotValue
 

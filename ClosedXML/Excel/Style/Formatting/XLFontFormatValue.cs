@@ -1,3 +1,5 @@
+using System;
+
 namespace ClosedXML.Excel.Formatting;
 
 /// <summary>
@@ -39,7 +41,7 @@ internal record XLFontFormatValue
         Shadow = false,
         Condense = false,
         Extend = false,
-        Color = XLColor.Auto,
+        Color = XLColor.Automatic,
         Size = XLFontSize.FromPoints(11),
         Underline = XLFontUnderlineValues.None,
         VerticalAlignment = XLFontVerticalTextAlignmentValues.Baseline,
@@ -76,28 +78,123 @@ internal record XLFontFormatValue
 
     public required XLFontScheme Scheme { get; init; }
 
-    internal XLFontKey GetFontKey()
+    /// <summary>
+    /// Return a registered font format equivalent to <paramref name="font"/>.
+    /// </summary>
+    internal static XLFontFormatValue FromFontBase(IXLFontBase font, XLWorkbookStyles styles)
     {
-        // XLFontKey doesn't contain outline, condense or extend
-        return new XLFontKey
+        var fontFormat = new XLFontFormatValue
         {
-            FontName = Name.Text,
-            FontCharSet = Charset,
-            FontFamilyNumbering = Family,
-            Bold = Bold,
-            Italic = Italic,
-            Strikethrough = Strikethrough,
-            Shadow = Shadow,
-
-            // TODO Styles: Incorrect default value for old XLFontValue.Color
-            // The correct color is auto, but XLFontValue uses black (0xFF000000).
-            // Changes few test workbooks, don't fix now. Fix it in bulk, when
-            // switching to new styles infra.
-            FontColor = Color == XLColor.Auto ? XLColor.FromArgb(0, 0, 0).Key : Color.Key,
-            FontSize = Size.Points,
-            Underline = Underline,
-            VerticalAlignment = VerticalAlignment,
-            FontScheme = Scheme
+            Name = font.FontName,
+            Charset = font.FontCharSet,
+            Family = font.FontFamilyNumbering,
+            Bold = font.Bold,
+            Italic = font.Italic,
+            Strikethrough = font.Strikethrough,
+            Outline = Default.Outline,
+            Shadow = font.Shadow,
+            Condense = Default.Condense,
+            Extend = Default.Extend,
+            Color = font.FontColor,
+            Size = XLFontSize.FromPoints(font.FontSize),
+            Underline = font.Underline,
+            VerticalAlignment = font.VerticalAlignment,
+            Scheme = font.FontScheme
         };
+        return styles.GetRegisteredFontFormat(fontFormat, static x => x);
+    }
+
+    /// <summary>
+    /// Create an adapter to font base. The adapter is not modifiable.
+    /// </summary>
+    internal IXLFontBase ToFontBase()
+    {
+        return new FontBaseAdapter(this);
+    }
+
+    private class FontBaseAdapter : IXLFontBase
+    {
+        private readonly XLFontFormatValue _font;
+
+        internal FontBaseAdapter(XLFontFormatValue font)
+        {
+            _font = font;
+        }
+
+        public bool Bold
+        {
+            get => _font.Bold;
+            set => throw Exception();
+        }
+
+        public bool Italic
+        {
+            get => _font.Italic;
+            set => throw Exception();
+        }
+        public XLFontUnderlineValues Underline
+        {
+            get => _font.Underline;
+            set => throw Exception();
+        }
+
+        public bool Strikethrough
+        {
+            get => _font.Strikethrough;
+            set => throw Exception();
+        }
+
+        public XLFontVerticalTextAlignmentValues VerticalAlignment
+        {
+            get => _font.VerticalAlignment;
+            set => throw Exception();
+        }
+
+        public bool Shadow
+        {
+            get => _font.Shadow;
+            set => throw Exception();
+        }
+
+        public double FontSize
+        {
+            get => _font.Size.Points;
+            set => throw Exception();
+        }
+
+        public XLColor FontColor
+        {
+            get => _font.Color;
+            set => throw Exception();
+        }
+
+        public string FontName
+        {
+            get => _font.Name.Text;
+            set => throw Exception();
+        }
+
+        public XLFontFamilyNumberingValues FontFamilyNumbering
+        {
+            get => _font.Family;
+            set => throw Exception();
+        }
+
+        public XLFontCharSet FontCharSet
+        {
+            get => _font.Charset;
+            set => throw Exception();
+        }
+
+        public XLFontScheme FontScheme
+        {
+            get => _font.Scheme;
+            set => throw Exception();
+        }
+
+        private NotSupportedException Exception()
+        {
+            return new NotSupportedException("This is an adapter for an immutable font format.");
+        }
     }
 }

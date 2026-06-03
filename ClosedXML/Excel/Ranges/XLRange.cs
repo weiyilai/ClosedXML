@@ -244,15 +244,15 @@ namespace ClosedXML.Excel
 
             foreach (IXLCell c in Range(1, 1, columnCount, rowCount).Cells())
             {
-                var border = (c.Style as XLStyle).Value.Border;
-                c.Style.Border.TopBorder = border.LeftBorder;
-                c.Style.Border.TopBorderColor = border.LeftBorderColor;
-                c.Style.Border.LeftBorder = border.TopBorder;
-                c.Style.Border.LeftBorderColor = border.TopBorderColor;
-                c.Style.Border.RightBorder = border.BottomBorder;
-                c.Style.Border.RightBorderColor = border.BottomBorderColor;
-                c.Style.Border.BottomBorder = border.RightBorder;
-                c.Style.Border.BottomBorderColor = border.RightBorderColor;
+                var border = ((XLCell)c).GetFormat().Border;
+                c.Style.Border.TopBorder = border.Left.Style;
+                c.Style.Border.TopBorderColor = border.Left.Color;
+                c.Style.Border.LeftBorder = border.Top.Style;
+                c.Style.Border.LeftBorderColor = border.Top.Color;
+                c.Style.Border.RightBorder = border.Bottom.Style;
+                c.Style.Border.RightBorderColor = border.Bottom.Color;
+                c.Style.Border.BottomBorder = border.Right.Style;
+                c.Style.Border.BottomBorderColor = border.Right.Color;
             }
         }
 

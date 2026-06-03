@@ -10,15 +10,15 @@ internal record XLFillFormatValue
     internal static readonly XLFillFormatValue None = new(new XLPatternFill
     {
         PatternType = XLFillPatternValues.None,
-        BackgroundColor = XLColor.NoColor,
-        PatternColor = XLColor.NoColor
+        BackgroundColor = XLColor.Automatic,
+        PatternColor = XLColor.Automatic
     });
 
     internal static readonly XLFillFormatValue Gray125 = new(new XLPatternFill
     {
         PatternType = XLFillPatternValues.Gray125,
-        BackgroundColor = XLColor.NoColor,
-        PatternColor = XLColor.NoColor
+        BackgroundColor = XLColor.Automatic,
+        PatternColor = XLColor.Automatic
     });
 
     public XLFillFormatValue(XLPatternFill pattern)
@@ -48,38 +48,5 @@ internal record XLFillFormatValue
     public XLLinearGradientFill? LinearGradient { get; }
 
     public XLPathGradientFill? PathGradient { get; }
-
-    internal XLFillKey ApplyTo(XLFillKey fillKey)
-    {
-        // TODO: XLFillKey doesn't have structure to hold other gradient types. For now, keep original logic.
-        if (Pattern is null)
-            return fillKey;
-
-        switch (Pattern.PatternType)
-        {
-            case XLFillPatternValues.Solid:
-                // ISO-29500: For solid cell fills (no pattern), fgColor is used.
-                // That makes sense, because solid pattern means the pattern color fully covers
-                // everything, but the historical ClosedXML code expects color for solid to be
-                // in the background color, so keep it for now.
-                fillKey = new XLFillKey
-                {
-                    PatternType = Pattern.PatternType,
-                    PatternColor = XLColor.NoColor.Key,
-                    BackgroundColor = Pattern.PatternColor.Key
-                };
-                break;
-            default:
-                fillKey = new XLFillKey
-                {
-                    PatternType = Pattern.PatternType,
-                    PatternColor = Pattern.PatternColor.Key,
-                    BackgroundColor = Pattern.BackgroundColor.Key
-                };
-                break;
-        }
-
-        return fillKey;
-    }
 }
 

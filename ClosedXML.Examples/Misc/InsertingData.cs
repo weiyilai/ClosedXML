@@ -8,9 +8,6 @@ namespace ClosedXML.Examples.Misc
 {
     public class InsertingData : IXLExample
     {
-        #region Methods
-
-        // Public
         public void Create(String filePath)
         {
             using (var wb = new XLWorkbook())
@@ -18,18 +15,22 @@ namespace ClosedXML.Examples.Misc
                 var ws = wb.Worksheets.Add("Inserting Data");
 
                 // From a list of strings
-                var listOfStrings = new List<String>();
-                listOfStrings.Add("House");
-                listOfStrings.Add("001");
+                var listOfStrings = new List<String>
+                {
+                    "House",
+                    "001"
+                };
                 ws.Cell(1, 1).Value = "From Strings";
                 ws.Cell(1, 1).AsRange().AddToNamed("Titles");
                 ws.Cell(2, 1).InsertData(listOfStrings);
 
                 // From a list of arrays
-                var listOfArr = new List<Int32[]>();
-                listOfArr.Add(new Int32[] { 1, 2, 3 });
-                listOfArr.Add(new Int32[] { 1 });
-                listOfArr.Add(new Int32[] { 1, 2, 3, 4, 5, 6 });
+                var listOfArr = new List<Int32[]>
+                {
+                    new[] { 1, 2, 3 },
+                    new[] { 1 },
+                    new[] { 1, 2, 3, 4, 5, 6 }
+                };
                 ws.Cell(1, 3).Value = "From Arrays";
                 ws.Range(1, 3, 1, 8).Merge().AddToNamed("Titles");
                 ws.Cell(2, 3).InsertData(listOfArr);
@@ -41,11 +42,13 @@ namespace ClosedXML.Examples.Misc
                 ws.Cell(7, 1).InsertData(dataTable);
 
                 // From a query
-                var list = new List<Person>();
-                list.Add(new Person() { Name = "John", Age = 30, House = "On Elm St." });
-                list.Add(new Person() { Name = "Mary", Age = 15, House = "On Main St." });
-                list.Add(new Person() { Name = "Luis", Age = 21, House = "On 23rd St." });
-                list.Add(new Person() { Name = "Henry", Age = 45, House = "On 5th Ave." });
+                var list = new List<Person>
+                {
+                    new() { Name = "John", Age = 30, House = "On Elm St." },
+                    new() { Name = "Mary", Age = 15, House = "On Main St." },
+                    new() { Name = "Luis", Age = 21, House = "On 23rd St." },
+                    new() { Name = "Henry", Age = 45, House = "On 5th Ave." }
+                };
 
                 var people = from p in list
                              where p.Age >= 21
@@ -63,14 +66,10 @@ namespace ClosedXML.Examples.Misc
                 ws.Range(13, 1, 13, 3).Merge().AddToNamed("Titles");
                 ws.Cell("A14").InsertData(people.AsEnumerable(), true);
 
-                // Prepare the style for the titles
-                var titlesStyle = wb.Style;
-                titlesStyle.Font.Bold = true;
-                titlesStyle.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                titlesStyle.Fill.BackgroundColor = XLColor.Cyan;
-
-                // Format all titles in one shot
-                wb.DefinedNames.DefinedName("Titles").Ranges.Style = titlesStyle;
+                wb.DefinedNames.DefinedName("Titles").Ranges.Style
+                    .Font.SetBold()
+                    .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center)
+                    .Fill.SetBackgroundColor(XLColor.Cyan);
 
                 ws.Columns().AdjustToContents();
 
@@ -86,8 +85,7 @@ namespace ClosedXML.Examples.Misc
             public static String ClassType { get { return nameof(Person); } }
         }
 
-        // Private
-        private DataTable GetTable()
+        private static DataTable GetTable()
         {
             DataTable table = new DataTable();
             table.Columns.Add("Dosage", typeof(int));
@@ -102,9 +100,5 @@ namespace ClosedXML.Examples.Misc
             table.Rows.Add(100, "Dilantin", "Melanie", new DateTime(2000, 1, 5));
             return table;
         }
-
-        // Override
-
-        #endregion Methods
     }
 }

@@ -82,9 +82,6 @@ namespace ClosedXML.Examples.Misc
             ws.Cell(++ro, co).Value = "Error from evaluation:";
             ws.Cell(ro, co + 1).FormulaA1 = "1/0";
 
-            // To view all shared strings (all texts in the workbook actually), use the following:
-            // workbook.GetSharedStrings()
-
             ws.Columns(2, 3).AdjustToContents();
 
             workbook.SaveAs(filePath);

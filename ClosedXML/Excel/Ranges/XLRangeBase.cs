@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using ClosedXML.Excel.CalcEngine.Visitors;
+using ClosedXML.Excel.Formatting;
 
 namespace ClosedXML.Excel
 {
@@ -316,51 +317,72 @@ namespace ClosedXML.Excel
                 }
 
                 var firstCell = FirstCell();
-                var firstCellStyleKey = (firstCell.Style as XLStyle).Key;
-                var firstCellStyle = firstCell.Style;
-                var defaultStyleKey = XLStyle.Default.Key;
                 var cellsUsed =
-                    CellsUsed(XLCellsUsedOptions.All & ~XLCellsUsedOptions.MergedRanges, c => !c.Equals(firstCell)).ToList();
+                    CellsUsedInternal(XLCellsUsedOptions.All & ~XLCellsUsedOptions.MergedRanges, c => c.SheetPoint != firstCell.SheetPoint).ToList<XLCell>();
                 cellsUsed.ForEach(c => c.Clear(XLClearOptions.All
                                                & ~XLClearOptions.MergedRanges
                                                & ~XLClearOptions.NormalFormats));
 
-                if (firstCellStyleKey.Alignment != defaultStyleKey.Alignment)
-                    asRange.Style.Alignment = firstCellStyle.Alignment;
+                // When a range is merged, remaining cells of the area take on the format of the first cell
+                if (firstCell.FormatValue is null)
+                {
+                    Worksheet.Internals.CellsCollection.FormatSlice.Clear(SheetRange);
+                }
                 else
-                    cellsUsed.ForEach(c => c.Style.Alignment = firstCellStyle.Alignment);
+                {
+                    // Merging removes borders that are not consistent across the whole border, even on the first cell
+                    var area = SheetRange;
+                    var leftBorder = GetVerticalBorder(area.LeftColumn, area.TopRow, area.BottomRow, static b => b.Left);
+                    var topBorder = GetHorizontalBorder(area.TopRow, area.LeftColumn, area.RightColumn, static b => b.Top);
+                    var rightBorder = GetVerticalBorder(area.RightColumn, area.TopRow, area.BottomRow, static b => b.Right);
+                    var bottomBorder = GetHorizontalBorder(area.BottomRow, area.LeftColumn, area.RightColumn, static b => b.Bottom);
 
-                if (firstCellStyleKey.Fill != defaultStyleKey.Fill)
-                    asRange.Style.Fill = firstCellStyle.Fill;
-                else
-                    cellsUsed.ForEach(c => c.Style.Fill = firstCellStyle.Fill);
+                    var cellsCollection = Worksheet.Internals.CellsCollection;
+                    var borderlessFormat = Worksheet.Workbook.Styles.GetModifiedFormat(firstCell.FormatValue, _ => XLBorderFormatValue.None);
+                    cellsCollection.FormatSlice.SetAll(SheetRange, borderlessFormat);
 
-                if (firstCellStyleKey.Font != defaultStyleKey.Font)
-                    asRange.Style.Font = firstCellStyle.Font;
-                else
-                    cellsUsed.ForEach(c => c.Style.Font = firstCellStyle.Font);
+                    if (leftBorder is not null && leftBorder.Value.IsVisible)
+                        cellsCollection.ApplyFormatOnAll(SheetRange.SliceFromLeft(1), b => b with { Left = leftBorder.Value });
 
-                if (firstCellStyleKey.IncludeQuotePrefix != defaultStyleKey.IncludeQuotePrefix)
-                    asRange.Style.IncludeQuotePrefix = firstCellStyle.IncludeQuotePrefix;
-                else
-                    cellsUsed.ForEach(c => c.Style.IncludeQuotePrefix = firstCellStyle.IncludeQuotePrefix);
+                    if (topBorder is not null && topBorder.Value.IsVisible)
+                        cellsCollection.ApplyFormatOnAll(SheetRange.SliceFromTop(1), b => b with { Top = topBorder.Value });
 
-                if (firstCellStyleKey.NumberFormat != defaultStyleKey.NumberFormat)
-                    asRange.Style.NumberFormat = firstCellStyle.NumberFormat;
-                else
-                    cellsUsed.ForEach(c => c.Style.NumberFormat = firstCellStyle.NumberFormat);
+                    if (rightBorder is not null && rightBorder.Value.IsVisible)
+                        cellsCollection.ApplyFormatOnAll(SheetRange.SliceFromRight(1), b => b with { Right = rightBorder.Value });
 
-                if (firstCellStyleKey.Protection != defaultStyleKey.Protection)
-                    asRange.Style.Protection = firstCellStyle.Protection;
-                else
-                    cellsUsed.ForEach(c => c.Style.Protection = firstCellStyle.Protection);
-
-                if (cellsUsed.Any(c => (c.Style as XLStyle).Key.Border != defaultStyleKey.Border))
-                    asRange.Style.Border.SetInsideBorder(XLBorderStyleValues.None);
+                    if (bottomBorder is not null && bottomBorder.Value.IsVisible)
+                        cellsCollection.ApplyFormatOnAll(SheetRange.SliceFromBottom(1), b => b with { Bottom = bottomBorder.Value });
+                }
             }
 
             Worksheet.Internals.MergedRanges.Add(asRange);
             return asRange;
+        }
+
+        private XLBorderLine? GetHorizontalBorder(int row, int minColumn, int maxColumn, Func<XLBorderFormatValue, XLBorderLine> borderSide)
+        {
+            var initialSide = borderSide(Worksheet.GetStyleValue(new XLSheetPoint(row, minColumn)).Border);
+            for (var column = minColumn + 1; column <= maxColumn; ++column)
+            {
+                var currentSide = borderSide(Worksheet.GetStyleValue(new XLSheetPoint(row, column)).Border);
+                if (currentSide != initialSide)
+                    return null;
+            }
+
+            return initialSide;
+        }
+
+        private XLBorderLine? GetVerticalBorder(int column, int minRow, int maxRow, Func<XLBorderFormatValue, XLBorderLine> borderSide)
+        {
+            var initialSide = borderSide(Worksheet.GetStyleValue(new XLSheetPoint(minRow, column)).Border);
+            for (var row = minRow + 1; row <= maxRow; ++row)
+            {
+                var currentSide = borderSide(Worksheet.GetStyleValue(new XLSheetPoint(row, column)).Border);
+                if (currentSide != initialSide)
+                    return null;
+            }
+
+            return initialSide;
         }
 
         public IXLRange Unmerge()
@@ -381,11 +403,11 @@ namespace ClosedXML.Excel
                     & ~XLClearOptions.MergedRanges
                     & ~XLClearOptions.Sparklines;
             var cellUsedOptions = cellClearOptions.ToCellsUsedOptions();
-            foreach (var cell in CellsUsed(cellUsedOptions))
+            foreach (var cell in CellsUsedInternal(cellUsedOptions))
             {
                 // We'll clear the conditional formatting, data validations, sparklines
                 // and merged ranges later down.
-                (cell as XLCell).Clear(cellClearOptions, true);
+                cell.Clear(cellClearOptions, true);
             }
 
             if (clearOptions.HasFlag(XLClearOptions.ConditionalFormats))
@@ -966,6 +988,11 @@ namespace ClosedXML.Excel
         }
 
         public IXLCells CellsUsed(XLCellsUsedOptions options, Func<IXLCell, Boolean> predicate)
+        {
+            return CellsUsedInternal(options, predicate);
+        }
+
+        internal XLCells CellsUsedInternal(XLCellsUsedOptions options, Func<XLCell, Boolean> predicate = null)
         {
             var cells = new XLCells(Worksheet, true, options, predicate) { RangeAddress };
             return cells;

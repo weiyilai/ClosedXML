@@ -116,8 +116,8 @@ namespace ClosedXML.Excel
         Boolean ShowZeros { get; set; }
 
         /// <summary>
-        ///   Gets or sets the default style for the workbook.
-        ///   <para>All new worksheets will use this style.</para>
+        /// Gets or sets the default format of the workbook. All cells that don't have specified format, either
+        /// at sheet, column, row or cell level, will use this format.
         /// </summary>
         IXLStyle Style { get; set; }
 

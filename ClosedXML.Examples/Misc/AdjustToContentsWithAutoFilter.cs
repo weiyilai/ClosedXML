@@ -5,7 +5,6 @@ namespace ClosedXML.Examples.Misc
 {
     public class AdjustToContentsWithAutoFilter : IXLExample
     {
-        // Public
         public void Create(String filePath)
         {
             var wb = new XLWorkbook();

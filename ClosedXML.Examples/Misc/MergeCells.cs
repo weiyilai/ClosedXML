@@ -6,50 +6,6 @@ namespace ClosedXML.Examples.Misc
 {
     public class MergeCells : IXLExample
     {
-        #region Variables
-
-        // Public
-
-        // Private
-
-
-        #endregion
-
-        #region Properties
-
-        // Public
-
-        // Private
-
-        // Override
-
-
-        #endregion
-
-        #region Constructors
-
-        // Public
-
-
-        // Private
-
-
-        #endregion
-
-        #region Events
-
-        // Public
-
-        // Private
-
-        // Override
-
-
-        #endregion
-
-        #region Methods
-
-        // Public
         public void Create(String filePath)
         {
             var workbook = new XLWorkbook();
@@ -77,12 +33,5 @@ namespace ClosedXML.Examples.Misc
 
             workbook.SaveAs(filePath);
         }
-
-        // Private
-
-        // Override
-
-
-        #endregion
     }
 }

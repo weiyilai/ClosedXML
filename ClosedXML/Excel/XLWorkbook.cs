@@ -48,22 +48,6 @@ namespace ClosedXML.Excel
     {
         #region Static
 
-        public static IXLStyle DefaultStyle
-        {
-            get
-            {
-                return XLStyle.Default;
-            }
-        }
-
-        internal static XLStyleValue DefaultStyleValue
-        {
-            get
-            {
-                return XLStyleValue.Default;
-            }
-        }
-
         public static Double DefaultRowHeight { get; private set; }
         public static Double DefaultColumnWidth { get; private set; }
 
@@ -179,11 +163,12 @@ namespace ClosedXML.Excel
         /// </summary>
         public IXLPivotCaches PivotCaches => PivotCachesInternal;
 
-        /// <summary>
-        ///   Gets or sets the default style for the workbook.
-        ///   <para>All new worksheets will use this style.</para>
-        /// </summary>
-        public IXLStyle Style { get; set; }
+        /// <inheritdoc/>
+        public IXLStyle Style
+        {
+            get => Format;
+            set => Format.SetStyle(value);
+        }
 
         /// <summary>
         ///   Gets or sets the default row height for the workbook.
@@ -804,7 +789,6 @@ namespace ClosedXML.Excel
             DefaultRowHeight = 15;
             DefaultColumnWidth = 8.43;
             Styles = XLWorkbookStyles.CreateInitialized();
-            Style = new XLStyle(null, DefaultStyle);
             RowHeight = DefaultRowHeight;
             ColumnWidth = DefaultColumnWidth;
             PageOptions = DefaultPageOptions;

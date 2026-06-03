@@ -32,12 +32,20 @@ namespace ClosedXML.Excel
 
         public void Add(IXLConditionalFormat conditionalFormat)
         {
-            _conditionalFormats.Add((XLConditionalFormat)conditionalFormat);
+            var addedCf = (XLConditionalFormat)conditionalFormat;
+            _conditionalFormats.Add(addedCf);
+            if (addedCf.FormatValue is { } dxf)
+                _worksheet.Workbook.Styles.RegisteredDxFormat(dxf);
         }
 
-        public IEnumerator<IXLConditionalFormat> GetEnumerator()
+        public IEnumerator<XLConditionalFormat> GetEnumerator()
         {
             return _conditionalFormats.GetEnumerator();
+        }
+
+        IEnumerator<IXLConditionalFormat> IEnumerable<IXLConditionalFormat>.GetEnumerator()
+        {
+            return GetEnumerator();
         }
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
@@ -79,7 +87,7 @@ namespace ClosedXML.Excel
                         item.Ranges.Select(r => r.RangeAddress.FirstAddress.RowNumber).Min(),
                         item.Ranges.Select(r => r.RangeAddress.FirstAddress.ColumnNumber).Min(),
                         false, false);
-                    var baseCell = firstRange.Worksheet.Cell(baseAddress) as XLCell;
+                    var baseCell = (XLCell)firstRange.Worksheet.Cell(baseAddress);
 
                     int i = 1;
                     bool stop = false;
@@ -120,7 +128,7 @@ namespace ClosedXML.Excel
                     item.Ranges.RemoveAll();
                     consRanges.ForEach(r => item.Ranges.Add(r));
 
-                    var targetCell = item.Ranges.First().FirstCell() as XLCell;
+                    var targetCell = (XLCell)item.Ranges.First().FirstCell();
                     item.AdjustFormulas(baseCell, targetCell);
 
                     similarFormats.ForEach(cf => formats.Remove(cf));

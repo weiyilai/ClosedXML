@@ -9,9 +9,9 @@ internal record XLDxfValue
     {
         NumberFormat = null,
         Font = XLDifferentialFontValue.Empty,
-        Fill = null,
-        Alignment = null,
-        Border = null,
+        Fill = XLDifferentialFillValue.Empty,
+        Alignment = XLDifferentialAlignmentValue.Empty,
+        Border = XLDifferentialBorderValue.Empty,
         Protection = null
     };
 
@@ -19,11 +19,11 @@ internal record XLDxfValue
 
     public required XLDifferentialFontValue Font { get; init; }
 
-    public required XLFillFormatValue? Fill { get; init; }
+    public required XLDifferentialFillValue Fill { get; init; }
 
-    public required XLAlignmentFormatValue? Alignment { get; init; }
+    public required XLDifferentialAlignmentValue Alignment { get; init; }
 
-    public required XLBorderFormatValue? Border { get; init; }
+    public required XLDifferentialBorderValue Border { get; init; }
 
     public required XLProtectionFormatValue? Protection { get; init; }
 }

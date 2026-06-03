@@ -23,6 +23,8 @@ namespace ClosedXML.Excel.IO
 
         public const string RevisionNs = "http://schemas.microsoft.com/office/spreadsheetml/2014/revision";
 
+        public const string X15Main2010SsNs = "http://schemas.microsoft.com/office/spreadsheetml/2010/11/main";
+
         /// <summary>
         /// Valid and shorter than normal true.
         /// </summary>

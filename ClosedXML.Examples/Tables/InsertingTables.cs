@@ -9,9 +9,6 @@ namespace ClosedXML.Examples.Tables
 {
     public class InsertingTables : IXLExample
     {
-        #region Methods
-
-        // Public
         public void Create(String filePath)
         {
             using (var wb = new XLWorkbook())
@@ -36,7 +33,7 @@ namespace ClosedXML.Examples.Tables
                 ws.Cell(2, 3).InsertTable(listOfArr);
 
                 // From a DataTable
-                var dataTable = GetTable();
+                var dataTable = InsertingTables.GetTable();
                 ws.Cell(7, 1).Value = "From DataTable";
                 ws.Range(7, 1, 7, 4).Merge().AddToNamed("Titles");
                 ws.Cell(8, 1).InsertTable(dataTable);
@@ -60,14 +57,10 @@ namespace ClosedXML.Examples.Tables
                 ws.Range(15, 6, 15, 9).Merge().AddToNamed("Titles");
                 ws.Cell(16, 6).InsertTable(people);
 
-                // Prepare the style for the titles
-                var titlesStyle = wb.Style;
-                titlesStyle.Font.Bold = true;
-                titlesStyle.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                titlesStyle.Fill.BackgroundColor = XLColor.Cyan;
-
-                // Format all titles in one shot
-                wb.DefinedNames.DefinedName("Titles").Ranges.Style = titlesStyle;
+                wb.DefinedNames.DefinedName("Titles").Ranges.Style
+                    .Font.SetBold()
+                    .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center)
+                    .Fill.SetBackgroundColor(XLColor.Cyan);
 
                 ws.Columns().AdjustToContents();
 
@@ -87,8 +80,7 @@ namespace ClosedXML.Examples.Tables
             public static String ClassType { get { return nameof(Person); } }
         }
 
-        // Private
-        private DataTable GetTable()
+        private static DataTable GetTable()
         {
             DataTable table = new DataTable();
             table.Columns.Add("Dosage", typeof(int));
@@ -103,9 +95,5 @@ namespace ClosedXML.Examples.Tables
             table.Rows.Add(100, "Dilantin", "Melanie", new DateTime(2000, 1, 5));
             return table;
         }
-
-        // Override
-
-        #endregion Methods
     }
 }

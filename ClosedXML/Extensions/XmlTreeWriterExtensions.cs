@@ -70,6 +70,10 @@ internal static class XmlTreeWriterExtensions
         xml.WriteStartElement(elName, ns);
         switch (color.ColorType)
         {
+            case XLColorType.Automatic:
+                xml.WriteAttribute("auto", 1);
+                break;
+
             case XLColorType.Color:
                 xml.WriteAttribute("rgb", color.Color.ToHex());
                 break;

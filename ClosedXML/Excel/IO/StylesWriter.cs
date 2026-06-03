@@ -52,12 +52,34 @@ internal class StylesWriter
 
     private readonly string _ns = Main2006SsNs;
 
-    internal void WriteContent(WorkbookStylesPart stylesPart, IEnumMapper mapper, XLWorkbookStyles styles, XLWorkbook.SaveContext context)
+    internal void WriteContent(WorkbookStylesPart stylesPart, IEnumMapper mapper, XLWorkbookStyles styles, XLWorkbook workbook, XLWorkbook.SaveContext context)
     {
         // Determine which format components are used and thus should be saved.
-        // TODO: For now just assume everything in styles is used
-        var usedCellFormats = styles.CellFormats.Select(x => x.Value).ToHashSet();
-        var usedNumberFormats = new HashSet<string>();
+        var usedCellFormats = new HashSet<XLCellFormatValue>
+        {
+            styles.DefaultCellFormat
+        };
+        foreach (var sheet in workbook.WorksheetsInternal)
+        {
+            if (sheet.FormatValue is { } sheetFormat)
+                usedCellFormats.Add(sheetFormat);
+
+            foreach (var column in sheet.Internals.ColumnsCollection.Values)
+            {
+                if (column.FormatValue is { } columnFormat)
+                    usedCellFormats.Add(columnFormat);
+            }
+
+            foreach (var row in sheet.Internals.RowsCollection.Values)
+            {
+                if (row.FormatValue is { } rowFormat)
+                    usedCellFormats.Add(rowFormat);
+            }
+
+            sheet.Internals.CellsCollection.FormatSlice.AddUsedFormat(usedCellFormats);
+        }
+
+        var usedNumberFormats = new HashSet<XLNumberFormat>();
         var usedFonts = new HashSet<XLFontFormatValue>();
         var usedFills = new HashSet<XLFillFormatValue>();
         var usedBorders = new HashSet<XLBorderFormatValue>();
@@ -91,6 +113,51 @@ internal class StylesWriter
                 usedBorders.Add(border);
         }
 
+        // SST writes fonts as ids, unlike other format properties which are inlined next to a rich text
+        foreach (var phoneticsFont in workbook.SharedStringTable.GetUsedPhoneticFonts())
+            usedFonts.Add(phoneticsFont);
+
+        // Create dxfMap from used dxfs in cfs, tables, pivot tables and so on
+        var usedDxf = new HashSet<XLDxfValue>();
+        foreach (var ws in workbook.WorksheetsInternal)
+        {
+            foreach (var cf in ws.ConditionalFormats)
+            {
+                if (cf.FormatValue is { } dxf)
+                    usedDxf.Add(dxf);
+            }
+
+            foreach (var table in ws.Tables)
+            {
+                foreach (var field in table.Fields)
+                {
+                    if (field.HeaderFormatValue is { } headerDxf)
+                        usedDxf.Add(headerDxf);
+
+                    if (field.DataFormatValue is { } dataDxf)
+                        usedDxf.Add(dataDxf);
+
+                    if (field.TotalFormatValue is { } totalsDxf)
+                        usedDxf.Add(totalsDxf);
+                }
+            }
+
+            foreach (var pt in ws.PivotTables)
+            {
+                foreach (var format in pt.Formats)
+                {
+                    if (format.FormatValue is { } dxFormat)
+                        usedDxf.Add(dxFormat);
+                }
+
+                foreach (var field in pt.PivotFields)
+                {
+                    if (field.NumberFormatValue is { } fieldNumFmt)
+                        usedNumberFormats.Add(fieldNumFmt);
+                }
+            }
+        }
+
         var settings = new XmlWriterSettings
         {
             Encoding = XLHelper.NoBomUTF8
@@ -104,14 +171,15 @@ internal class StylesWriter
         // Number formats
         // The map has predefined formats from index 0 and the user defined ones from 164 onward.
         // There is a gap between predefined formats.
-        var predefinedNumberFormats = XLPredefinedFormat.FormatCodes.OrderBy(x => x.Key).Select(x => x.Value).ToArray();
-        var numberFormatMap = SequentialMap<int, string>.Create(usedNumberFormats, styles.NumberFormats, FirstUserDefinedFormatIndex, predefinedNumberFormats);
+        var predefinedNumberFormats = XLPredefinedFormat.NumberFormatIds;
+        var numberFormatMap = SequentialMap<int, XLNumberFormat>.Create(usedNumberFormats, styles.NumberFormats, XLPredefinedFormat.NumberFormatIds, FirstUserDefinedFormatIndex);
 
-        if (numberFormatMap.Count > predefinedNumberFormats.Length)
-            WriteNumberFormats(xml, numberFormatMap);
+        if (numberFormatMap.Count > predefinedNumberFormats.Count)
+            WriteNumberFormats(xml, numberFormatMap, predefinedNumberFormats);
 
         // Fonts. Register default format font as font zero. The font zero is used for font name and size.
-        var fontFormatsMap = SequentialMap<int, XLFontFormatValue>.Create(usedFonts, styles.Fonts, 0, styles.DefaultFormat.Font);
+        var firstFontValues = new Dictionary<XLFontFormatValue, int> { { styles.DefaultFormat.Font, 0 } };
+        var fontFormatsMap = SequentialMap<int, XLFontFormatValue>.Create(usedFonts, styles.Fonts, firstFontValues);
         if (fontFormatsMap.Count > 0)
             WriteFonts(xml, fontFormatsMap);
 
@@ -120,7 +188,12 @@ internal class StylesWriter
         // or not.
         AddFillAsUsed(XLFillFormatValue.None);
         AddFillAsUsed(XLFillFormatValue.Gray125);
-        var fillsFormatsMap = SequentialMap<int, XLFillFormatValue>.Create(usedFills, styles.Fills, 0, XLFillFormatValue.None, XLFillFormatValue.Gray125);
+        var firstFillValues = new Dictionary<XLFillFormatValue, int>
+        {
+            { XLFillFormatValue.None, 0 },
+            { XLFillFormatValue.Gray125, 1 },
+        };
+        var fillsFormatsMap = SequentialMap<int, XLFillFormatValue>.Create(usedFills, styles.Fills, firstFillValues);
         WriteFills(xml, fillsFormatsMap);
 
         var borderFormatsMap = SequentialMap<int, XLBorderFormatValue>.Create(usedBorders, styles.Borders);
@@ -138,20 +211,14 @@ internal class StylesWriter
         if (cellStylesMap.Count > 0)
             WriteCellStyleXfs(xml, cellStylesMap, numberFormatMap, fontFormatsMap, fillsFormatsMap, borderFormatsMap);
 
-        var cellXfsMap = SequentialMap<int, XLCellFormatValue>.Create(usedCellFormats, styles.CellFormats, 0, styles.DefaultFormat);
-        if (cellXfsMap.Count > 0)
-            WriteCellXfs(xml, cellXfsMap, numberFormatMap, fontFormatsMap, fillsFormatsMap, borderFormatsMap, cellStylesMap);
+        var firstCellXfsValues = new Dictionary<XLCellFormatValue, int> { { styles.DefaultFormat, 0 } };
+        var cellXfsMap = SequentialMap<int, XLCellFormatValue>.Create(usedCellFormats, styles.CellFormats, firstCellXfsValues);
+        WriteCellXfs(xml, cellXfsMap, numberFormatMap, fontFormatsMap, fillsFormatsMap, borderFormatsMap, cellStylesMap);
 
         if (cellStylesMap.Count > 0)
             WriteCellStyles(xml, cellStylesMap);
 
-        // TODO: Create dxfMap from used dxfs in tables, pivot tables and so on
-        var dxfMap = new SequentialMap<int, XLDxfValue>(styles.DifferentialFormats);
-        foreach (var dxfId in styles.DifferentialFormats.Keys)
-            dxfMap.Add(dxfId);
-
-        dxfMap.Sort();
-
+        var dxfMap = SequentialMap<int, XLDxfValue>.Create(usedDxf, styles.DifferentialFormats);
         WriteDxfs(xml, dxfMap, numberFormatMap.Count);
 
         var hasTableStyles = styles.TableStyles.Count > 0 ||
@@ -163,9 +230,23 @@ internal class StylesWriter
 
         WriteColors(xml, styles);
 
-        xml.WriteEndElement();
+        WriteExtensions(xml);
 
-        // Fill the map used in other parts to determine format id
+        xml.WriteEndDocument();
+
+        // Fill the maps used in other parts to determine saved id for a format
+        foreach (var (numberFormatId, numberFormat) in numberFormatMap.GetActual())
+        {
+            if (!context.NumberFormatMap.ContainsKey(numberFormat))
+                context.NumberFormatMap.Add(numberFormat, numberFormatId);
+        }
+
+        foreach (var (fontId, fontFormat) in fontFormatsMap.GetActual())
+        {
+            if (!context.FontMap.ContainsKey(fontFormat))
+                context.FontMap.Add(fontFormat, fontId);
+        }
+
         foreach (var (xfId, format) in cellXfsMap.GetActual())
         {
             if (!context.FormatMap.ContainsKey(format))
@@ -188,15 +269,15 @@ internal class StylesWriter
         }
     }
 
-    private void WriteNumberFormats(XmlTreeWriter xml, SequentialMap<int, string> idMap)
+    private void WriteNumberFormats(XmlTreeWriter xml, SequentialMap<int, XLNumberFormat> idMap, IReadOnlyDictionary<XLNumberFormat, int> predefinedNumberFormats)
     {
         xml.WriteStartElement("numFmts", _ns);
-        xml.WriteAttribute("count", idMap.Count - FirstUserDefinedFormatIndex);
+        xml.WriteAttribute("count", idMap.Count - predefinedNumberFormats.Count);
 
         foreach (var (savedId, format) in idMap.GetActual())
         {
-            // The number format map has identity map for predefined formats
-            if (savedId < FirstUserDefinedFormatIndex)
+            // Do not write the predefined formats, Excel doesn't write that either
+            if (predefinedNumberFormats.ContainsKey(format))
                 continue;
 
             WriteNumFmt(xml, "numFmt", savedId, format);
@@ -226,26 +307,47 @@ internal class StylesWriter
 
     private void WriteFont(XmlTreeWriter xml, string elementName, XLFontFormatValue font)
     {
-        // Font table and dxf use same XML type, use adapter.
-        var dxfAdapter = new XLDifferentialFontValue
+        // MS-OI29500 dictates font elements order.
+        xml.WriteStartElement(elementName, _ns);
+
+        WriteFlag("b", font.Bold);
+        WriteFlag("i", font.Italic);
+        WriteFlag("strike", font.Strikethrough);
+        WriteFlag("condense", font.Condense);
+        WriteFlag("extend", font.Extend);
+        WriteFlag("outline", font.Outline);
+        WriteFlag("shadow", font.Shadow);
+
+        if (font.Underline != XLFontUnderlineValues.None)
+            WriteFontUnderline(xml, font.Underline);
+
+        if (font.VerticalAlignment != XLFontVerticalTextAlignmentValues.Baseline)
+            WriteFontVerticalAlignment(xml, font.VerticalAlignment);
+
+        WriteFontSize(xml, font.Size);
+
+        if (!font.Color.IsAuto)
+            xml.WriteColor("color", _ns, font.Color);
+
+        WriteFontName(xml, font.Name);
+
+        if (font.Family != XLFontFamilyNumberingValues.NotApplicable)
+            WriteFontFamily(xml, font.Family);
+
+        if (font.Charset != XLFontCharSet.Ansi)
+            WriteFontCharset(xml, font.Charset);
+
+        if (font.Scheme != XLFontScheme.None)
+            WriteFontScheme(xml, font.Scheme);
+
+        xml.WriteEndElement();
+        return;
+
+        void WriteFlag(string flagName, bool flag)
         {
-            Name = font.Name,
-            Size = font.Size,
-            Charset = font.Charset,
-            Family = font.Family,
-            Bold = font.Bold,
-            Italic = font.Italic,
-            Strikethrough = font.Strikethrough,
-            Outline = font.Outline,
-            Shadow = font.Shadow,
-            Condense = font.Condense,
-            Extend = font.Extend,
-            Color = font.Color,
-            Underline = font.Underline,
-            VerticalAlignment = font.VerticalAlignment,
-            Scheme = font.Scheme,
-        };
-        WriteFont(xml, elementName, dxfAdapter);
+            if (flag)
+                xml.WriteBooleanProperty(flagName, true, _ns);
+        }
     }
 
     private void WriteFont(XmlTreeWriter xml, string elementName, XLDifferentialFontValue font)
@@ -262,59 +364,28 @@ internal class StylesWriter
         WriteFlag("shadow", font.Shadow);
 
         if (font.Underline is { } underline && underline != XLFontUnderlineValues.None)
-        {
-            xml.WriteStartElement("u", _ns);
-            xml.WriteAttributeDefault("val", underline, XLFontUnderlineValues.Single);
-            xml.WriteEndElement();
-        }
+            WriteFontUnderline(xml, underline);
 
         if (font.VerticalAlignment is { } verticalAlignment && verticalAlignment != XLFontVerticalTextAlignmentValues.Baseline)
-        {
-            xml.WriteStartElement("vertAlign", _ns);
-            xml.WriteAttribute("val", verticalAlignment);
-            xml.WriteEndElement();
-        }
+            WriteFontVerticalAlignment(xml, verticalAlignment);
 
         if (font.Size is { } size)
-        {
-            xml.WriteStartElement("sz", _ns);
-            xml.WriteAttribute("val", size.Points);
-            xml.WriteEndElement();
-        }
+            WriteFontSize(xml, size);
 
-        if (font.Color is { } color)
-        {
+        if (font.Color is { } color && !color.IsAuto)
             xml.WriteColor("color", _ns, color);
-        }
 
         if (font.Name is { } name)
-        {
-            xml.WriteStartElement("name", _ns);
-            xml.WriteAttribute("val", name.Text);
-            xml.WriteEndElement();
-        }
+            WriteFontName(xml, name);
 
         if (font.Family is { } family && family != XLFontFamilyNumberingValues.NotApplicable)
-        {
-            xml.WriteStartElement("family", _ns);
-            xml.WriteAttribute("val", (int)family);
-            xml.WriteEndElement();
-        }
+            WriteFontFamily(xml, family);
 
         if (font.Charset is { } charset && charset != XLFontCharSet.Ansi)
-        {
-            // Charset is stored as an CT_IntProperty
-            xml.WriteStartElement("charset", _ns);
-            xml.WriteAttribute("val", (int)charset);
-            xml.WriteEndElement();
-        }
+            WriteFontCharset(xml, charset);
 
         if (font.Scheme is { } scheme && scheme != XLFontScheme.None)
-        {
-            xml.WriteStartElement("scheme", _ns);
-            xml.WriteAttribute("val", scheme);
-            xml.WriteEndElement();
-        }
+            WriteFontScheme(xml, scheme);
 
         xml.WriteEndElement();
         return;
@@ -326,23 +397,73 @@ internal class StylesWriter
         }
     }
 
+    private void WriteFontUnderline(XmlTreeWriter xml, XLFontUnderlineValues underline)
+    {
+        xml.WriteStartElement("u", _ns);
+        xml.WriteAttributeDefault("val", underline, XLFontUnderlineValues.Single);
+        xml.WriteEndElement();
+    }
+
+    private void WriteFontVerticalAlignment(XmlTreeWriter xml, XLFontVerticalTextAlignmentValues verticalAlignment)
+    {
+        xml.WriteStartElement("vertAlign", _ns);
+        xml.WriteAttribute("val", verticalAlignment);
+        xml.WriteEndElement();
+    }
+
+    private void WriteFontSize(XmlTreeWriter xml, XLFontSize size)
+    {
+        xml.WriteStartElement("sz", _ns);
+        xml.WriteAttribute("val", size.Points);
+        xml.WriteEndElement();
+    }
+
+    private void WriteFontName(XmlTreeWriter xml, XLFontName fontName)
+    {
+        xml.WriteStartElement("name", _ns);
+        xml.WriteAttribute("val", fontName.Text);
+        xml.WriteEndElement();
+    }
+
+    private void WriteFontFamily(XmlTreeWriter xml, XLFontFamilyNumberingValues family)
+    {
+        xml.WriteStartElement("family", _ns);
+        xml.WriteAttribute("val", (int)family);
+        xml.WriteEndElement();
+    }
+
+    private void WriteFontCharset(XmlTreeWriter xml, XLFontCharSet charset)
+    {
+        // Charset is stored as an CT_IntProperty
+        xml.WriteStartElement("charset", _ns);
+        xml.WriteAttribute("val", (int)charset);
+        xml.WriteEndElement();
+    }
+
+    private void WriteFontScheme(XmlTreeWriter xml, XLFontScheme scheme)
+    {
+        xml.WriteStartElement("scheme", _ns);
+        xml.WriteAttribute("val", scheme);
+        xml.WriteEndElement();
+    }
+
     private void WriteFills(XmlTreeWriter xml, SequentialMap<int, XLFillFormatValue> idMap)
     {
         xml.WriteStartElement("fills", _ns);
         xml.WriteAttribute("count", idMap.Count);
 
         foreach (var (_, fill) in idMap.GetActual())
-            WriteFill(xml, "fill", fill, false);
+            WriteFill(xml, "fill", fill.Pattern, fill.LinearGradient, fill.PathGradient, false);
 
         xml.WriteEndElement();
     }
 
-    private void WriteFill(XmlTreeWriter xml, string elementName, XLFillFormatValue fill, bool isDxf)
+    private void WriteFill(XmlTreeWriter xml, string elementName, XLPatternFill? patternFill, XLLinearGradientFill? linearGradient, XLPathGradientFill? pathGradient, bool isDxf)
     {
         xml.WriteStartElement(elementName, _ns);
 
         // A fill element with no pattern/gradient is a valid state per XML
-        if (fill.Pattern is { } patternFill)
+        if (patternFill is not null)
         {
             xml.WriteStartElement("patternFill", _ns);
             xml.WriteAttribute("patternType", patternFill.PatternType);
@@ -368,7 +489,7 @@ internal class StylesWriter
 
             xml.WriteEndElement();
         }
-        else if (fill.LinearGradient is { } linearGradient)
+        else if (linearGradient is not null)
         {
             // Linear is the default type, so no need to write it
             xml.WriteStartElement("gradientFill", _ns);
@@ -378,7 +499,7 @@ internal class StylesWriter
 
             xml.WriteEndElement();
         }
-        else if (fill.PathGradient is { } pathGradient)
+        else if (pathGradient is not null)
         {
             xml.WriteStartElement("gradientFill", _ns);
             xml.WriteAttribute("type", "path");
@@ -413,51 +534,78 @@ internal class StylesWriter
         xml.WriteStartElement("borders", _ns);
         xml.WriteAttribute("count", idMap.Count);
         foreach (var (_, border) in idMap.GetActual())
-            WriteBorder(xml, "border", border, false);
+            WriteBorder(xml, "border", border);
 
         xml.WriteEndElement();
     }
 
-    private void WriteBorder(XmlTreeWriter xml, string elementName, XLBorderFormatValue border, bool isDxf)
+    private void WriteBorder(XmlTreeWriter xml, string elementName, XLBorderFormatValue border)
+    {
+        xml.WriteStartElement(elementName, _ns);
+        xml.WriteAttributeDefault("diagonalUp", border.DiagonalUp, false);
+        xml.WriteAttributeDefault("diagonalDown", border.DiagonalDown, false);
+
+        // ISO should be "start"+"end", but Excel uses "left"+"right"
+        WriteBorderPr(xml, "left", border.Left);
+        WriteBorderPr(xml, "right", border.Right);
+        WriteBorderPr(xml, "top", border.Top);
+        WriteBorderPr(xml, "bottom", border.Bottom);
+        WriteBorderPr(xml, "diagonal", border.Diagonal);
+
+        xml.WriteEndElement();
+    }
+
+    private void WriteBorder(XmlTreeWriter xml, string elementName, XLDifferentialBorderValue border)
     {
         xml.WriteStartElement(elementName, _ns);
         xml.WriteAttributeDefault("diagonalUp", border.DiagonalUp, false);
         xml.WriteAttributeDefault("diagonalDown", border.DiagonalDown, false);
 
         // Outline has no meaning for cell styles, it is only for dxf - tables and such.
-        if (isDxf)
-            xml.WriteAttributeDefault("outline", border.Outline, true);
+        xml.WriteAttributeDefault("outline", border.Outline, true);
 
         // ISO should be "start"+"end", but Excel uses "left"+"right"
-        WriteBorderPr("left", border.Left);
-        WriteBorderPr("right", border.Right);
-        WriteBorderPr("top", border.Top);
-        WriteBorderPr("bottom", border.Bottom);
-        WriteBorderPr("diagonal", border.Diagonal);
-        WriteBorderPr("vertical", border.Vertical);
-        WriteBorderPr("horizontal", border.Horizontal);
+        if (border.Left is { } left)
+            WriteBorderPr(xml, "left", left);
+
+        if (border.Right is { } right)
+            WriteBorderPr(xml, "right", right);
+
+        if (border.Top is { } top)
+            WriteBorderPr(xml, "top", top);
+
+        if (border.Bottom is { } bottom)
+            WriteBorderPr(xml, "bottom", bottom);
+
+        if (border.Diagonal is { } diagonal)
+            WriteBorderPr(xml, "diagonal", diagonal);
+
+        if (border.Vertical is { } vertical)
+            WriteBorderPr(xml, "vertical", vertical);
+
+        if (border.Horizontal is { } horizontal)
+            WriteBorderPr(xml, "horizontal", horizontal);
 
         xml.WriteEndElement();
-        return;
+    }
 
-        void WriteBorderPr(string name, XLBorderLine? borderLine)
+    private void WriteBorderPr(XmlTreeWriter xml, string name, XLBorderLine borderLine)
+    {
+        xml.WriteStartElement(name, _ns);
+        xml.WriteAttributeDefault("style", borderLine.Style, XLBorderStyleValues.None);
+        if (borderLine.Style != XLBorderStyleValues.None)
         {
-            if (!borderLine.HasValue)
-                return;
-
-            xml.WriteStartElement(name, _ns);
-            xml.WriteAttributeDefault("style", borderLine.Value.Style, XLBorderStyleValues.None);
-            if (borderLine.Value.Style != XLBorderStyleValues.None)
-                xml.WriteColor("color", _ns, borderLine.Value.Color);
-
-            xml.WriteEndElement();
+            // Color for border is always written and default value is automatic color.
+            xml.WriteColor("color", _ns, borderLine.Color);
         }
+
+        xml.WriteEndElement();
     }
 
     private void WriteCellStyleXfs(
         XmlTreeWriter xml,
         SequentialMap<StyleId, XLCellStyleValue> cellStylesMap,
-        SequentialMap<int, string> numFmtIdMap,
+        SequentialMap<int, XLNumberFormat> numFmtIdMap,
         SequentialMap<int, XLFontFormatValue> fontIdMap,
         SequentialMap<int, XLFillFormatValue> fillIdMap,
         SequentialMap<int, XLBorderFormatValue> borderIdMap)
@@ -498,7 +646,7 @@ internal class StylesWriter
     private void WriteCellXfs(
         XmlTreeWriter xml,
         SequentialMap<int, XLCellFormatValue> idMap,
-        SequentialMap<int, string> numFmtIdMap,
+        SequentialMap<int, XLNumberFormat> numFmtIdMap,
         SequentialMap<int, XLFontFormatValue> fontIdMap,
         SequentialMap<int, XLFillFormatValue> fillIdMap,
         SequentialMap<int, XLBorderFormatValue> borderIdMap,
@@ -516,7 +664,7 @@ internal class StylesWriter
             xml.WriteAttributeOptional("borderId", borderIdMap.GetSavedId(cellXf.Border));
 
             if (cellXf.CellStyleId is not null)
-                xml.WriteAttributeDefault("xfId", cellStyleIdMap.GetSavedId(cellXf.CellStyleId.Value), 0);
+                xml.WriteAttribute("xfId", cellStyleIdMap.GetSavedId(cellXf.CellStyleId.Value));
 
             xml.WriteAttributeDefault("quotePrefix", cellXf.IncludeQuotePrefix, false);
             xml.WriteAttributeDefault("pivotButton", cellXf.PivotButton, false);
@@ -542,16 +690,53 @@ internal class StylesWriter
 
     private void WriteAlignment(XmlTreeWriter xml, string elementName, XLAlignmentFormatValue alignment)
     {
+        if (alignment == XLAlignmentFormatValue.Default)
+            return;
+
         xml.WriteStartElement(elementName, _ns);
-        xml.WriteAttributeDefault("horizontal", alignment.Horizontal, XLAlignmentHorizontalValues.General);
-        xml.WriteAttributeDefault("vertical", alignment.Vertical, XLAlignmentVerticalValues.Bottom);
-        xml.WriteAttributeDefault("textRotation", alignment.TextRotation.GetIso(), 0);
-        xml.WriteAttributeDefault("wrapText", alignment.WrapText, false);
-        xml.WriteAttributeDefault("indent", alignment.Indent, 0);
-        xml.WriteAttributeDefault("relativeIndent", alignment.RelativeIndent, 0);
-        xml.WriteAttributeDefault("justifyLastLine", alignment.JustifyLastLine, false);
-        xml.WriteAttributeDefault("shrinkToFit", alignment.ShrinkToFit, false);
-        xml.WriteAttributeDefault("readingOrder", alignment.ReadingOrder, XLAlignmentReadingOrderValues.ContextDependent);
+        xml.WriteAttributeDefault("horizontal", alignment.Horizontal, XLAlignmentFormatValue.Default.Horizontal);
+        xml.WriteAttributeDefault("vertical", alignment.Vertical, XLAlignmentFormatValue.Default.Vertical);
+        xml.WriteAttributeDefault("textRotation", alignment.TextRotation.GetIso(), XLAlignmentFormatValue.Default.TextRotation.Value);
+        xml.WriteAttributeDefault("wrapText", alignment.WrapText, XLAlignmentFormatValue.Default.WrapText);
+        xml.WriteAttributeDefault("indent", alignment.Indent, XLAlignmentFormatValue.Default.Indent);
+        xml.WriteAttributeDefault("relativeIndent", alignment.RelativeIndent, XLAlignmentFormatValue.Default.RelativeIndent);
+        xml.WriteAttributeDefault("justifyLastLine", alignment.JustifyLastLine, XLAlignmentFormatValue.Default.JustifyLastLine);
+        xml.WriteAttributeDefault("shrinkToFit", alignment.ShrinkToFit, XLAlignmentFormatValue.Default.ShrinkToFit);
+        xml.WriteAttributeDefault("readingOrder", (uint)alignment.ReadingOrder, (uint)XLAlignmentFormatValue.Default.ReadingOrder);
+        xml.WriteEndElement();
+    }
+
+    private void WriteAlignment(XmlTreeWriter xml, string elementName, XLDifferentialAlignmentValue alignment)
+    {
+        // Alignment is kind of wonky. Current Excel doesn't even support it in a DXF dialogue and doesn't always work correctly.
+        xml.WriteStartElement(elementName, _ns);
+        if (alignment.Horizontal is { } horizontal)
+            xml.WriteAttribute("horizontal", horizontal);
+
+        if (alignment.Vertical is { } vertical)
+            xml.WriteAttribute("vertical", vertical);
+
+        if (alignment.TextRotation is { } textRotation)
+            xml.WriteAttribute("textRotation", textRotation.GetIso());
+
+        if (alignment.WrapText is { } wrapText)
+            xml.WriteAttribute("wrapText", wrapText);
+
+        if (alignment.Indent is { } indent)
+            xml.WriteAttribute("indent", indent);
+
+        if (alignment.RelativeIndent is { } relativeIndent)
+            xml.WriteAttribute("relativeIndent", relativeIndent);
+
+        if (alignment.JustifyLastLine is { } justifyLastLine)
+            xml.WriteAttribute("justifyLastLine", justifyLastLine);
+
+        if (alignment.ShrinkToFit is { } shrinkToFit)
+            xml.WriteAttribute("shrinkToFit", shrinkToFit);
+
+        if (alignment.ReadingOrder is { } readingOrder)
+            xml.WriteAttribute("readingOrder", readingOrder);
+
         xml.WriteEndElement();
     }
 
@@ -614,8 +799,8 @@ internal class StylesWriter
         {
             xml.WriteStartElement("dxf", _ns);
 
-            if (dxf.Font is { } font)
-                WriteFont(xml, "font", font);
+            if (dxf.Font != XLDifferentialFontValue.Empty)
+                WriteFont(xml, "font", dxf.Font);
 
             if (dxf.NumberFormat is { } numberFormat)
             {
@@ -623,14 +808,14 @@ internal class StylesWriter
                 WriteNumFmt(xml, "numFmt", ++lastNumFmtId, numberFormat);
             }
 
-            if (dxf.Fill is { } fill)
-                WriteFill(xml, "fill", fill, true);
+            if (dxf.Fill != XLDifferentialFillValue.Empty)
+                WriteFill(xml, "fill", dxf.Fill.Pattern, dxf.Fill.LinearGradient, dxf.Fill.PathGradient, true);
 
-            if (dxf.Alignment is { } alignment)
-                WriteAlignment(xml, "alignment", alignment);
+            if (dxf.Alignment != XLDifferentialAlignmentValue.Empty)
+                WriteAlignment(xml, "alignment", dxf.Alignment);
 
-            if (dxf.Border is { } border)
-                WriteBorder(xml, "border", border, true);
+            if (dxf.Border != XLDifferentialBorderValue.Empty)
+                WriteBorder(xml, "border", dxf.Border);
 
             if (dxf.Protection is { } protection)
                 WriteProtection(xml, "protection", protection);
@@ -779,7 +964,40 @@ internal class StylesWriter
         xml.WriteEndElement(); // colors
     }
 
-    private class SequentialMap<TKey, T>
+    private void WriteExtensions(XmlTreeWriter xml)
+    {
+        xml.WriteStartElement("extLst", _ns);
+        WriteSlicerStyles(xml);
+        WriteTimelineStyles(xml);
+        xml.WriteEndElement();
+    }
+
+    private void WriteSlicerStyles(XmlTreeWriter xml)
+    {
+        // TODO Styles: Represent and write back, this only writes default created by Excel
+        xml.WriteStartExtension("{EB79DEF2-80B8-43e5-95BD-54CBDDF9020C}", _ns, "x14", X14Main2009SsNs);
+        xml.WriteStartElement("slicerStyles", X14Main2009SsNs);
+        xml.WriteAttribute("defaultSlicerStyle", "SlicerStyleLight1");
+        xml.WriteEndElement();
+        xml.WriteEndElement();
+
+        // dxfs for slicer styles: 46F421CA-312F-682F-3DD2-61675219B42D
+    }
+
+    private void WriteTimelineStyles(XmlTreeWriter xml)
+    {
+        // TODO Styles: Represent and write back, this only writes default created by Excel
+        xml.WriteStartExtension("{9260A510-F301-46a8-8635-F512D64BE5F5}", _ns, "x15", X15Main2010SsNs);
+        xml.WriteStartElement("timelineStyles", X15Main2010SsNs);
+        xml.WriteAttribute("defaultTimelineStyle", "TimeSlicerStyleLight1");
+        xml.WriteEndElement();
+        xml.WriteEndElement();
+
+        // dxfs for timeline styles: A0A4C193-F2C1-4fcb-8827-314CF55A85BB
+    }
+
+    // TODO Styles: Move the class out and initialition of maps to different place.
+    internal class SequentialMap<TKey, T>
         where TKey : struct
     {
         /// <summary>
@@ -805,13 +1023,14 @@ internal class StylesWriter
         /// </summary>
         public int Count => _savedIdToActualId.Count;
 
-        internal static SequentialMap<TKey, T> Create(HashSet<T> usedValues, IReadOnlyBiDictionary<TKey, T> allValuesMap, int usedStart = 0, params T[] firstValues)
+        internal static SequentialMap<TKey, T> Create(HashSet<T> usedValues, IReadOnlyBiDictionary<TKey, T> allValuesMap, IReadOnlyDictionary<T, int>? firstValues = null, int usedStart = 0)
         {
             var map = new SequentialMap<TKey, T>(allValuesMap);
-            foreach (var firstValue in firstValues)
+            firstValues ??= new Dictionary<T, int>();
+            foreach (var (firstValue, savedId) in firstValues)
             {
                 var actualId = allValuesMap[firstValue];
-                map.Add(actualId);
+                map.Add(actualId, savedId);
             }
 
             // This is here basically for number formats. It ensures that user defined number
@@ -820,7 +1039,7 @@ internal class StylesWriter
             var usedSaveId = Math.Max(map.Count, usedStart);
             foreach (var (actualId, value) in allValuesMap)
             {
-                if (firstValues.Contains(value))
+                if (firstValues.ContainsKey(value))
                     continue;
 
                 if (!usedValues.Contains(value))

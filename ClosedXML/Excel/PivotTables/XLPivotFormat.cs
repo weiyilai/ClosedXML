@@ -1,9 +1,11 @@
+using ClosedXML.Excel.Formatting;
+
 namespace ClosedXML.Excel;
 
 /// <summary>
 /// A description of formatting that should be applied to a <see cref="XLPivotTable"/>.
 /// </summary>
-internal class XLPivotFormat
+internal class XLPivotFormat : IXLDxfContainer
 {
     internal XLPivotFormat(XLPivotArea pivotArea)
     {
@@ -16,14 +18,13 @@ internal class XLPivotFormat
     internal XLPivotArea PivotArea { get; }
 
     /// <summary>
-    /// Should the formatting (determined by <see cref="DxfStyleValue"/>) be applied or not?
+    /// Should the formatting (determined by <see cref="FormatValue"/>) be applied or not?
     /// </summary>
     internal XLPivotFormatAction Action { get; init; } = XLPivotFormatAction.Formatting;
 
     /// <summary>
     /// Differential formatting to apply to the <see cref="PivotArea"/>. It can be empty, e.g. if
-    /// <see cref="Action"/> is blank. Empty dxf is represented by <see cref="XLStyle.Default"/>,
-    /// until we get better dxf representation.
+    /// <see cref="Action"/> is blank.
     /// </summary>
-    internal XLStyleValue DxfStyleValue { get; set; } = XLStyle.Default.Value;
+    public XLDxfValue? FormatValue { get; set; }
 }

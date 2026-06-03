@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using ClosedXML.Excel.Formatting;
 
 namespace ClosedXML.Excel
 {
@@ -109,6 +110,19 @@ namespace ClosedXML.Excel
             }
 
             return map;
+        }
+
+        internal IEnumerable<XLFontFormatValue> GetUsedPhoneticFonts()
+        {
+            foreach (var entry in _table)
+            {
+                if (entry.RefCount > 0 &&
+                    entry.Text.Value is XLImmutableRichText richText &&
+                    richText.PhoneticsProperties is { } phoneticProps)
+                {
+                    yield return phoneticProps.Font;
+                }
+            }
         }
 
         private int IncreaseTextRef(Text text)

@@ -5,8 +5,31 @@ namespace ClosedXML.Excel
 {
     public enum XLColorType
     {
+        /// <summary>
+        /// Automatic color. The actual color is determined by the application depending on a context where it is used.
+        /// Generally speaking, the value is resolved either as a black (e.g. border or font color) or as a white (cell
+        /// or chart fill). The <see cref="XLColor.Color"/> of automatic color has no bearing on actual resolved color
+        /// and should be ignored.
+        /// </summary>
+        Automatic,
+
+        /// <summary>
+        /// A RGB color. It can technically specify alpha component, but Excel just ignores that and marks everything
+        /// as fully opaque. The color value is stored directly in <see cref="XLColor.Color"/>.
+        /// </summary>
         Color,
+
+        /// <summary>
+        /// A theme color. The color value depends on a theme of a workbook and can be resolved through <see cref="IXLTheme.ResolveThemeColor(XLThemeColor)"/>.
+        /// </summary>
         Theme,
+
+        /// <summary>
+        /// An indexed color. Only for legacy usage, used in times when palette was common. The only semi-valid usage
+        /// is for system foreground color (index 64) and system background color (index 65). The default indexed colors can
+        /// be found in <see cref="XLColor.Indexed"/> and the <see cref="XLColor.Color"/> will return a value that
+        /// corresponds to the default indexed color.
+        /// </summary>
         Indexed
     }
 
@@ -41,13 +64,13 @@ namespace ClosedXML.Excel
         {
             get
             {
-                if (ColorType == XLColorType.Theme)
-                    throw new InvalidOperationException("Cannot convert theme color to Color.");
+                if (ColorType == XLColorType.Color)
+                    return Key.Color;
 
                 if (ColorType == XLColorType.Indexed)
                     return IndexedColors[Indexed].Color;
 
-                return Key.Color;
+                throw new InvalidOperationException($"Cannot convert {LcColorType} color to Color.");
             }
         }
 
@@ -55,13 +78,11 @@ namespace ClosedXML.Excel
         {
             get
             {
-                if (ColorType == XLColorType.Theme)
-                    throw new InvalidOperationException("Cannot convert theme color to indexed color.");
-
                 if (ColorType == XLColorType.Indexed)
                     return Key.Indexed;
 
-                throw new InvalidOperationException("Cannot convert Color to indexed color.");
+                throw new InvalidOperationException($"Cannot convert {LcColorType} color to indexed color.");
+
             }
         }
 
@@ -72,10 +93,7 @@ namespace ClosedXML.Excel
                 if (ColorType == XLColorType.Theme)
                     return Key.ThemeColor;
 
-                if (ColorType == XLColorType.Indexed)
-                    throw new InvalidOperationException("Cannot convert indexed color to theme color.");
-
-                throw new InvalidOperationException("Cannot convert Color to theme color.");
+                throw new InvalidOperationException($"Cannot convert {LcColorType} color to theme color.");
             }
         }
 

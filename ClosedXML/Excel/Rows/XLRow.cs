@@ -19,11 +19,7 @@ namespace ClosedXML.Excel
         /// The direct constructor should only be used in <see cref="XLWorksheet.RangeFactory"/>.
         /// </summary>
         public XLRow(XLWorksheet worksheet, Int32 row)
-#if STYLES_REWORK
             : base(XLRangeAddress.EntireRow(worksheet, row))
-#else
-            : base(XLRangeAddress.EntireRow(worksheet, row), worksheet.StyleValue)
-#endif
         {
             SetRowNumber(row);
 
@@ -159,23 +155,17 @@ namespace ClosedXML.Excel
             asRange.InsertRowsBelowVoid(true, numberOfRows);
 
             var newRows = Worksheet.Rows(rowNum + 1, rowNum + numberOfRows);
-
-            CopyRows(newRows);
-
-            return newRows;
-        }
-
-        private void CopyRows(IXLRows newRows)
-        {
             foreach (var newRow in newRows)
             {
                 var internalRow = Worksheet.Internals.RowsCollection[newRow.RowNumber()];
                 internalRow._height = Height;
-                internalRow.StyleValue = StyleValue;
+                internalRow.FormatValue = FormatValue; // Is within a worbook
                 internalRow.Collapsed = Collapsed;
                 internalRow.IsHidden = IsHidden;
                 internalRow._outlineLevel = OutlineLevel;
             }
+
+            return newRows;
         }
 
         public new IXLRows InsertRowsAbove(Int32 numberOfRows)
@@ -292,7 +282,6 @@ namespace ClosedXML.Excel
         private int CalculateMinRowHeight(int startColumn, int endColumn, IXLGraphicEngine engine, Dpi dpi)
         {
             var glyphs = new List<GlyphBox>();
-            XLStyle? cellStyle = null;
             var rowHeightPx = 0;
             foreach (var cell in Row(startColumn, endColumn).CellsUsed().Cast<XLCell>())
             {
@@ -302,12 +291,10 @@ namespace ClosedXML.Excel
                 if (cell.IsMerged())
                     continue;
 
-                // Reuse styles if possible to reduce memory consumption
-                if (cellStyle is null || cellStyle.Value != cell.StyleValue)
-                    cellStyle = (XLStyle)cell.Style;
+                var cellFormat = Worksheet.GetStyleValue(cell.SheetPoint);
 
                 cell.GetGlyphBoxes(engine, dpi, glyphs);
-                var cellHeightPx = (int)Math.Ceiling(GetContentHeight(cellStyle.Alignment.TextRotation, glyphs));
+                var cellHeightPx = (int)Math.Ceiling(GetContentHeight(cellFormat.Alignment.TextRotation.Value, glyphs));
 
                 rowHeightPx = Math.Max(cellHeightPx, rowHeightPx);
             }
@@ -492,8 +479,11 @@ namespace ClosedXML.Excel
             var newRow = (XLRow)row;
             newRow._height = _height;
             newRow.HeightChanged = HeightChanged;
-            newRow.StyleValue = StyleValue;
             newRow.IsHidden = IsHidden;
+            if (FormatValue is not null)
+            {
+                newRow.FormatValue = newRow.Worksheet.Workbook.Styles.GetRegisteredCellFormat(GetFormat());
+            }
 
             AsRange().CopyTo(row);
 
@@ -544,6 +534,11 @@ namespace ClosedXML.Excel
         public XLCellFormatValue? FormatValue { get; set; }
 
         internal override XLCellFormat Format => XLCellFormat.ForRow(this);
+
+        private XLCellFormatValue GetFormat()
+        {
+            return FormatValue ?? Worksheet.Workbook.Styles.DefaultCellFormat;
+        }
 
         #endregion
 
@@ -659,8 +654,7 @@ namespace ClosedXML.Excel
 
         public override Boolean IsEmpty(XLCellsUsedOptions options)
         {
-            if (options.HasFlag(XLCellsUsedOptions.NormalFormats) &&
-                !StyleValue.Equals(Worksheet.StyleValue))
+            if (options.HasFlag(XLCellsUsedOptions.NormalFormats) && FormatValue is not null)
                 return false;
 
             return base.IsEmpty(options);
@@ -675,15 +669,6 @@ namespace ClosedXML.Excel
         {
             return false;
         }
-
-#if STYLES_REWORK
-        // TODO Styles: Replace with FormatValue during cut-over
-        internal XLStyleValue StyleValue
-        {
-            get;
-            set;
-        } = null!;
-#endif
 
         /// <summary>
         /// Flag enum to save space, instead of wasting byte for each flag.

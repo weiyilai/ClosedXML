@@ -68,12 +68,18 @@ namespace ClosedXML.Excel
         XLAlignmentVerticalValues Vertical { get; set; }
 
         /// <summary>
-        /// Gets or sets the cell's text indentation.
+        /// Gets or sets the cell's text indentation. If <see cref="Horizontal"/>
+        /// is <see cref="XLAlignmentHorizontalValues.General"/>, the value is
+        /// changed to <see cref="XLAlignmentHorizontalValues.Left"/>.
         /// </summary>
         /// <value>
         /// The value means a width equal to <c>indent_value * 3 * width_of_space_in_normal_font</c>.
         /// </value>
         /// <exception cref="ArgumentOutOfRangeException">When the value is outside of [0,255].</exception>
+        /// <exception cref="InvalidOperationException">If the value is positive and <see cref="Horizontal"/>
+        ///     is either <see cref="XLAlignmentHorizontalValues.Left"/>, <see cref="XLAlignmentHorizontalValues.Right"/>
+        ///     or <see cref="XLAlignmentHorizontalValues.Distributed"/>.
+        /// </exception>
         Int32 Indent { get; set; }
 
         /// <summary>

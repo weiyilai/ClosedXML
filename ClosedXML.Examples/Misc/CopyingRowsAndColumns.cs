@@ -1,45 +1,10 @@
 using System;
 using ClosedXML.Excel;
 
-
 namespace ClosedXML.Examples.Misc
 {
     public class CopyingRowsAndColumns : IXLExample
     {
-        #region Variables
-
-        // Public
-
-        // Private
-
-
-        #endregion
-
-        #region Properties
-
-        // Public
-
-        // Private
-
-        // Override
-
-
-        #endregion
-
-        #region Events
-
-        // Public
-
-        // Private
-
-        // Override
-
-
-        #endregion
-
-        #region Methods
-
-        // Public
         public void Create(String filePath)
         {
             var workbook = new XLWorkbook();
@@ -85,30 +50,22 @@ namespace ClosedXML.Examples.Misc
             originalSheet.Column("F").AsRange().CopyTo(fromRangeToColumn.Column(4).AsRange());
             fromRangeToColumn.Cell(1, 5).SetValue("Range to Cell:").Style.Alignment.SetTopToBottom();
             originalSheet.Column("F").AsRange().CopyTo(fromRangeToColumn.Column(6).FirstCell());
-          
+
 
             workbook.SaveAs(filePath);
         }
 
         private static void CopyRowAsRange(IXLWorksheet originalSheet, int originalRowNumber, IXLWorksheet destSheet, int destRowNumber)
         {
-            {
-                var destinationRow = destSheet.Row(destRowNumber);
-                destinationRow.Clear();
+            var destinationRow = destSheet.Row(destRowNumber);
+            destinationRow.Clear();
 
-                var originalRow = originalSheet.Row(originalRowNumber);
-                int columnNumber = originalRow.LastCellUsed(XLCellsUsedOptions.All).Address.ColumnNumber;
+            var originalRow = originalSheet.Row(originalRowNumber);
+            int columnNumber = originalRow.LastCellUsed(XLCellsUsedOptions.All).Address.ColumnNumber;
 
-                var originalRange = originalSheet.Range(originalRowNumber, 1, originalRowNumber, columnNumber);
-                var destRange = destSheet.Range(destRowNumber, 1, destRowNumber, columnNumber);
-                originalRange.CopyTo(destRange);
-            }
+            var originalRange = originalSheet.Range(originalRowNumber, 1, originalRowNumber, columnNumber);
+            var destRange = destSheet.Range(destRowNumber, 1, destRowNumber, columnNumber);
+            originalRange.CopyTo(destRange);
         }
-        // Private
-
-        // Override
-
-
-        #endregion
     }
 }

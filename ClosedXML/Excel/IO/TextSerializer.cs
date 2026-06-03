@@ -40,15 +40,11 @@ namespace ClosedXML.Excel.IO
                     w.WriteEndElement(); // rPh
                 }
 
-                var font = phoneticsProps.Font;
-                if (!context.SharedFonts.TryGetValue(font, out FontInfo fi))
-                {
-                    fi = new FontInfo { Font = font };
-                    context.SharedFonts.Add(font, fi);
-                }
+                var phoneticsFont = phoneticsProps.Font;
+                var phoneticsFontId = context.GetFontId(phoneticsFont);
 
                 w.WriteStartElement("phoneticPr", Main2006SsNs);
-                w.WriteAttribute("fontId", fi.FontId);
+                w.WriteAttribute("fontId", phoneticsFontId);
 
                 if (phoneticsProps.Alignment != XLPhoneticAlignment.Left)
                     w.WriteAttributeString("alignment", phoneticsProps.Alignment.ToOpenXmlString());
@@ -66,7 +62,7 @@ namespace ClosedXML.Excel.IO
             WriteRun(w, runText, run.Font);
         }
 
-        private static void WriteRun(XmlWriter w, string text, XLFontValue font)
+        private static void WriteRun(XmlWriter w, string text, XLFontFormatValue font)
         {
             var defaultFont = XLFontFormatValue.Default;
             w.WriteStartElement("r", Main2006SsNs);
@@ -94,16 +90,16 @@ namespace ClosedXML.Excel.IO
                 WriteRunProperty(w, "u", font.Underline.ToOpenXmlString());
 
             WriteRunProperty(w, @"vertAlign", font.VerticalAlignment.ToOpenXmlString());
-            WriteRunProperty(w, "sz", font.FontSize);
-            w.WriteColor("color", font.FontColor);
-            WriteRunProperty(w, "rFont", font.FontName);
-            WriteRunProperty(w, "family", (Int32)font.FontFamilyNumbering);
+            WriteRunProperty(w, "sz", font.Size.Points);
+            w.WriteColor("color", font.Color);
+            WriteRunProperty(w, "rFont", font.Name.Text);
+            WriteRunProperty(w, "family", (int)font.Family);
 
-            if (font.FontCharSet != defaultFont.Charset)
-                WriteRunProperty(w, "charset", (int)font.FontCharSet);
+            if (font.Charset != defaultFont.Charset)
+                WriteRunProperty(w, "charset", (int)font.Charset);
 
-            if (font.FontScheme != defaultFont.Scheme)
-                WriteRunProperty(w, "scheme", font.FontScheme.ToOpenXml());
+            if (font.Scheme != defaultFont.Scheme)
+                WriteRunProperty(w, "scheme", font.Scheme.ToOpenXml());
 
             w.WriteEndElement(); // rPr
 

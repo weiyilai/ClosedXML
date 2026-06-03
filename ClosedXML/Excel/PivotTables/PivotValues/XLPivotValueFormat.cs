@@ -13,28 +13,32 @@ namespace ClosedXML.Excel
 
         public Int32 NumberFormatId
         {
-            get => _pivotValue.NumberFormatValue?.NumberFormatId ?? -1;
+            get
+            {
+                if (_pivotValue.NumberFormatValue is null)
+                    return -1;
+
+                if (!XLPredefinedFormat.NumberFormatIds.TryGetValue(_pivotValue.NumberFormatValue.Value, out var numFmtId))
+                    return -1;
+
+                return numFmtId;
+            }
+
             set
             {
                 if (!XLPredefinedFormat.FormatCodes.TryGetValue(value, out var format))
                     throw new ArgumentOutOfRangeException($"Only predefined format is permitted. Use nested enums/members of {nameof(XLPredefinedFormat)}.");
 
-                var key = new XLNumberFormatKey
-                {
-                    NumberFormatId = value,
-                    Format = format
-                };
-                _pivotValue.NumberFormatValue = XLNumberFormatValue.FromKey(ref key);
+                _pivotValue.NumberFormatValue = format;
             }
         }
 
         public String Format
         {
-            get => _pivotValue.NumberFormatValue?.Format ?? string.Empty;
+            get => _pivotValue.NumberFormatValue ?? string.Empty;
             set
             {
-                var key = XLNumberFormatKey.ForFormat(value);
-                _pivotValue.NumberFormatValue = XLNumberFormatValue.FromKey(ref key);
+                _pivotValue.NumberFormatValue = XLNumberFormat.Parse(value);
             }
         }
 

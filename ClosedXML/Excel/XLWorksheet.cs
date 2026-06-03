@@ -95,7 +95,7 @@ namespace ClosedXML.Excel
             ShowWhiteSpace = workbook.ShowWhiteSpace;
             ShowZeros = workbook.ShowZeros;
             RightToLeft = workbook.RightToLeft;
-            TabColor = XLColor.NoColor;
+            TabColor = XLColor.Automatic;
             _selectedRanges = new XLRanges(this);
 
             Author = workbook.Author;
@@ -209,6 +209,11 @@ namespace ClosedXML.Excel
         public XLCellFormatValue? FormatValue { get; set; }
 
         internal override XLCellFormat Format => XLCellFormat.ForWorksheet(this);
+
+        internal XLCellFormatValue GetFormat()
+        {
+            return FormatValue ?? Workbook.Styles.DefaultCellFormat;
+        }
 
         #endregion
 
@@ -649,7 +654,9 @@ namespace ClosedXML.Excel
             targetSheet.ColumnWidthChanged = ColumnWidthChanged;
             targetSheet.RowHeight = RowHeight;
             targetSheet.RowHeightChanged = RowHeightChanged;
-            targetSheet.StyleValue = StyleValue;
+            if (FormatValue is not null)
+                targetSheet.FormatValue = workbook.Styles.GetRegisteredCellFormat(FormatValue);
+
             targetSheet.PageSetup = new XLPageSetup((XLPageSetup)PageSetup, targetSheet);
             ((XLHeaderFooter)targetSheet.PageSetup.Header).Changed = true;
             ((XLHeaderFooter)targetSheet.PageSetup.Footer).Changed = true;
@@ -1480,7 +1487,7 @@ namespace ClosedXML.Excel
             }
         }
 
-        public XLRow Row(Int32 rowNumber, Boolean pingCells)
+        internal XLRow Row(Int32 rowNumber, Boolean pingCells)
         {
             if (rowNumber <= 0 || rowNumber > XLHelper.MaxRowNumber)
                 throw new ArgumentOutOfRangeException(nameof(rowNumber), $"Row number must be between 1 and {XLHelper.MaxRowNumber}");
@@ -1954,33 +1961,37 @@ namespace ClosedXML.Excel
         /// <summary>
         /// Get the actual style for a point in the sheet.
         /// </summary>
-        internal XLStyleValue GetStyleValue(XLSheetPoint point)
+        internal XLCellFormatValue GetStyleValue(XLSheetPoint point)
         {
-            var styleValue = Internals.CellsCollection.FormatSlice.GetStyleValue(point);
-            if (styleValue is not null)
-                return styleValue;
+            // TODO Styles: This is basically a duplication of Hierarchy.Resolve(). Investigate deduplication.
+            var cellFormat = Internals.CellsCollection.FormatSlice.GetFormat(point);
+            if (cellFormat is not null)
+                return cellFormat;
 
+            // TODO Styles: Ensure all cross points are set at this time (=load+change). Taking from row/col should only be done if no cross is there.
             // If the slice doesn't contain any value, determine values by inheriting.
             // Cells that lie on an intersection of a XLColumn and a XLRow have their
             // style set when column/row is created to avoid problems with correct which
             // style has precedence. I.e. set column blue, set row red => cell is red.
             // Swap order the the cell is blue.
-            var sheetStyle = StyleValue;
-            var rowStyle = Internals.RowsCollection.TryGetValue(point.Row, out var row)
-                ? row.StyleValue
-                : sheetStyle;
-            var colStyle = Internals.ColumnsCollection.TryGetValue(point.Column, out var column)
-                ? column.StyleValue
-                : sheetStyle;
+            if (Internals.RowsCollection.TryGetValue(point.Row, out var row) && row.FormatValue is not null)
+                return row.FormatValue;
 
-            return XLStyleValue.Combine(sheetStyle, rowStyle, colStyle);
+            if (Internals.ColumnsCollection.TryGetValue(point.Column, out var column) && column.FormatValue is not null)
+                return column.FormatValue;
+
+            var sheetFormat = FormatValue;
+            if (sheetFormat is not null)
+                return sheetFormat;
+
+            return Workbook.Styles.DefaultCellFormat;
         }
 
         /// <summary>
         /// Get a style that should be used for a <paramref name="value"/>,
         /// if the value is set to the <paramref name="point"/>.
         /// </summary>
-        internal XLStyleValue? GetStyleForValue(XLCellValue value, XLSheetPoint point)
+        internal XLCellFormatValue? GetStyleForValue(XLCellValue value, XLSheetPoint point)
         {
             // Because StyleValue property retrieves value from a slice,
             // access it only if necessary. This happens during ever cell
@@ -1990,26 +2001,25 @@ namespace ClosedXML.Excel
                 case XLDataType.DateTime:
                     {
                         var onlyDatePart = value.GetUnifiedNumber() % 1 == 0;
-                        var styleValue = GetStyleValue(point);
-                        if (styleValue.NumberFormat.Format.Length == 0 &&
-                            styleValue.NumberFormat.NumberFormatId == 0)
+                        var currentFormat = GetStyleValue(point);
+                        if (currentFormat.NumberFormat.IsGeneralFormat())
                         {
                             var numberFormatId = onlyDatePart
                                 ? XLPredefinedFormat.DateTime.DayMonthYear4WithSlashes
                                 : XLPredefinedFormat.DateTime.MonthDayYear4WithDashesHour24Minutes;
-                            var dateTimeNumberFormat = styleValue.NumberFormat.ForPredefined((int)numberFormatId);
-                            return styleValue.WithNumberFormat(dateTimeNumberFormat);
+                            var dateTimeNumberFormat = XLPredefinedFormat.FormatCodes[(int)numberFormatId];
+                            return Workbook.Styles.GetModifiedFormat(currentFormat, dateTimeNumberFormat);
                         }
                     }
                     break;
 
                 case XLDataType.TimeSpan:
                     {
-                        var styleValue = GetStyleValue(point);
-                        if (styleValue.NumberFormat.Format.Length == 0 && styleValue.NumberFormat.NumberFormatId == 0)
+                        var currentFormat = GetStyleValue(point);
+                        if (currentFormat.NumberFormat.IsGeneralFormat())
                         {
-                            var durationNumberFormat = styleValue.NumberFormat.ForPredefined((int)XLPredefinedFormat.DateTime.Hour12MinutesSeconds);
-                            return styleValue.WithNumberFormat(durationNumberFormat);
+                            var durationNumberFormat = XLPredefinedFormat.FormatCodes[(int)XLPredefinedFormat.DateTime.Hour12MinutesSeconds];
+                            return Workbook.Styles.GetModifiedFormat(currentFormat, durationNumberFormat);
                         }
                     }
                     break;
@@ -2017,38 +2027,27 @@ namespace ClosedXML.Excel
                 case XLDataType.Text:
                     {
                         var text = value.GetText();
-                        XLStyleValue? styleValue = null;
-                        if (text.Length > 0 && text[0] == '\'')
+                        var startsWithQuote = text.Length > 0 && text[0] == '\'';
+                        var containsNewLine = text.Contains(Environment.NewLine, StringComparison.Ordinal);
+                        if (!startsWithQuote && !containsNewLine)
+                            break;
+
+                        var currentFormat = GetStyleValue(point);
+                        if (startsWithQuote && !currentFormat.IncludeQuotePrefix)
                         {
-                            styleValue = GetStyleValue(point);
-                            styleValue = styleValue.WithIncludeQuotePrefix(true);
+                            currentFormat = Workbook.Styles.GetRegisteredCellFormat(currentFormat, format => format with { IncludeQuotePrefix = true });
                         }
 
-                        var containsNewLine = text.AsSpan()
-                            .Contains(Environment.NewLine.AsSpan(), StringComparison.Ordinal);
-                        if (containsNewLine)
+                        if (containsNewLine && !currentFormat.Alignment.WrapText)
                         {
-                            styleValue ??= GetStyleValue(point);
-                            if (!styleValue.Alignment.WrapText)
-                            {
-                                styleValue = styleValue.WithAlignment(static alignment => alignment.WithWrapText(true));
-                            }
+                            currentFormat = Workbook.Styles.GetModifiedFormat(currentFormat, alignment => alignment with { WrapText = true });
                         }
 
-                        return styleValue;
+                        return currentFormat;
                     }
             }
 
             return null;
         }
-
-#if STYLES_REWORK
-        // TODO Styles: Replace with FormatValue during cut-over
-        internal XLStyleValue StyleValue
-        {
-            get;
-            set;
-        } = null!;
-#endif
     }
 }

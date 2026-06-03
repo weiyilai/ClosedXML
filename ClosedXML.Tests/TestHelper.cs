@@ -168,7 +168,6 @@ namespace ClosedXML.Tests
             {
                 var wb = new XLWorkbook(stream);
                 modify(wb);
-                wb.SaveAs(ms, validate);
                 return wb;
             }, expectedOutputResourcePath, evaluateFormulae, validate);
         }

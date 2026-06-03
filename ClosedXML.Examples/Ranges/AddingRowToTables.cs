@@ -7,9 +7,6 @@ namespace ClosedXML.Examples.Ranges
 {
     public class AddingRowToTables : IXLExample
     {
-        #region Methods
-
-        // Public
         public void Create(String filePath)
         {
             string tempFile = ExampleHelper.GetTempFilePath(filePath);
@@ -46,11 +43,5 @@ namespace ClosedXML.Examples.Ranges
                 }
             }
         }
-
-        // Private
-
-        // Override
-
-        #endregion Methods
     }
 }

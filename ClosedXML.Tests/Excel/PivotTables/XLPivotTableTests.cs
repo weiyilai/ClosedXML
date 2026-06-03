@@ -35,24 +35,18 @@ namespace ClosedXML.Tests
         public void TestPivotTableVersioningAttributes()
         {
             // Pivot cache definitions in input file has created and refreshed version attributes = 3
-            using (var stream = TestHelper.GetStreamFromResource(TestHelper.GetResourcePath(@"Other\PivotTableReferenceFiles\VersioningAttributes\inputfile.xlsx")))
+            TestHelper.LoadModifyAndCompare(@"Other\PivotTableReferenceFiles\VersioningAttributes\inputfile.xlsx", wb =>
             {
-                TestHelper.CreateAndCompare(() =>
-                {
-                    var wb = new XLWorkbook(stream);
+                var data = wb.Worksheet("Data");
 
-                    var data = wb.Worksheet("Data");
+                var pt = data.RangeUsed().CreatePivotTable(wb.AddWorksheet("pvt2").FirstCell(), "pvt2");
 
-                    var pt = data.RangeUsed().CreatePivotTable(wb.AddWorksheet("pvt2").FirstCell(), "pvt2");
+                pt.ColumnLabels.Add("Sex");
+                pt.RowLabels.Add("FullName");
+                pt.Values.Add("Id", "Count of Id").SetSummaryFormula(XLPivotSummary.Count);
 
-                    pt.ColumnLabels.Add("Sex");
-                    pt.RowLabels.Add("FullName");
-                    pt.Values.Add("Id", "Count of Id").SetSummaryFormula(XLPivotSummary.Count);
-
-                    return wb;
-                    // Pivot cache definitions in output file has created and refreshed version attributes = 5
-                }, @"Other\PivotTableReferenceFiles\VersioningAttributes\outputfile.xlsx");
-            }
+                // Pivot cache definitions in output file has created and refreshed version attributes = 5
+            }, @"Other\PivotTableReferenceFiles\VersioningAttributes\outputfile.xlsx");
         }
 
         [Test]
@@ -207,22 +201,20 @@ namespace ClosedXML.Tests
         }
 
         [Test]
-        [Ignore("PT styles will be fixed in a different PR")]
         public void PivotTableStyleFormatsTest()
         {
-/*
-            using (var ms = new MemoryStream())
-            {
-                using (var stream = TestHelper.GetStreamFromResource(TestHelper.GetResourcePath(@"Examples\PivotTables\PivotTables.xlsx")))
-                using (var wbSource = new XLWorkbook(stream))
-                using (var wbDestination = new XLWorkbook())
+            TestHelper.CreateAndCompare(
+                wb =>
                 {
-                    var ws = wbSource.Worksheet("PastrySalesData");
-                    wbDestination.AddWorksheet(ws);
-                    ws = wbDestination.Worksheet("PastrySalesData");
+                    // Copy pastry data from example file
+                    using var stream = TestHelper.GetStreamFromResource(TestHelper.GetResourcePath(@"Examples\PivotTables\PivotTables.xlsx"));
+                    using var wbSource = new XLWorkbook(stream);
+                    var wsDataSource = wbSource.Worksheet("PastrySalesData");
+                    wb.AddWorksheet(wsDataSource);
 
+                    var ws = wb.Worksheet("PastrySalesData");
                     var table = ws.Table("PastrySalesData");
-                    var ptSheet = wbDestination.Worksheets.Add("PivotTableStyleFormats");
+                    var ptSheet = wb.Worksheets.Add("PivotTableStyleFormats");
                     var pt = ptSheet.PivotTables.Add("pvtStyleFormats", ptSheet.Cell(1, 1), table);
                     pt.Layout = XLPivotLayout.Tabular;
 
@@ -251,46 +243,8 @@ namespace ClosedXML.Tests
                         .AndWith(monthPivotField, v => v.IsText && v.GetText() == "May")
                         .ForValueField(numberOfOrdersPivotValue)
                         .Style.Font.FontColor = XLColor.Green;
-
-                    wbDestination.SaveAs(ms);
-                }
-
-                ms.Seek(0, SeekOrigin.Begin);
-
-                using (var wb = new XLWorkbook(ms))
-                {
-                    var ws = wb.Worksheet("PivotTableStyleFormats");
-                    var pt = ws.PivotTable("pvtStyleFormats").CastTo<XLPivotTable>();
-
-                    Assert.AreEqual(0, pt.StyleFormats.ColumnGrandTotalFormats.Count());
-
-                    Assert.NotNull(pt.StyleFormats.RowGrandTotalFormats);
-                    Assert.AreEqual(1, pt.StyleFormats.RowGrandTotalFormats.Count());
-                    Assert.AreEqual(XLPivotStyleFormatElement.All, pt.StyleFormats.RowGrandTotalFormats.First().AppliesTo);
-                    Assert.AreEqual(XLColor.VenetianRed, pt.StyleFormats.RowGrandTotalFormats.ForElement(XLPivotStyleFormatElement.All).Style.Font.FontColor);
-
-                    var namePivotField = pt.RowLabels.Get("Name");
-                    var monthPivotField = pt.ColumnLabels.Get("Month");
-                    var numberOfOrdersPivotValue = pt.Values.Get("NumberOfOrders");
-
-                    Assert.AreEqual(XLStyle.Default, namePivotField.StyleFormats.Label.Style);
-                    Assert.AreEqual(XLColor.Blue, namePivotField.StyleFormats.Subtotal.Style.Fill.BackgroundColor);
-
-                    Assert.AreEqual(XLStyle.Default, monthPivotField.StyleFormats.Subtotal.Style);
-                    Assert.AreEqual(XLColor.Amber, monthPivotField.StyleFormats.Label.Style.Fill.BackgroundColor);
-                    Assert.AreEqual(XLColor.Yellow, monthPivotField.StyleFormats.Header.Style.Font.FontColor);
-
-                    var nameDataValuesFormat = namePivotField.StyleFormats.DataValuesFormat as XLPivotValueStyleFormat;
-                    Assert.AreEqual(2, nameDataValuesFormat.FieldReferences.Count());
-
-                    Assert.AreEqual(monthPivotField, nameDataValuesFormat.FieldReferences.First().CastTo<PivotLabelFieldReference>().PivotField);
-
-                    Assert.AreEqual(numberOfOrdersPivotValue.CustomName, nameDataValuesFormat.FieldReferences.Last().CastTo<PivotValueFieldReference>().Value);
-
-                    wb.Save();
-                }
-            }
-*/
+                },
+                @"Other\PivotTable\Style\Field_style_formats.xlsx");
         }
 
         [Test]
@@ -363,79 +317,72 @@ namespace ClosedXML.Tests
         [Test]
         public void BlankPivotTableField()
         {
-            using (var ms = new MemoryStream())
+            TestHelper.CreateAndCompare(wb =>
             {
-                TestHelper.CreateAndCompare(() =>
+                // Based on .\ClosedXML\ClosedXML.Examples\PivotTables\PivotTables.cs
+                // But with empty column for Month
+                var pastries = new List<Pastry>
                 {
-                    // Based on .\ClosedXML\ClosedXML.Examples\PivotTables\PivotTables.cs
-                    // But with empty column for Month
-                    var pastries = new List<Pastry>
-                    {
-                        new Pastry("Croissant", 101, 150, 60.2, "", new DateTime(2016, 04, 21)),
-                        new Pastry("Croissant", 101, 250, 50.42, "", new DateTime(2016, 05, 03)),
-                        new Pastry("Croissant", 101, 134, 22.12, "", new DateTime(2016, 06, 24)),
-                        new Pastry("Doughnut", 102, 250, 89.99, "", new DateTime(2017, 04, 23)),
-                        new Pastry("Doughnut", 102, 225, 70, "", new DateTime(2016, 05, 24)),
-                        new Pastry("Doughnut", 102, 210, 75.33, "", new DateTime(2016, 06, 02)),
-                        new Pastry("Bearclaw", 103, 134, 10.24, "", new DateTime(2016, 04, 27)),
-                        new Pastry("Bearclaw", 103, 184, 33.33, "", new DateTime(2016, 05, 20)),
-                        new Pastry("Bearclaw", 103, 124, 25, "", new DateTime(2017, 06, 05)),
-                        new Pastry("Danish", 104, 394, -20.24, "", null),
-                        new Pastry("Danish", 104, 190, 60, "", new DateTime(2017, 05, 08)),
-                        new Pastry("Danish", 104, 221, 24.76, "", new DateTime(2016, 06, 21)),
+                    new Pastry("Croissant", 101, 150, 60.2, "", new DateTime(2016, 04, 21)),
+                    new Pastry("Croissant", 101, 250, 50.42, "", new DateTime(2016, 05, 03)),
+                    new Pastry("Croissant", 101, 134, 22.12, "", new DateTime(2016, 06, 24)),
+                    new Pastry("Doughnut", 102, 250, 89.99, "", new DateTime(2017, 04, 23)),
+                    new Pastry("Doughnut", 102, 225, 70, "", new DateTime(2016, 05, 24)),
+                    new Pastry("Doughnut", 102, 210, 75.33, "", new DateTime(2016, 06, 02)),
+                    new Pastry("Bearclaw", 103, 134, 10.24, "", new DateTime(2016, 04, 27)),
+                    new Pastry("Bearclaw", 103, 184, 33.33, "", new DateTime(2016, 05, 20)),
+                    new Pastry("Bearclaw", 103, 124, 25, "", new DateTime(2017, 06, 05)),
+                    new Pastry("Danish", 104, 394, -20.24, "", null),
+                    new Pastry("Danish", 104, 190, 60, "", new DateTime(2017, 05, 08)),
+                    new Pastry("Danish", 104, 221, 24.76, "", new DateTime(2016, 06, 21)),
 
-                        // Deliberately add different casings of same string to ensure pivot table doesn't duplicate it.
-                        new Pastry("Scone", 105, 135, 0, "", new DateTime(2017, 04, 22)),
-                        new Pastry("SconE", 105, 122, 5.19, "", new DateTime(2017, 05, 03)),
-                        new Pastry("SCONE", 105, 243, 44.2, "", new DateTime(2017, 06, 14)),
+                    // Deliberately add different casings of same string to ensure pivot table doesn't duplicate it.
+                    new Pastry("Scone", 105, 135, 0, "", new DateTime(2017, 04, 22)),
+                    new Pastry("SconE", 105, 122, 5.19, "", new DateTime(2017, 05, 03)),
+                    new Pastry("SCONE", 105, 243, 44.2, "", new DateTime(2017, 06, 14)),
 
-                        // For ContainsBlank and integer rows/columns test
-                        new Pastry("Scone", null, 255, 18.4, "", null),
-                    };
+                    // For ContainsBlank and integer rows/columns test
+                    new Pastry("Scone", null, 255, 18.4, "", null),
+                };
 
-                    var wb = new XLWorkbook();
+                var sheet = wb.Worksheets.Add("PastrySalesData");
+                // Insert our list of pastry data into the "PastrySalesData" sheet at cell 1,1
+                var table = sheet.Cell(1, 1).InsertTable(pastries, "PastrySalesData", true);
+                sheet.Cell("F11").Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                sheet.Columns().AdjustToContents();
 
-                    var sheet = wb.Worksheets.Add("PastrySalesData");
-                    // Insert our list of pastry data into the "PastrySalesData" sheet at cell 1,1
-                    var table = sheet.Cell(1, 1).InsertTable(pastries, "PastrySalesData", true);
-                    sheet.Cell("F11").Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                    sheet.Columns().AdjustToContents();
+                IXLWorksheet ptSheet;
+                IXLPivotTable pt;
 
-                    IXLWorksheet ptSheet;
-                    IXLPivotTable pt;
+                for (var i = 1; i <= 5; i++)
+                {
+                    // Add a new sheet for our pivot table
+                    ptSheet = wb.Worksheets.Add("pvt" + i);
 
-                    for (var i = 1; i <= 5; i++)
-                    {
-                        // Add a new sheet for our pivot table
-                        ptSheet = wb.Worksheets.Add("pvt" + i);
+                    // Create the pivot table, using the data from the "PastrySalesData" table
+                    pt = ptSheet.PivotTables.Add("pvt" + i, ptSheet.Cell(1, 1), table);
 
-                        // Create the pivot table, using the data from the "PastrySalesData" table
-                        pt = ptSheet.PivotTables.Add("pvt" + i, ptSheet.Cell(1, 1), table);
+                    if (i == 1 || i == 4 || i == 5)
+                        pt.ColumnLabels.Add("Name");
+                    else if (i == 2 || i == 3)
+                        pt.RowLabels.Add("Name");
 
-                        if (i == 1 || i == 4 || i == 5)
-                            pt.ColumnLabels.Add("Name");
-                        else if (i == 2 || i == 3)
-                            pt.RowLabels.Add("Name");
+                    if (i == 1 || i == 3)
+                        pt.RowLabels.Add("Month");
+                    else if (i == 2 || i == 4)
+                        pt.ColumnLabels.Add("Month");
+                    else if (i == 5)
+                        pt.RowLabels.Add("BakeDate");
 
-                        if (i == 1 || i == 3)
-                            pt.RowLabels.Add("Month");
-                        else if (i == 2 || i == 4)
-                            pt.ColumnLabels.Add("Month");
-                        else if (i == 5)
-                            pt.RowLabels.Add("BakeDate");
+                    // The values in our table will come from the "NumberOfOrders" field
+                    // The default calculation setting is a total of each row/column
+                    pt.Values.Add("NumberOfOrders", "NumberOfOrdersPercentageOfBearclaw")
+                        .ShowAsPercentageFrom("Name").And("Bearclaw")
+                        .NumberFormat.Format = "0%";
 
-                        // The values in our table will come from the "NumberOfOrders" field
-                        // The default calculation setting is a total of each row/column
-                        pt.Values.Add("NumberOfOrders", "NumberOfOrdersPercentageOfBearclaw")
-                            .ShowAsPercentageFrom("Name").And("Bearclaw")
-                            .NumberFormat.Format = "0%";
-
-                        ptSheet.Columns().AdjustToContents();
-                    }
-
-                    return wb;
-                }, @"Other\PivotTableReferenceFiles\BlankPivotTableField\BlankPivotTableField.xlsx");
-            }
+                    ptSheet.Columns().AdjustToContents();
+                }
+            }, @"Other\PivotTableReferenceFiles\BlankPivotTableField\BlankPivotTableField.xlsx");
         }
 
         [Test]
@@ -443,10 +390,8 @@ namespace ClosedXML.Tests
         {
             // Check that pivot source reference for a sheet name with whitespaces
             // is not saved to the file with escaped quotes, issue #955.
-            TestHelper.CreateAndCompare(() =>
+            TestHelper.CreateAndCompare(wb =>
             {
-                var wb = new XLWorkbook();
-
                 // Worksheet name contains whitespaces that shouldn't be quoted in the file.
                 var sheet = wb.Worksheets.Add("Pastry Sales Data");
                 var range = sheet.Cell(1, 1).InsertData(new object[]
@@ -462,24 +407,15 @@ namespace ClosedXML.Tests
                 var pt = ptSheet.PivotTables.Add("pvt", ptSheet.Cell(1, 1), range);
                 pt.RowLabels.Add("Name");
                 pt.Values.Add("Sold count");
-
-                return wb;
             }, @"Other\PivotTableReferenceFiles\SourceSheetWithWhitespace\outputfile.xlsx");
         }
 
         [Test]
         public void PivotTableWithNoneTheme()
         {
-            using (var stream = TestHelper.GetStreamFromResource(TestHelper.GetResourcePath(@"Other\PivotTableReferenceFiles\PivotTableWithNoneTheme\inputfile.xlsx")))
-            using (var ms = new MemoryStream())
-            {
-                TestHelper.CreateAndCompare(() =>
-                {
-                    var wb = new XLWorkbook(stream);
-                    wb.SaveAs(ms);
-                    return wb;
-                }, @"Other\PivotTableReferenceFiles\PivotTableWithNoneTheme\outputfile.xlsx");
-            }
+            TestHelper.LoadSaveAndCompare(
+                @"Other\PivotTableReferenceFiles\PivotTableWithNoneTheme\inputfile.xlsx",
+                @"Other\PivotTableReferenceFiles\PivotTableWithNoneTheme\outputfile.xlsx");
         }
 
         [Test]
@@ -699,10 +635,9 @@ namespace ClosedXML.Tests
         [Test]
         public void TwoPivotWithOneSourceTest()
         {
-            using (var stream = TestHelper.GetStreamFromResource(TestHelper.GetResourcePath(@"Other\PivotTableReferenceFiles\TwoPivotTablesWithSingleSource\input.xlsx")))
-                TestHelper.CreateAndCompare(() =>
+            TestHelper.LoadModifyAndCompare(@"Other\PivotTableReferenceFiles\TwoPivotTablesWithSingleSource\input.xlsx",
+                wb =>
                 {
-                    var wb = new XLWorkbook(stream);
                     var srcRange = wb.Range("Sheet1!$B$2:$H$207");
 
                     var pivotSource = wb.PivotCaches.Add(srcRange);
@@ -711,8 +646,6 @@ namespace ClosedXML.Tests
                     {
                         pt.PivotCache = pivotSource;
                     }
-
-                    return wb;
                 }, @"Other\PivotTableReferenceFiles\TwoPivotTablesWithSingleSource\output.xlsx");
         }
 

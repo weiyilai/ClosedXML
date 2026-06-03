@@ -3,6 +3,9 @@ namespace ClosedXML.Excel.Formatting;
 /// <summary>
 /// A border format master record.
 /// </summary>
+/// <remarks>
+/// Many XML attributes are used only for dxf and thus are not represented in this structure (vertical, horizontal, outline).
+/// </remarks>
 internal record XLBorderFormatValue
 {
     internal static readonly XLBorderFormatValue None = new()
@@ -12,11 +15,8 @@ internal record XLBorderFormatValue
         Top = XLBorderLine.None,
         Bottom = XLBorderLine.None,
         Diagonal = XLBorderLine.None,
-        Vertical = XLBorderLine.None,
-        Horizontal = XLBorderLine.None,
         DiagonalUp = false,
         DiagonalDown = false,
-        Outline = false
     };
 
     public required XLBorderLine Left { get; init; }
@@ -33,40 +33,21 @@ internal record XLBorderFormatValue
     /// </summary>
     public required XLBorderLine Diagonal { get; init; }
 
-    /// <summary>
-    /// For pivot tables only.
-    /// </summary>
-    public required XLBorderLine Vertical { get; init; }
-
-    /// <summary>
-    /// For pivot tables only.
-    /// </summary>
-    public required XLBorderLine Horizontal { get; init; }
-
     public required bool DiagonalUp { get; init; }
 
     public required bool DiagonalDown { get; init; }
 
-    public required bool Outline { get; init; }
-
-    internal XLBorderKey ApplyTo(XLBorderKey borderKey)
+    internal static XLBorderFormatValue FromDxf(XLDifferentialBorderValue dxfBorder)
     {
-        borderKey = new XLBorderKey
+        return new XLBorderFormatValue
         {
-            LeftBorder = Left.Style,
-            LeftBorderColor = Left.Color.Key,
-            RightBorder = Right.Style,
-            RightBorderColor = Right.Color.Key,
-            TopBorder = Top.Style,
-            TopBorderColor = Top.Color.Key,
-            BottomBorder = Bottom.Style,
-            BottomBorderColor = Bottom.Color.Key,
-            DiagonalBorder = Diagonal.Style,
-            DiagonalBorderColor = Diagonal.Color.Key,
-            DiagonalUp = DiagonalUp,
-            DiagonalDown = DiagonalDown
+            Left = dxfBorder.Left ?? XLBorderLine.None,
+            Right = dxfBorder.Right ?? XLBorderLine.None,
+            Top = dxfBorder.Top ?? XLBorderLine.None,
+            Bottom = dxfBorder.Bottom ?? XLBorderLine.None,
+            Diagonal = dxfBorder.Diagonal ?? XLBorderLine.None,
+            DiagonalUp = dxfBorder.DiagonalUp,
+            DiagonalDown = dxfBorder.DiagonalDown,
         };
-
-        return borderKey;
     }
 }

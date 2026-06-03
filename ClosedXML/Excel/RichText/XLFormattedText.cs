@@ -2,42 +2,31 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Diagnostics;
 using System.Linq;
+using System.Text;
+using ClosedXML.Excel.Formatting;
 
 namespace ClosedXML.Excel
 {
     internal class XLFormattedText<T> : IXLFormattedText<T>
     {
+        // TODO: Move from ancestor to children, not needed here
+        protected T Container;
+        protected readonly XLWorkbookStyles Styles;
+
         /// <summary>
         /// Font used for a new rich text run, never modified. It is generally provided by a container of the formatted text.
         /// </summary>
-        private readonly IXLFontBase _defaultFont;
-        private List<XLRichString> _richTexts = new();
+        private readonly XLFontFormatValue _defaultFont;
+        private readonly List<XLRichString> _richTexts = new();
         private XLPhonetics _phonetics;
-        protected T Container;
 
-        protected XLFormattedText(IXLFormattedText<T> defaultRichText, IXLFontBase defaultFont)
-            : this(defaultFont)
+        protected XLFormattedText(XLFontFormatValue defaultFont, XLWorkbookStyles styles)
         {
-            foreach (var rt in defaultRichText)
-                AddText(rt.Text, rt);
-            if (defaultRichText.HasPhonetics)
-            {
-                _phonetics = new XLPhonetics(defaultRichText.Phonetics, defaultFont, OnContentChanged);
-            }
-        }
-
-        protected XLFormattedText(String text, IXLFontBase defaultFont)
-            : this(defaultFont)
-        {
-            AddText(text);
-        }
-
-        protected XLFormattedText(IXLFontBase defaultFont)
-        {
-            Length = 0;
+            Debug.Assert(styles.Fonts.ContainsValue(defaultFont));
             _defaultFont = defaultFont;
+            Styles = styles;
         }
 
         IXLPhonetics IXLFormattedText<T>.Phonetics => Phonetics;
@@ -51,23 +40,25 @@ namespace ClosedXML.Excel
         public Boolean HasPhonetics => _phonetics is not null;
 
         /// <inheritdoc cref="IXLFormattedText{T}.Phonetics"/>
-        internal XLPhonetics Phonetics => _phonetics ??= new XLPhonetics(_defaultFont, OnContentChanged);
+        internal XLPhonetics Phonetics
+        {
+            get => _phonetics ??= new XLPhonetics(_defaultFont, _defaultFont, Styles, OnContentChanged);
+            init => _phonetics = value;
+        } 
 
         public IXLRichString AddText(String text)
         {
-            return AddText(text, _defaultFont);
+            var richText = new XLRichString(text, _defaultFont, this, Styles, OnContentChanged);
+            AddText(richText);
+            OnContentChanged();
+            return richText;
         }
 
         public IXLRichString AddText(String text, IXLFontBase font)
         {
-            var richText = new XLRichString(text, font, this, OnContentChanged);
-            return AddText(richText);
-        }
-
-        public IXLRichString AddText(XLRichString richText)
-        {
-            _richTexts.Add(richText);
-            Length += richText.Text.Length;
+            var richFont = XLFontFormatValue.FromFontBase(font, Styles);
+            var richText = new XLRichString(text, richFont, this, Styles, OnContentChanged);
+            AddText(richText);
             OnContentChanged();
             return richText;
         }
@@ -79,8 +70,7 @@ namespace ClosedXML.Excel
 
         public IXLFormattedText<T> ClearText()
         {
-            _richTexts.Clear();
-            Length = 0;
+            ClearContent();
             OnContentChanged();
             return this;
         }
@@ -88,7 +78,7 @@ namespace ClosedXML.Excel
         public IXLFormattedText<T> ClearFont()
         {
             String text = Text;
-            ClearText();
+            ClearContent();
             AddText(text);
             return this;
         }
@@ -111,9 +101,9 @@ namespace ClosedXML.Excel
                 throw new IndexOutOfRangeException("Index and length must refer to a location within the string.");
 
             var newRichTexts = new List<XLRichString>();
-            var retVal = new XLFormattedText<T>(_defaultFont);
+            var retVal = new XLFormattedText<T>(_defaultFont, Styles);
 
-            Int32 lastPosition = 0;
+            var lastPosition = 0;
             foreach (var rt in _richTexts)
             {
                 if (lastPosition >= index + 1 + length) // We already have what we need
@@ -122,23 +112,23 @@ namespace ClosedXML.Excel
                 }
                 else if (lastPosition + rt.Text.Length >= index + 1) // Eureka!
                 {
-                    Int32 startIndex = index - lastPosition;
+                    var startIndex = index - lastPosition;
 
                     if (startIndex > 0)
-                        newRichTexts.Add(new XLRichString(rt.Text.Substring(0, startIndex), rt, this, OnContentChanged));
+                        newRichTexts.Add(new XLRichString(rt.Text[..startIndex], rt.Font, this, Styles, OnContentChanged));
                     else if (startIndex < 0)
                         startIndex = 0;
 
-                    Int32 leftToTake = length - retVal.Length;
+                    var leftToTake = length - retVal.Length;
                     if (leftToTake > rt.Text.Length - startIndex)
                         leftToTake = rt.Text.Length - startIndex;
 
-                    var newRt = new XLRichString(rt.Text.Substring(startIndex, leftToTake), rt, this, OnContentChanged);
+                    var newRt = new XLRichString(rt.Text.Substring(startIndex, leftToTake), rt.Font, this, Styles, OnContentChanged);
                     newRichTexts.Add(newRt);
                     retVal.AddText(newRt);
 
                     if (startIndex + leftToTake < rt.Text.Length)
-                        newRichTexts.Add(new XLRichString(rt.Text.Substring(startIndex + leftToTake), rt, this, OnContentChanged));
+                        newRichTexts.Add(new XLRichString(rt.Text.Substring(startIndex + leftToTake), rt.Font, this, Styles, OnContentChanged));
                 }
                 else // We haven't reached the desired position yet
                 {
@@ -146,17 +136,24 @@ namespace ClosedXML.Excel
                 }
                 lastPosition += rt.Text.Length;
             }
-            _richTexts = newRichTexts;
+
+            _richTexts.Clear();
+            _richTexts.AddRange(newRichTexts);
             OnContentChanged();
             return retVal;
         }
 
         public IXLFormattedText<T> CopyFrom(IXLFormattedText<T> original)
         {
-            ClearText();
+            ClearContent();
             foreach (var richText in original)
-                AddText(new XLRichString(richText.Text, richText, this, OnContentChanged));
+            {
+                var copyFont = XLFontFormatValue.FromFontBase(richText, Styles);
+                var copyText = new XLRichString(richText.Text, copyFont, this, Styles, OnContentChanged);
+                AddText(copyText);
+            }
 
+            OnContentChanged();
             return this;
         }
 
@@ -210,12 +207,24 @@ namespace ClosedXML.Excel
             return (_phonetics is null && !other.HasPhonetics) || Phonetics.Equals(other.Phonetics);
         }
 
+        protected void AddText(XLRichString richText)
+        {
+            _richTexts.Add(richText);
+            Length += richText.Text.Length;
+        }
+
         /// <summary>
         /// This method is called every time the formatted text is changed (new runs, font props, phonetics...).
         /// </summary>
         protected virtual void OnContentChanged()
         {
             // Do nothing, intended to be overriden.
+        }
+
+        private void ClearContent()
+        {
+            _richTexts.Clear();
+            Length = 0;
         }
     }
 }

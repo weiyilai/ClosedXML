@@ -13,7 +13,7 @@ internal sealed partial class XLNumberCellFormat : IXLNumberFormat
     string IXLNumberFormatBase.Format
     {
         get => Format;
-        set => Format = value;
+        set => Format = XLNumberFormat.Parse(value);
     }
 
     bool IEquatable<IXLNumberFormatBase>.Equals(IXLNumberFormatBase? other)
@@ -32,7 +32,7 @@ internal sealed partial class XLNumberCellFormat : IXLNumberFormat
 
     IXLStyle IXLNumberFormat.SetFormat(string value)
     {
-        Format = value;
+        Format = XLNumberFormat.Parse(value);
         return _parent;
     }
 }

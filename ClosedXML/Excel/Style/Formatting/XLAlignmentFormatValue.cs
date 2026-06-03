@@ -6,6 +6,22 @@ internal record XLAlignmentFormatValue
 {
     private readonly int _indent;
 
+    /// <summary>
+    /// Default values of alignment properties in XML part. If a value is missing in XML this one is used instead.
+    /// </summary>
+    internal static XLAlignmentFormatValue Default { get; } = new()
+    {
+        Horizontal = XLAlignmentHorizontalValues.General,
+        Vertical = XLAlignmentVerticalValues.Bottom,
+        TextRotation = TextRotation.None,
+        WrapText = false,
+        Indent = 0,
+        RelativeIndent = 0,
+        JustifyLastLine = false,
+        ShrinkToFit = false,
+        ReadingOrder = XLAlignmentReadingOrderValues.ContextDependent,
+    };
+
     public required XLAlignmentHorizontalValues Horizontal { get; init; }
 
     public required XLAlignmentVerticalValues Vertical { get; init; }
@@ -42,20 +58,4 @@ internal record XLAlignmentFormatValue
     public required bool ShrinkToFit { get; init; }
 
     public required XLAlignmentReadingOrderValues ReadingOrder { get; init; }
-
-    internal XLAlignmentKey ApplyTo(XLAlignmentKey alignmentKey)
-    {
-        return new XLAlignmentKey
-        {
-            Horizontal = Horizontal,
-            Vertical = Vertical,
-            TextRotation = TextRotation.Value,
-            WrapText = WrapText,
-            Indent = Indent,
-            RelativeIndent = RelativeIndent,
-            JustifyLastLine = JustifyLastLine,
-            ShrinkToFit = ShrinkToFit,
-            ReadingOrder = ReadingOrder
-        };
-    }
 }

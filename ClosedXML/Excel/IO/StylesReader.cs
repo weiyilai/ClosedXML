@@ -18,7 +18,7 @@ internal partial class StylesReader
     private readonly SequentialNameGenerator _styleNameGenerator = new("Style ", 1);
 
     // Format components to use when not specified in xf record
-    private readonly string _defaultNumberFormat;
+    private readonly XLNumberFormat _defaultNumberFormat;
     private readonly XLFillFormatValue _defaultFillFormat;
     private readonly XLBorderFormatValue _defaultBorderFormat;
     private readonly XLAlignmentFormatValue _defaultAlignmentFormat;
@@ -246,12 +246,12 @@ internal partial class StylesReader
             _styles.AddFormat(cellFormat);
     }
 
-    private (int NumFmtId, string FormatCode) OnNumFmtParsed(uint numFmtId, string formatCode)
+    private (int NumFmtId, XLNumberFormat FormatCode) OnNumFmtParsed(uint numFmtId, string formatCode)
     {
-        return (checked((int)numFmtId), formatCode);
+        return (checked((int)numFmtId), XLNumberFormat.Parse(formatCode));
     }
 
-    partial void OnNumFmtsParsed(List<(int NumFmtId, string FormatCode)> numFmt, uint? count)
+    partial void OnNumFmtsParsed(List<(int NumFmtId, XLNumberFormat Format)> numFmt, uint? count)
     {
         foreach (var (numFmtId, formatCode) in numFmt)
         {
@@ -429,8 +429,8 @@ internal partial class StylesReader
     private XLFillFormatValue OnPatternFillParsed(XLColor? fgColor, XLColor? bgColor, XLFillPatternValues? patternType)
     {
         // There is a discrepancy between <fill> interpretation for a solid fill:
-        // * cell fill: Pattern color is the one used for fill, the background color is ignored
-        // * dxf fill: Pattern color is ignored, the background color is used for fill
+        // * cell fill: Pattern color is ignored, the background color is used for fill
+        // * dxf fill: Pattern color is the one used for fill, the background color is ignored
         // The GUI in both cases says that the background color is the one that is used. Therefore
         // use background is correct per GUI. The problem is that ClosedXML historically says
         // the pattern color is the one that is used. This sucks, I have to live with it.
@@ -440,35 +440,27 @@ internal partial class StylesReader
         // OI-29500 is silent, but Excel uses solid fill for dxf and none for cell fill.
         if (_reader.Context[^2] == "dxf")
         {
-            var pattern = patternType ?? XLFillPatternValues.Solid;
-            if (pattern == XLFillPatternValues.Solid)
-            {
-                // Fix solid pattern discrepancy for dxf
-                var solidFill = new XLPatternFill
-                {
-                    PatternColor = bgColor ?? XLColor.NoColor,
-                    BackgroundColor = fgColor ?? XLColor.NoColor,
-                    PatternType = XLFillPatternValues.Solid,
-                };
-                return new XLFillFormatValue(solidFill);
-            }
-
             var patternFill = new XLPatternFill
             {
-                PatternColor = fgColor ?? XLColor.NoColor,
-                BackgroundColor = bgColor ?? XLColor.NoColor,
-                PatternType = pattern,
+                PatternColor = fgColor ?? XLColor.Automatic,
+                BackgroundColor = bgColor ?? XLColor.Automatic,
+                PatternType = patternType ?? XLFillPatternValues.Solid,
             };
             return new XLFillFormatValue(patternFill);
         }
         else
         {
-            // Pattern for cell style fill
+            var pattern = patternType ?? XLFillPatternValues.None;
+
+            // Fix solid pattern discrepancy for cell fill
+            if (pattern == XLFillPatternValues.Solid)
+                (bgColor, fgColor) = (fgColor, bgColor);
+
             var patternFill = new XLPatternFill
             {
-                PatternColor = fgColor ?? XLColor.NoColor,
-                BackgroundColor = bgColor ?? XLColor.NoColor,
-                PatternType = patternType ?? XLFillPatternValues.None,
+                PatternColor = fgColor ?? XLColor.Automatic,
+                BackgroundColor = bgColor ?? XLColor.Automatic,
+                PatternType = pattern,
             };
             return new XLFillFormatValue(patternFill);
         }
@@ -505,28 +497,33 @@ internal partial class StylesReader
         return (position, color);
     }
 
-    private XLBorderFormatValue OnBorderParsed(XLBorderLine? left, XLBorderLine? right, XLBorderLine? top, XLBorderLine? bottom, XLBorderLine? diagonal, XLBorderLine? vertical, XLBorderLine? horizontal, bool? diagonalUp, bool? diagonalDown, bool outline)
+    private XLDifferentialBorderValue OnBorderParsed(XLBorderLine? left, XLBorderLine? right, XLBorderLine? top, XLBorderLine? bottom, XLBorderLine? diagonal, XLBorderLine? vertical, XLBorderLine? horizontal, bool? diagonalUp, bool? diagonalDown, bool outline)
     {
-        var borderFormat = new XLBorderFormatValue
+        var dxfBorder = new XLDifferentialBorderValue
         {
-            Left = left ?? XLBorderLine.None,
-            Right = right ?? XLBorderLine.None,
-            Top = top ?? XLBorderLine.None,
-            Bottom = bottom ?? XLBorderLine.None,
-            Diagonal = diagonal ?? XLBorderLine.None,
-            Vertical = vertical ?? XLBorderLine.None,
-            Horizontal = horizontal ?? XLBorderLine.None,
-            DiagonalUp = diagonalUp ?? false, // OI-29500: Excel uses false as default value
-            DiagonalDown = diagonalDown ?? false, // OI-29500: Excel uses false as default value
+            Left = left,
+            Right = right,
+            Top = top,
+            Bottom = bottom,
+            Diagonal = diagonal,
+            Vertical = vertical,
+            Horizontal = horizontal,
+            DiagonalUp = diagonalUp ?? false,
+            DiagonalDown = diagonalDown ?? false,
             Outline = outline
         };
-        _styles.AddBorderFormat(borderFormat);
-        return borderFormat;
+        if (_reader.Context[^1] == "borders")
+        {
+            var cellBorder = XLBorderFormatValue.FromDxf(dxfBorder);
+            _styles.AddBorderFormat(cellBorder);
+        }
+
+        return dxfBorder;
     }
 
     private XLBorderLine OnBorderPrParsed(XLColor? color, XLBorderStyleValues style)
     {
-        return new XLBorderLine(color ?? XLColor.NoColor, style);
+        return new XLBorderLine(color ?? XLColor.Automatic, style);
     }
 
     partial void OnCellStyleXfsParsed(List<(XLCellFormatValue Format, int? CellStyleXfId)> xf, uint? count)
@@ -534,7 +531,7 @@ internal partial class StylesReader
         _styleFormats = xf.Select(x => x.Format).ToList();
     }
 
-    private (XLCellFormatValue Format, int? CellStyleXfId) OnXfParsed(XLAlignmentFormatValue? alignment, XLProtectionFormatValue? protection, uint? numFmtId, uint? fontId, uint? fillId, uint? borderId, uint? xfId, bool quotePrefix, bool pivotButton, bool? applyNumberFormat, bool? applyFont, bool? applyFill, bool? applyBorder, bool? applyAlignment, bool? applyProtection)
+    private (XLCellFormatValue Format, int? CellStyleXfId) OnXfParsed(XLDifferentialAlignmentValue? alignment, XLProtectionFormatValue? protection, uint? numFmtId, uint? fontId, uint? fillId, uint? borderId, uint? xfId, bool quotePrefix, bool pivotButton, bool? applyNumberFormat, bool? applyFont, bool? applyFill, bool? applyBorder, bool? applyAlignment, bool? applyProtection)
     {
         // When xf is parsed, all number formats, fonts, fills and borders should already be read.
         var numberFormat = _defaultNumberFormat;
@@ -578,7 +575,19 @@ internal partial class StylesReader
         var format = new XLCellFormatValue
         {
             NumberFormat = numberFormat,
-            Alignment = alignment ?? _defaultAlignmentFormat,
+            // Alignment is not copied from default format
+            Alignment = alignment is not null ? new XLAlignmentFormatValue
+            {
+                Horizontal = alignment.Horizontal ?? XLAlignmentFormatValue.Default.Horizontal,
+                Vertical = alignment.Vertical ?? XLAlignmentFormatValue.Default.Vertical,
+                TextRotation = alignment.TextRotation ?? XLAlignmentFormatValue.Default.TextRotation,
+                WrapText = alignment.WrapText ?? XLAlignmentFormatValue.Default.WrapText,
+                Indent = alignment.Indent ?? XLAlignmentFormatValue.Default.Indent,
+                RelativeIndent = alignment.RelativeIndent ?? XLAlignmentFormatValue.Default.RelativeIndent,
+                JustifyLastLine = alignment.JustifyLastLine ?? XLAlignmentFormatValue.Default.JustifyLastLine,
+                ShrinkToFit = alignment.ShrinkToFit ?? XLAlignmentFormatValue.Default.ShrinkToFit,
+                ReadingOrder = alignment.ReadingOrder ?? XLAlignmentFormatValue.Default.ReadingOrder,
+            } : XLAlignmentFormatValue.Default,
             Protection = protection ?? _defaultProtectionFormat,
             Font = font,
             Fill = fill,
@@ -675,35 +684,35 @@ internal partial class StylesReader
         return cellStyles;
     }
 
-    private XLAlignmentFormatValue OnCellAlignmentParsed(XLAlignmentHorizontalValues? horizontal, XLAlignmentVerticalValues vertical, uint? textRotation, bool? wrapText, uint? indent, int? relativeIndent, bool? justifyLastLine, bool? shrinkToFit, uint? readingOrder)
+    private XLDifferentialAlignmentValue OnCellAlignmentParsed(XLAlignmentHorizontalValues? horizontal, XLAlignmentVerticalValues vertical, uint? textRotation, bool? wrapText, uint? indent, int? relativeIndent, bool? justifyLastLine, bool? shrinkToFit, uint? readingOrder)
     {
         if (readingOrder is not null && readingOrder is not (0 or 1 or 2))
             throw PartStructureException.InvalidAttributeFormat();
 
         var normalizedTextRotation = OpenXmlHelper.NormalizeRotation(textRotation ?? 0);
-        return new XLAlignmentFormatValue
+        return new XLDifferentialAlignmentValue
         {
-            Horizontal = horizontal ?? XLAlignmentHorizontalValues.General,
+            Horizontal = horizontal,
             Vertical = vertical,
-            TextRotation = new TextRotation(normalizedTextRotation),
-            WrapText = wrapText ?? false,
-            Indent = indent is not null ? checked((int)indent.Value) : 0,
-            RelativeIndent = relativeIndent ?? 0,
-            JustifyLastLine = justifyLastLine ?? false,
-            ShrinkToFit = shrinkToFit ?? false,
-            ReadingOrder = readingOrder is not null ? (XLAlignmentReadingOrderValues)readingOrder.Value : XLAlignmentReadingOrderValues.ContextDependent
+            TextRotation = textRotation is not null ? new TextRotation(normalizedTextRotation) : null,
+            WrapText = wrapText,
+            Indent = indent is not null ? checked((int)indent.Value) : null,
+            RelativeIndent = relativeIndent,
+            JustifyLastLine = justifyLastLine,
+            ShrinkToFit = shrinkToFit,
+            ReadingOrder = readingOrder is not null ? (XLAlignmentReadingOrderValues)readingOrder.Value : null
         };
     }
 
-    partial void OnDxfParsed(XLDifferentialFontValue? font, (int NumFmtId, string FormatCode)? numFmt, XLFillFormatValue? fill, XLAlignmentFormatValue? alignment, XLBorderFormatValue? border, XLProtectionFormatValue? protection)
+    partial void OnDxfParsed(XLDifferentialFontValue? font, (int NumFmtId, string FormatCode)? numFmt, XLFillFormatValue? fill, XLDifferentialAlignmentValue? alignment, XLDifferentialBorderValue? border, XLProtectionFormatValue? protection)
     {
         var dxf = new XLDxfValue
         {
             NumberFormat = numFmt?.FormatCode,
             Font = font ?? XLDifferentialFontValue.Empty,
-            Fill = fill,
-            Alignment = alignment,
-            Border = border,
+            Fill = fill is not null ? new XLDifferentialFillValue(fill) : XLDifferentialFillValue.Empty,
+            Alignment = alignment ?? XLDifferentialAlignmentValue.Empty,
+            Border = border ?? XLDifferentialBorderValue.Empty,
             Protection = protection,
         };
         _styles.AddDifferentialFormat(dxf);

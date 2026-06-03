@@ -6,22 +6,22 @@ internal partial class XLDxFormat : IXLStyle
 {
     IXLAlignment IXLStyle.Alignment
     {
-        get => throw new NotImplementedException();
-        set => throw new NotImplementedException();
+        get => Alignment;
+        set => Alignment.SetValue(value);
     }
 
     IXLBorder IXLStyle.Border
     {
-        get => throw new NotImplementedException();
-        set => throw new NotImplementedException();
+        get => Border;
+        set => Border.SetValue(value);
     }
 
     IXLNumberFormat IXLStyle.DateFormat => throw new NotImplementedException();
 
     IXLFill IXLStyle.Fill
     {
-        get => throw new NotImplementedException();
-        set => throw new NotImplementedException();
+        get => Fill;
+        set => Fill.SetValue(value);
     }
 
     IXLFont IXLStyle.Font
@@ -56,5 +56,15 @@ internal partial class XLDxFormat : IXLStyle
     bool IEquatable<IXLStyle>.Equals(IXLStyle? other)
     {
         throw new NotSupportedException();
+    }
+
+    /// <summary>
+    /// A helper method that is used when a style if copied from one object to another.
+    /// For example, <c>conditionaFormat.Style = someOtherApi.Style</c>.
+    /// </summary>
+    internal void SetStyle(IXLStyle other)
+    {
+        // TODO Styles: Implement.
+        throw new NotImplementedException();
     }
 }

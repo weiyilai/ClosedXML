@@ -2,14 +2,10 @@ using System;
 using System.Linq;
 using ClosedXML.Excel;
 
-
 namespace ClosedXML.Examples.PageSetup
 {
     public class TwoPages : IXLExample
     {
-        #region Methods
-
-        // Public
         public void Create(String filePath)
         {
             var wb = new XLWorkbook();
@@ -25,12 +21,5 @@ namespace ClosedXML.Examples.PageSetup
 
             wb.SaveAs(filePath);
         }
-
-        // Private
-
-        // Override
-
-
-        #endregion
     }
 }

@@ -1,7 +1,5 @@
 #nullable disable
 
-using ClosedXML.Excel.InsertData;
-using ClosedXML.Extensions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -11,19 +9,17 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using ClosedXML.Graphics;
-using ClosedXML.Parser;
 using ClosedXML.Excel.CalcEngine.Visitors;
 using ClosedXML.Excel.Formatting;
+using ClosedXML.Excel.InsertData;
+using ClosedXML.Extensions;
+using ClosedXML.Graphics;
+using ClosedXML.Parser;
 
 namespace ClosedXML.Excel
 {
     [DebuggerDisplay("{Address}")]
-    internal sealed class XLCell :
-#if !STYLES_REWORK
-        XLStylizedBase, IXLStylized,
-#endif
-        IXLCell, IXLFormatContainer
+    internal sealed class XLCell : IXLCell, IXLFormatContainer
     {
         public static readonly Regex A1SimpleRegex = new Regex(
             //  @"(?<=\W)" // Start with non word
@@ -84,6 +80,8 @@ namespace ClosedXML.Excel
 
         internal XLSheetPoint SheetPoint => new(_rowNumber, _columnNumber);
 
+        private XLWorkbookStyles Styles => Worksheet.Workbook.Styles;
+
         #region Slice fields
 
         /// <summary>
@@ -93,20 +91,6 @@ namespace ClosedXML.Excel
         {
             get => _cellsCollection.ValueSlice.GetShareString(SheetPoint);
             set => _cellsCollection.ValueSlice.SetShareString(SheetPoint, value);
-        }
-
-        /// <summary>
-        /// Overriden <see cref="XLStylizedBase.StyleValue"/>, because we can't store the value
-        /// in the cell.
-        /// </summary>
-#if STYLES_REWORK
-        public XLStyleValue StyleValue
-#else
-        public override XLStyleValue StyleValue
-#endif
-        {
-            get => Worksheet.GetStyleValue(SheetPoint);
-            set => _cellsCollection.FormatSlice.Set(SheetPoint, value);
         }
 
         internal int MemorySstId => _cellsCollection.ValueSlice.GetShareStringId(SheetPoint);
@@ -197,6 +181,10 @@ namespace ClosedXML.Excel
 
         #region IXLFormatContainer
 #nullable enable
+
+        /// <summary>
+        /// A format of a cell. If cell format depends on inherited format, the value is <c>null</c>.
+        /// </summary>
         public XLCellFormatValue? FormatValue
         {
             get => _cellsCollection.FormatSlice.GetFormat(SheetPoint);
@@ -214,26 +202,29 @@ namespace ClosedXML.Excel
 
         internal XLComment CreateComment(int? shapeId = null)
         {
-            return SliceComment = new XLComment(this, shapeId: shapeId);
+            return SliceComment = XLComment.Create(this, shapeId: shapeId);
         }
 
         public XLRichText GetRichText()
         {
             var sliceRichText = SliceRichText;
             if (sliceRichText is not null)
-                return new XLRichText(this, sliceRichText);
+            {
+                var cellFormat = GetFormat();
+                return new XLRichText(this, cellFormat.Font, sliceRichText);
+            }
 
             return CreateRichText();
         }
 
         public XLRichText CreateRichText()
         {
-            var font = new XLFont(GetStyleForRead().Font.Key);
+            var fontFormat = GetFormat().Font;
 
             // Don't include rich text string with 0 length to a new rich text
             var richText = DataType == XLDataType.Blank
-                ? new XLRichText(this, font)
-                : new XLRichText(this, GetFormattedString(), font);
+                ? new XLRichText(this, fontFormat)
+                : new XLRichText(this, fontFormat, GetFormattedString());
             SliceRichText = XLImmutableRichText.Create(richText);
             return richText;
         }
@@ -268,7 +259,23 @@ namespace ClosedXML.Excel
             if (checkMergedRanges && IsInferiorMergedCell())
                 return this;
 
-            SetValueAndStyle(value);
+            // Mimic Excel behavior: When a value is set to a a certain types (e.g. timespan or
+            // a date), the format of a cell is changed.
+            var valueRequiredFormat = Worksheet.GetStyleForValue(value, SheetPoint);
+            if (valueRequiredFormat is not null)
+                FormatValue = valueRequiredFormat;
+
+            // Modify value after style, because we might need to strip the '
+            if (value.Type == XLDataType.Text)
+            {
+                var text = value.GetText();
+                if (text.Length > 0 && text[0] == '\'')
+                {
+                    value = text.Substring(1);
+                }
+            }
+
+            SetOnlyValue(value);
 
             FormulaA1 = null;
 
@@ -280,29 +287,6 @@ namespace ClosedXML.Excel
             }
 
             return this;
-        }
-
-        /// <summary>
-        /// Set value of a cell and its format (if necessary) from the passed value.
-        /// It doesn't clear formulas or checks merged cells or tables.
-        /// </summary>
-        private void SetValueAndStyle(XLCellValue value)
-        {
-            var modifiedStyleValue = Worksheet.GetStyleForValue(value, SheetPoint);
-            if (modifiedStyleValue is not null)
-                StyleValue = modifiedStyleValue;
-
-            // Modify value after style, because we might strip the '
-            if (value.Type == XLDataType.Text)
-            {
-                var text = value.GetText();
-                if (text.Length > 0 && text[0] == '\'')
-                {
-                    value = text.Substring(1);
-                }
-            }
-
-            SetOnlyValue(value);
         }
 
         public Boolean GetBoolean() => Value.GetBoolean();
@@ -517,9 +501,9 @@ namespace ClosedXML.Excel
         internal string GetFormattedString(XLCellValue value, CultureInfo culture = null)
         {
             culture ??= CultureInfo.CurrentCulture;
-            var format = GetFormat();
+            var numberFormat = GetFormat().NumberFormat;
             return value.IsUnifiedNumber
-                ? value.GetUnifiedNumber().ToExcelFormat(format, culture)
+                ? value.GetUnifiedNumber().ToExcelFormat(numberFormat, culture)
                 : value.ToString(culture);
         }
 
@@ -722,7 +706,7 @@ namespace ClosedXML.Excel
                 }
 
                 if (clearOptions.HasFlag(XLClearOptions.NormalFormats))
-                    SetStyle(Worksheet.Style);
+                    FormatValue = Worksheet.FormatValue;
 
                 if (clearOptions.HasFlag(XLClearOptions.ConditionalFormats))
                 {
@@ -822,13 +806,16 @@ namespace ClosedXML.Excel
             if (hyperlink is null)
                 return;
 
-            var cellFont = GetStyleForRead().Font;
-            var sheetFont = Worksheet.StyleValue.Font;
-            if (cellFont.FontColor.Equals(sheetFont.FontColor))
-                Style.Font.FontColor = XLColor.FromTheme(XLThemeColor.Hyperlink);
-
-            if (cellFont.Underline == sheetFont.Underline)
-                Style.Font.Underline = XLFontUnderlineValues.Single;
+            var cellFormat = GetFormat();
+            var sheetFormat = Worksheet.GetFormat();
+            if (ReferenceEquals(cellFormat, sheetFormat))
+            {
+                FormatValue = Styles.GetModifiedFormat(cellFormat, font => font with
+                {
+                    Color = XLColor.FromTheme(XLThemeColor.Hyperlink),
+                    Underline = XLFontUnderlineValues.Single
+                });
+            }
         }
 
         internal void SetCellHyperlink(XLHyperlink hyperlink)
@@ -1144,7 +1131,7 @@ namespace ClosedXML.Excel
         /// </summary>
         internal void PingStyle()
         {
-            StyleValue = StyleValue;
+            FormatValue = GetFormat();
         }
 
         public XLRange AsRange()
@@ -1154,14 +1141,12 @@ namespace ClosedXML.Excel
 
         #region Styles
 
-        private XLStyleValue GetStyleForRead()
+        /// <summary>
+        /// Get format of a cell that should be used to render it.
+        /// </summary>
+        internal XLCellFormatValue GetFormat()
         {
-            return StyleValue;
-        }
-
-        private void SetStyle(IXLStyle styleToUse)
-        {
-            Style = styleToUse;
+            return Worksheet.GetStyleValue(SheetPoint);
         }
 
         #endregion Styles
@@ -1174,21 +1159,6 @@ namespace ClosedXML.Excel
         public void DeleteSparkline()
         {
             Clear(XLClearOptions.Sparklines);
-        }
-
-        private string GetFormat()
-        {
-            var style = GetStyleForRead();
-            if (String.IsNullOrWhiteSpace(style.NumberFormat.Format))
-            {
-                var formatCodes = XLPredefinedFormat.FormatCodes;
-                if (formatCodes.TryGetValue(style.NumberFormat.NumberFormatId, out string format))
-                    return format;
-                else
-                    return string.Empty;
-            }
-            else
-                return style.NumberFormat.Format;
         }
 
         public IXLCell CopyFrom(IXLRangeBase rangeObject)
@@ -1374,7 +1344,7 @@ namespace ClosedXML.Excel
                 SliceRichText = sourceRichText;
 
             FormulaR1C1 = source.FormulaR1C1;
-            SliceComment = source.SliceComment == null ? null : new XLComment(this, source.SliceComment, source.Style.Font, source.SliceComment.Style);
+            SliceComment = source.SliceComment == null ? null : XLComment.CreateAsCopy(this, source, source.SliceComment);
 
             if (source.Worksheet.Hyperlinks.TryGet(source.SheetPoint, out var sourceHyperlink))
             {
@@ -1399,8 +1369,9 @@ namespace ClosedXML.Excel
             if (options.HasFlag(XLCellCopyOptions.Values))
                 CopyValuesFrom(otherCell);
 
+            // Other cell might be from a different workbook.
             if (options.HasFlag(XLCellCopyOptions.Styles))
-                StyleValue = otherCell.StyleValue;
+                FormatValue = Styles.GetRegisteredCellFormat(otherCell.GetFormat());
 
             if (options.HasFlag(XLCellCopyOptions.Sparklines))
                 CopySparklineFrom(otherCell);
@@ -2034,7 +2005,7 @@ namespace ClosedXML.Excel
                 foreach (var richTextRun in richText.Runs)
                 {
                     var text = richText.GetRunText(richTextRun);
-                    var font = new XLFont(richTextRun.Font.Key);
+                    var font = richTextRun.Font.ToFontBase();
                     AddGlyphs(text, font, engine, dpi, output);
                 }
             }

@@ -11,7 +11,7 @@ internal partial class StylesReader
     private void ParseNumFmts(string elementName)
     {
         var count = _reader.GetOptionalUInt("count");
-        var numFmt = new List<(int NumFmtId, string FormatCode)>();
+        var numFmt = new List<(int NumFmtId, XLNumberFormat Format)>();
         while (_reader.TryOpen("numFmt", _ns))
         {
             numFmt.Add(ParseNumFmt("numFmt"));
@@ -20,9 +20,9 @@ internal partial class StylesReader
         OnNumFmtsParsed(numFmt, count);
     }
 
-    partial void OnNumFmtsParsed(List<(int NumFmtId, string FormatCode)> numFmt, uint? count);
+    partial void OnNumFmtsParsed(List<(int NumFmtId, XLNumberFormat Format)> numFmt, uint? count);
 
-    private (int NumFmtId, string FormatCode) ParseNumFmt(string elementName)
+    private (int NumFmtId, XLNumberFormat Format) ParseNumFmt(string elementName)
     {
         var numFmtId = _reader.GetUInt("numFmtId");
         var formatCode = _reader.GetXString("formatCode");
@@ -120,7 +120,7 @@ internal partial class StylesReader
     private void ParseBorders(string elementName)
     {
         var count = _reader.GetOptionalUInt("count");
-        var border = new List<XLBorderFormatValue>();
+        var border = new List<XLDifferentialBorderValue>();
         while (_reader.TryOpen("border", _ns))
         {
             border.Add(ParseBorder("border"));
@@ -129,9 +129,9 @@ internal partial class StylesReader
         OnBordersParsed(border, count);
     }
 
-    partial void OnBordersParsed(List<XLBorderFormatValue> border, uint? count);
+    partial void OnBordersParsed(List<XLDifferentialBorderValue> border, uint? count);
 
-    private XLBorderFormatValue ParseBorder(string elementName)
+    private XLDifferentialBorderValue ParseBorder(string elementName)
     {
         var diagonalUp = _reader.GetOptionalBool("diagonalUp");
         var diagonalDown = _reader.GetOptionalBool("diagonalDown");
@@ -218,7 +218,7 @@ internal partial class StylesReader
         var applyBorder = _reader.GetOptionalBool("applyBorder");
         var applyAlignment = _reader.GetOptionalBool("applyAlignment");
         var applyProtection = _reader.GetOptionalBool("applyProtection");
-        XLAlignmentFormatValue? alignment = default;
+        XLDifferentialAlignmentValue? alignment = default;
         if (_reader.TryOpen("alignment", _ns))
         {
             alignment = ParseCellAlignment("alignment");
@@ -236,10 +236,10 @@ internal partial class StylesReader
         return OnXfParsed(alignment, protection, numFmtId, fontId, fillId, borderId, xfId, quotePrefix, pivotButton, applyNumberFormat, applyFont, applyFill, applyBorder, applyAlignment, applyProtection);
     }
 
-    private XLAlignmentFormatValue ParseCellAlignment(string elementName)
+    private XLDifferentialAlignmentValue ParseCellAlignment(string elementName)
     {
         var horizontal = _reader.GetOptionalEnum<XLAlignmentHorizontalValues>("horizontal");
-        var vertical = _reader.GetOptionalEnum<XLAlignmentVerticalValues>("vertical") ?? XLAlignmentVerticalValues.Bottom;
+        var vertical = _reader.GetOptionalEnum<XLAlignmentVerticalValues>("vertical") ?? XLAlignmentFormatValue.Default.Vertical;
         var textRotation = _reader.GetOptionalUInt("textRotation");
         var wrapText = _reader.GetOptionalBool("wrapText");
         var indent = _reader.GetOptionalUInt("indent");
@@ -333,12 +333,12 @@ internal partial class StylesReader
         {
             fill = ParseFill("fill");
         }
-        XLAlignmentFormatValue? alignment = default;
+        XLDifferentialAlignmentValue? alignment = default;
         if (_reader.TryOpen("alignment", _ns))
         {
             alignment = ParseCellAlignment("alignment");
         }
-        XLBorderFormatValue? border = default;
+        XLDifferentialBorderValue? border = default;
         if (_reader.TryOpen("border", _ns))
         {
             border = ParseBorder("border");
@@ -356,7 +356,7 @@ internal partial class StylesReader
         OnDxfParsed(font, numFmt, fill, alignment, border, protection);
     }
 
-    partial void OnDxfParsed(XLDifferentialFontValue? font, (int NumFmtId, string FormatCode)? numFmt, XLFillFormatValue? fill, XLAlignmentFormatValue? alignment, XLBorderFormatValue? border, XLProtectionFormatValue? protection);
+    partial void OnDxfParsed(XLDifferentialFontValue? font, (int NumFmtId, string FormatCode)? numFmt, XLFillFormatValue? fill, XLDifferentialAlignmentValue? alignment, XLDifferentialBorderValue? border, XLProtectionFormatValue? protection);
 
     private void ParseTableStyles(string elementName)
     {

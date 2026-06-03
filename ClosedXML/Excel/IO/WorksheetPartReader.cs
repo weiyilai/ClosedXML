@@ -1,17 +1,18 @@
-using DocumentFormat.OpenXml.Packaging;
-using DocumentFormat.OpenXml.Spreadsheet;
-using DocumentFormat.OpenXml;
-using System.Collections.Generic;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using ClosedXML.Utils;
+using ClosedXML.Excel.Formatting;
 using ClosedXML.Extensions;
 using ClosedXML.IO;
-using X14 = DocumentFormat.OpenXml.Office2010.Excel;
-using System.Diagnostics;
 using ClosedXML.Parser;
+using ClosedXML.Utils;
+using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Spreadsheet;
 using static ClosedXML.Excel.XLPredefinedFormat.DateTime;
+using X14 = DocumentFormat.OpenXml.Office2010.Excel;
 
 namespace ClosedXML.Excel.IO;
 
@@ -35,7 +36,6 @@ internal class WorksheetPartReader
 
     internal void LoadWorksheet(XLWorksheet ws, WorksheetPart worksheetPart, SharedStringItem[] sharedStrings, LoadContext context)
     {
-        var styleList = new Dictionary<int, XLStyleValue>();// {{0, ws.Style}};
         PageSetupProperties pageSetupProperties = null;
 
         _lastRow = 0;
@@ -83,7 +83,7 @@ internal class WorksheetPartReader
                 else if (reader.ElementType == typeof(Columns))
                     LoadColumns(ws, (Columns)reader.LoadCurrentElement());
                 else if (reader.ElementType == typeof(Row))
-                    LoadRow(ws, sharedStrings, styleList, reader);
+                    LoadRow(ws, sharedStrings, reader);
                 else if (reader.ElementType == typeof(AutoFilter))
                     AutoFilterReader.LoadAutoFilter((AutoFilter)reader.LoadCurrentElement(), ws);
                 else if (reader.ElementType == typeof(SheetProtection))
@@ -194,27 +194,20 @@ internal class WorksheetPartReader
                 xlColumns.ForEach(c => c.OutlineLevel = outlineLevel);
             }
 
-            Int32 styleIndex = col.Style != null ? Int32.Parse(col.Style.InnerText) : -1;
-            if (styleIndex >= 0)
+            if (col.Style?.Value is { } styleIndex)
             {
-                ApplyStyle(xlColumns, styleIndex, ws.Workbook.Styles);
-            }
-            else
-            {
-                xlColumns.Style = ws.Style;
+                ApplyStyle(xlColumns, checked((int)styleIndex), ws.Workbook.Styles);
             }
         }
     }
 
-    private void LoadRow(XLWorksheet ws, SharedStringItem[] sharedStrings,
-                          Dictionary<Int32, XLStyleValue> styleList,
-                          OpenXmlPartReader reader)
+    private void LoadRow(XLWorksheet ws, SharedStringItem[] sharedStrings, OpenXmlPartReader reader)
     {
         Debug.Assert(reader.LocalName == "row");
 
         var attributes = reader.Attributes;
         var rowIndexAttr = attributes.GetAttribute("r");
-        
+
         // Row number is an optional attribute. If not specified, it should be a next row from the last read row.
         var rowIndex = string.IsNullOrEmpty(rowIndexAttr) ? ++_lastRow : int.Parse(rowIndexAttr);
         _lastRow = rowIndex;
@@ -261,10 +254,6 @@ internal class WorksheetPartReader
             {
                 ApplyStyle(xlRow, styleIndex.Value, ws.Workbook.Styles);
             }
-            else
-            {
-                xlRow.Style = ws.Style;
-            }
         }
 
         _lastColumnNumber = 0;
@@ -274,7 +263,7 @@ internal class WorksheetPartReader
 
         while (reader.IsStartElement("c"))
         {
-            LoadCell(sharedStrings, ws, styleList, reader, rowIndex);
+            LoadCell(sharedStrings, ws, reader, rowIndex);
 
             // Move from end element of 'cell' either to next cell, extList start or end of row.
             reader.MoveAhead();
@@ -285,8 +274,7 @@ internal class WorksheetPartReader
             reader.Skip();
     }
 
-    private void LoadCell(SharedStringItem[] sharedStrings,
-                          XLWorksheet ws, Dictionary<Int32, XLStyleValue> styleList, OpenXmlPartReader reader, Int32 rowIndex)
+    private void LoadCell(SharedStringItem[] sharedStrings, XLWorksheet ws, OpenXmlPartReader reader, Int32 rowIndex)
     {
         Debug.Assert(reader.LocalName == "c" && reader.IsStartElement);
 
@@ -310,17 +298,9 @@ internal class WorksheetPartReader
 
         var xlCell = ws.Cell(cellAddress.Row, cellAddress.Column);
 
-        var styleIndex = attributes.GetIntAttribute("s") ?? 0;
-        xlCell.FormatValue = ws.Workbook.Styles.CellFormats[styleIndex];
-
-        if (styleList.TryGetValue(styleIndex, out var styleValue))
-        {
-            xlCell.StyleValue = styleValue;
-        }
-        else
-        {
-            ApplyStyle(xlCell, styleIndex, ws.Workbook.Styles);
-        }
+        var xfId = attributes.GetIntAttribute("s") ?? 0;
+        var cellFormat = ws.Workbook.Styles.CellFormats[xfId];
+        xlCell.FormatValue = cellFormat;
 
         var showPhonetic = attributes.GetBoolAttribute("ph", false);
         if (showPhonetic)
@@ -352,7 +332,7 @@ internal class WorksheetPartReader
         var cellHasValue = reader.IsStartElement("v");
         if (cellHasValue)
         {
-            SetCellValue(dataType, reader.GetText(), xlCell, sharedStrings);
+            SetCellValue(dataType, reader.GetText(), xlCell, cellFormat, sharedStrings);
 
             // Skips all nodes of the 'v' element (has no child nodes) and moves to the first element after.
             reader.Skip();
@@ -408,9 +388,6 @@ internal class WorksheetPartReader
             // so if a workbook is in 1904-format, we do that adjustment here and when saving.
             xlCell.SetOnlyValue(xlCell.GetDateTime().AddDays(1462));
         }
-
-        if (!styleList.ContainsKey(styleIndex))
-            styleList.Add(styleIndex, xlCell.StyleValue);
     }
 
     private XLCellFormula SetCellFormula(XLWorksheet ws, XLSheetPoint cellAddress, OpenXmlPartReader reader)
@@ -514,14 +491,14 @@ internal class WorksheetPartReader
         return formula;
     }
 
-    private void SetCellValue(CellValues dataType, string cellValue, XLCell xlCell, SharedStringItem[] sharedStrings)
+    private void SetCellValue(CellValues dataType, string cellValue, XLCell xlCell, XLCellFormatValue format, SharedStringItem[] sharedStrings)
     {
         if (dataType == CellValues.Number)
         {
             // XLCell is by default blank, so no need to set it.
             if (cellValue is not null && double.TryParse(cellValue, XLHelper.NumberStyle, XLHelper.ParseCulture, out var number))
             {
-                var numberDataType = GetNumberDataType(xlCell.StyleValue.NumberFormat);
+                var numberDataType = GetNumberDataType(format.NumberFormat);
                 var cellNumber = numberDataType switch
                 {
                     XLDataType.DateTime => XLCellValue.FromSerialDateTime(number),
@@ -584,6 +561,7 @@ internal class WorksheetPartReader
     /// <param name="element">The element (either a shared string or inline string)</param>
     private void SetCellText(XLCell xlCell, RstType element)
     {
+        // TODO Styles: Create XLImmutableRichText and assign directly instead of using the API.
         var runs = element.Elements<Run>();
         var hasRuns = false;
         foreach (Run run in runs)
@@ -613,12 +591,29 @@ internal class WorksheetPartReader
         var pp = phoneticProperties.FirstOrDefault();
         if (pp != null)
         {
-            if (pp.Alignment != null)
-                xlCell.GetRichText().Phonetics.Alignment = pp.Alignment.Value.ToClosedXml();
-            if (pp.Type != null)
-                xlCell.GetRichText().Phonetics.Type = pp.Type.Value.ToClosedXml();
+            var xlPhoneticPr = xlCell.GetRichText().Phonetics;
 
-            OpenXmlHelper.LoadFont(pp, xlCell.GetRichText().Phonetics);
+            if (pp.Alignment != null)
+                xlPhoneticPr.Alignment = pp.Alignment.Value.ToClosedXml();
+            if (pp.Type != null)
+                xlPhoneticPr.Type = pp.Type.Value.ToClosedXml();
+            if (pp.FontId?.Value is { } fontId)
+            {
+                var phoneticsFont = xlCell.Worksheet.Workbook.Styles.Fonts[checked((int)fontId)];
+
+                xlPhoneticPr.Bold = phoneticsFont.Bold;
+                xlPhoneticPr.Italic = phoneticsFont.Italic;
+                xlPhoneticPr.Underline = phoneticsFont.Underline;
+                xlPhoneticPr.Strikethrough = phoneticsFont.Strikethrough;
+                xlPhoneticPr.VerticalAlignment = phoneticsFont.VerticalAlignment;
+                xlPhoneticPr.Shadow = phoneticsFont.Shadow;
+                xlPhoneticPr.FontSize = phoneticsFont.Size.Points;
+                xlPhoneticPr.FontColor = phoneticsFont.Color;
+                xlPhoneticPr.FontName = phoneticsFont.Name.Text;
+                xlPhoneticPr.FontFamilyNumbering = phoneticsFont.Family;
+                xlPhoneticPr.FontCharSet = phoneticsFont.Charset;
+                xlPhoneticPr.FontScheme = phoneticsFont.Scheme;
+            }
         }
 
         // Load phonetic runs
@@ -630,33 +625,39 @@ internal class WorksheetPartReader
         }
     }
 
-    private static XLDataType GetNumberDataType(XLNumberFormatValue numberFormat)
+    // TODO Styles: Move methods to strongly typed number format
+    private static XLDataType GetNumberDataType(XLNumberFormat numberFormat)
     {
-        var numberFormatId = (XLPredefinedFormat.DateTime)numberFormat.NumberFormatId;
-        var isTimeOnlyFormat = numberFormatId is
-            Hour12MinutesAmPm or
-            Hour12MinutesSecondsAmPm or
-            Hour24Minutes or
-            Hour24MinutesSeconds or
-            MinutesSeconds or
-            Hour12MinutesSeconds or
-            MinutesSecondsMillis1;
-
-        if (isTimeOnlyFormat)
-            return XLDataType.TimeSpan;
-
-        var isDateTimeFormat = numberFormatId is
-                DayMonthYear4WithSlashes or
-                DayMonthAbbrYear2WithDashes or
-                DayMonthAbbrWithDash or
-                MonthDayYear4WithDashesHour24Minutes;
-
-        if (isDateTimeFormat)
-            return XLDataType.DateTime;
-
-        if (!String.IsNullOrWhiteSpace(numberFormat.Format))
+        if (XLPredefinedFormat.NumberFormatIds.TryGetValue(numberFormat, out var formatId))
         {
-            var dataType = GetDataTypeFromFormat(numberFormat.Format);
+            var numberFormatId = (XLPredefinedFormat.DateTime)formatId;
+            var isTimeOnlyFormat = numberFormatId is
+                Hour12MinutesAmPm or
+                Hour12MinutesSecondsAmPm or
+                Hour24Minutes or
+                Hour24MinutesSeconds or
+                MinutesSeconds or
+                Hour12MinutesSeconds or
+                MinutesSecondsMillis1;
+
+            if (isTimeOnlyFormat)
+                return XLDataType.TimeSpan;
+
+            var isDateTimeFormat = numberFormatId is
+                    DayMonthYear4WithSlashes or
+                    DayMonthAbbrYear2WithDashes or
+                    DayMonthAbbrWithDash or
+                    MonthDayYear4WithDashesHour24Minutes;
+
+            if (isDateTimeFormat)
+                return XLDataType.DateTime;
+
+            return XLDataType.Number;
+        }
+
+        if (!String.IsNullOrWhiteSpace(numberFormat))
+        {
+            var dataType = GetDataTypeFromFormat(numberFormat);
             return dataType ?? XLDataType.Number;
         }
 
@@ -811,24 +812,11 @@ internal class WorksheetPartReader
 
             conditionalFormat.StopIfTrue = OpenXmlHelper.GetBooleanValueAsBool(fr.StopIfTrue, false);
 
-            var dxfKey = XLStyle.Default.Value.Key;
+            // TODO Styles: CF with empty format is technically legal, but seriously suss. Investigate.
             if (fr.FormatId is not null)
             {
-                var df = differentialFormats[checked((int)fr.FormatId.Value)];
-                if (df.NumberFormat is not null)
-                    dxfKey = dxfKey with { NumberFormat = XLNumberFormatKey.ForFormat(df.NumberFormat) };
-
-                if (df.Font is not null)
-                    dxfKey = dxfKey with { Font = df.Font.ApplyTo(dxfKey.Font) };
-
-                if (df.Fill is not null)
-                    dxfKey = dxfKey with { Fill = df.Fill.ApplyTo(dxfKey.Fill) };
-
-                if (df.Border is not null)
-                    dxfKey = dxfKey with { Border = df.Border.ApplyTo(dxfKey.Border) };
+                conditionalFormat.FormatValue = differentialFormats[checked((int)fr.FormatId.Value)];
             }
-
-            conditionalFormat.Style = new XLStyle(null, dxfKey);
 
             // The conditional formatting type is compulsory. If it doesn't exist, skip the entire rule.
             if (fr.Type == null) continue;
@@ -1255,52 +1243,15 @@ internal class WorksheetPartReader
         }
     }
 
-    private static void ApplyStyle(XLWorksheet sheet, Int32 styleIndex, XLWorkbookStyles styles)
+    private static void ApplyStyle(IXLFormatContainer container, Int32 styleIndex, XLWorkbookStyles styles)
     {
-        ApplyStyle(styleValue =>
-        {
-            sheet.StyleValue = styleValue;
-            sheet.FormatValue = styles.CellFormats[styleIndex];
-        }, styleIndex, styles);
-    }
-    
-    private static void ApplyStyle(XLRow row, Int32 styleIndex, XLWorkbookStyles styles)
-    {
-        ApplyStyle(styleValue =>
-        {
-            row.StyleValue = styleValue;
-            row.FormatValue = styles.CellFormats[styleIndex];
-        }, styleIndex, styles);
-    }
-
-    private static void ApplyStyle(XLCell cell, Int32 styleIndex, XLWorkbookStyles styles)
-    {
-        ApplyStyle(styleValue =>
-        {
-            cell.StyleValue = styleValue;
-            cell.FormatValue = styles.CellFormats[styleIndex];
-        }, styleIndex, styles);
-    }
-
-    private static void ApplyStyle(Action<XLStyleValue> setStyle, Int32 styleIndex, XLWorkbookStyles styles)
-    {
-        var xlStyleKey = XLStyle.Default.Key;
-        XLWorkbook.LoadStyle(ref xlStyleKey, styleIndex, styles);
-        var styleValue = XLStyleValue.FromKey(ref xlStyleKey);
-        setStyle(styleValue);
+        container.FormatValue = styles.CellFormats[styleIndex];
     }
 
     private static void ApplyStyle(XLColumns columns, Int32 styleIndex, XLWorkbookStyles styles)
     {
-        var xlStyleKey = XLStyle.Default.Key;
-        XLWorkbook.LoadStyle(ref xlStyleKey, styleIndex, styles);
-
         // When loading columns we must propagate style to each column but not deeper. In other cases we do not propagate at all.
-        var styleValue = XLStyleValue.FromKey(ref xlStyleKey);
-        columns.Cast<XLColumn>().ForEach(col =>
-        {
-            col.StyleValue = styleValue;
-            col.FormatValue = styles.CellFormats[styleIndex];
-        });
+        foreach (XLColumn col in columns)
+            ApplyStyle(col, styleIndex, styles);
     }
 }

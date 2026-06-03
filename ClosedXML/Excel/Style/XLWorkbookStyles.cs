@@ -16,7 +16,7 @@ internal class XLWorkbookStyles
     /// </summary>
     public const int FirstUserDefinedNumberFormatIndex = 164;
 
-    private readonly BiDictionary<int, string> _numberFormats;
+    private readonly BiDictionary<int, XLNumberFormat> _numberFormats;
 
     private readonly BiDictionary<int, XLFontFormatValue> _fontFormats;
 
@@ -79,7 +79,7 @@ internal class XLWorkbookStyles
         Font = new XLFontFormatValue
         {
             Name = "Calibri",
-            Charset = XLFontCharSet.ShiftJIS,
+            Charset = XLFontCharSet.Ansi,
             Family = XLFontFamilyNumberingValues.Swiss,
             Bold = false,
             Italic = false,
@@ -88,7 +88,7 @@ internal class XLWorkbookStyles
             Shadow = false,
             Condense = false,
             Extend = false,
-            Color = XLColor.FromArgb(0x00000000),
+            Color = XLColor.Black,
             Size = XLFontSize.FromPoints(11),
             Underline = XLFontUnderlineValues.None,
             VerticalAlignment = XLFontVerticalTextAlignmentValues.Baseline,
@@ -109,7 +109,7 @@ internal class XLWorkbookStyles
 
     internal XLWorkbookStyles()
     {
-        _numberFormats = new BiDictionary<int, string>();
+        _numberFormats = new BiDictionary<int, XLNumberFormat>();
         _fontFormats = new BiDictionary<int, XLFontFormatValue>();
         _fillFormats = new BiDictionary<int, XLFillFormatValue>();
         _borderFormats = new BiDictionary<int, XLBorderFormatValue>();
@@ -120,7 +120,7 @@ internal class XLWorkbookStyles
         _pivotStyles = new Dictionary<string, XLPivotTableStyle>(XLHelper.NameComparer);
     }
 
-    internal IReadOnlyBiDictionary<int, string> NumberFormats => _numberFormats;
+    internal IReadOnlyBiDictionary<int, XLNumberFormat> NumberFormats => _numberFormats;
 
     internal IReadOnlyBiDictionary<int, XLFontFormatValue> Fonts => _fontFormats;
 
@@ -191,7 +191,7 @@ internal class XLWorkbookStyles
             VerticalAlignment = XLFontVerticalTextAlignmentValues.Baseline,
             Scheme = XLFontScheme.None
         },
-        NumberFormat = "",
+        NumberFormat = XLPredefinedFormat.FormatCodes[XLPredefinedFormat.General],
         Alignment = new XLAlignmentFormatValue()
         {
             Horizontal = XLAlignmentHorizontalValues.General,
@@ -217,28 +217,18 @@ internal class XLWorkbookStyles
         CustomFormat = CellFormatComponents.None
     };
 
-    internal XLNumberFormatValue GetNumberFormat(int numberFormatId)
+    internal void AddNumberFormat(int numFmtId, XLNumberFormat format)
     {
-        var xlNumberFormat = new XLNumberFormatKey
-        {
-            NumberFormatId = numberFormatId,
-            Format = _numberFormats[numberFormatId]
-        };
-        return XLNumberFormatValue.FromKey(ref xlNumberFormat);
+        _numberFormats.Add(numFmtId, format);
     }
 
-    internal void AddNumberFormat(int numFmtId, string formatCode)
-    {
-        _numberFormats.Add(numFmtId, formatCode);
-    }
-
-    internal void AddUserDefinedNumberFormat(string formatCode)
+    internal void AddUserDefinedNumberFormat(XLNumberFormat numberFormat)
     {
         var numFmtId = FirstUserDefinedNumberFormatIndex;
         if (_numberFormats.Count > 0)
             numFmtId = Math.Max(_numberFormats.Keys.Max() + 1, numFmtId);
         
-        _numberFormats.Add(numFmtId, formatCode);
+        _numberFormats.Add(numFmtId, numberFormat);
     }
 
     internal void AddFontFormat(XLFontFormatValue fontFormat)
@@ -292,13 +282,25 @@ internal class XLWorkbookStyles
         _mruColors = mruColors;
     }
 
-    internal string GetRegisteredNumberFormat(string numberFormat)
+    internal XLNumberFormat GetRegisteredNumberFormat(XLNumberFormat numberFormat)
     {
         if (_numberFormats.TryGetValue(numberFormat, out var existingFormat))
             return existingFormat;
 
         AddUserDefinedNumberFormat(numberFormat);
         return numberFormat;
+    }
+
+    private XLAlignmentFormatValue GetRegisteredAlignmentFormat(XLAlignmentFormatValue original, Func<XLAlignmentFormatValue, XLAlignmentFormatValue> modify)
+    {
+        // TODO Styles: Probably also make a table for alignment
+        return modify(original);
+    }
+
+    private XLProtectionFormatValue GetRegisteredProtectionFormat(XLProtectionFormatValue original, Func<XLProtectionFormatValue, XLProtectionFormatValue> modify)
+    {
+        // TODO Styles: Probably also make a table for protection
+        return modify(original);
     }
 
     /// <summary>
@@ -309,11 +311,44 @@ internal class XLWorkbookStyles
     internal XLFontFormatValue GetRegisteredFontFormat(XLFontFormatValue original, Func<XLFontFormatValue, XLFontFormatValue> modify)
     {
         var modified = modify(original);
-        if (_fontFormats.TryGetValue(modified, out var existingFont))
+        return GetRegisteredFontFormat(modified);
+    }
+
+    internal XLFontFormatValue GetRegisteredFontFormat(XLFontFormatValue font)
+    {
+        if (_fontFormats.TryGetValue(font, out var existingFont))
             return existingFont;
 
-        AddFontFormat(modified);
-        return modified;
+        AddFontFormat(font);
+        return font;
+    }
+
+    internal XLCellFormatValue GetModifiedFormat(XLCellFormatValue originalFormat, XLNumberFormat numberFormat)
+    {
+        var modifiedNumberFormat = GetRegisteredNumberFormat(numberFormat);
+        var modifiedFormat = GetRegisteredCellFormat(originalFormat, format => format with { NumberFormat = modifiedNumberFormat });
+        return modifiedFormat;
+    }
+
+    internal XLCellFormatValue GetModifiedFormat(XLCellFormatValue originalFormat, Func<XLAlignmentFormatValue, XLAlignmentFormatValue> modify)
+    {
+        var modifiedAlignment = GetRegisteredAlignmentFormat(originalFormat.Alignment, modify);
+        var modifiedFormat = GetRegisteredCellFormat(originalFormat, format => format with { Alignment = modifiedAlignment });
+        return modifiedFormat;
+    }
+
+    internal XLCellFormatValue GetModifiedFormat(XLCellFormatValue originalFormat, Func<XLFontFormatValue, XLFontFormatValue> modify)
+    {
+        var modifiedFont = GetRegisteredFontFormat(originalFormat.Font, modify);
+        var modifiedFormat = GetRegisteredCellFormat(originalFormat, format => format with { Font = modifiedFont });
+        return modifiedFormat;
+    }
+
+    internal XLCellFormatValue GetModifiedFormat(XLCellFormatValue originalFormat, Func<XLBorderFormatValue, XLBorderFormatValue> modify)
+    {
+        var modifiedBorder = GetRegisteredBorderFormat(originalFormat.Border, modify);
+        var modifiedFormat = GetRegisteredCellFormat(originalFormat, format => format with { Border = modifiedBorder });
+        return modifiedFormat;
     }
 
     internal XLFillFormatValue GetRegisteredFillFormat(XLFillFormatValue original, Func<XLFillFormatValue, XLFillFormatValue> modify)
@@ -347,6 +382,22 @@ internal class XLWorkbookStyles
     }
 
     /// <summary>
+    /// Get registered format equal to <paramref name="format"/> from the styles. Generally for copying formats other workbooks.
+    /// </summary>
+    internal XLCellFormatValue GetRegisteredCellFormat(XLCellFormatValue format)
+    {
+        // Each component might be from a different workbook, so ensure they are all registered. Formats are immutable, so sharing is fine.
+        var registeredNumberFormat = GetRegisteredNumberFormat(format.NumberFormat);
+        var registeredAlignment = GetRegisteredAlignmentFormat(format.Alignment, static x => x);
+        var registeredProtection = GetRegisteredProtectionFormat(format.Protection, static x => x);
+        var registeredFont = GetRegisteredFontFormat(format.Font, static x => x);
+        var registeredFill = GetRegisteredFillFormat(format.Fill, static x => x);
+        var registeredBorder = GetRegisteredBorderFormat(format.Border, static x => x);
+        var registeredFormat = GetRegisteredCellFormat(format, static x => x);
+        return registeredFormat;
+    }
+
+    /// <summary>
     /// Get a differential format that is stored in the internal structures of the styles class.
     /// The differential format is created by modification of existing dxf format. This is
     /// essential for saving, all formats must be registered in the styles class. 
@@ -354,11 +405,16 @@ internal class XLWorkbookStyles
     internal XLDxfValue GetRegisteredDxFormat(XLDxfValue original, Func<XLDxfValue, XLDxfValue> modify)
     {
         var modified = modify(original);
-        if (_differentialFormats.TryGetValue(modified, out var existingDxf))
+        return RegisteredDxFormat(modified);
+    }
+
+    internal XLDxfValue RegisteredDxFormat(XLDxfValue dxf)
+    {
+        if (_differentialFormats.TryGetValue(dxf, out var existingDxf))
             return existingDxf;
 
-        AddDifferentialFormat(modified);
-        return modified;
+        AddDifferentialFormat(dxf);
+        return dxf;
     }
 
     /// <summary>
@@ -376,7 +432,7 @@ internal class XLWorkbookStyles
             styles.AddNumberFormat(numFmtId, formatCode);
 
         var normalStyle = styles.DefaultNormalStyle;
-        styles.AddFontFormat(normalStyle.Font!);
+        styles.AddFontFormat(normalStyle.Font);
         styles.AddFillFormat(XLFillFormatValue.None);
         styles.AddFillFormat(XLFillFormatValue.Gray125);
         styles.AddBorderFormat(XLBorderFormatValue.None);

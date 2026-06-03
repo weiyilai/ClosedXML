@@ -17,6 +17,7 @@
 
   <PropertyGroup>
     <NoWarn>$(NoWarn);NU1605;CS1591</NoWarn>
+    <DefineConstants>STYLES_REWORK</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,7 +1,5 @@
-using System;
 using System.Collections.Generic;
 using ClosedXML.Excel.Formatting;
-using ClosedXML.Utils;
 
 namespace ClosedXML.Excel;
 
@@ -59,21 +57,15 @@ internal class FormatSlice : ISlice
         _slice.Swap(sp1, sp2);
     }
 
-    public void Set(XLSheetPoint point, XLStyleValue value)
-    {
-        var modified = _slice[point] with { StyleValue = value };
-        _slice.Set(point, modified);
-    }
-
     public void Set(XLSheetPoint point, XLCellFormatValue? value)
     {
         var modified = _slice[point] with { Format = value };
         _slice.Set(point, modified);
     }
 
-    internal XLStyleValue? GetStyleValue(XLSheetPoint point)
+    internal void SetAll(XLSheetRange area, XLCellFormatValue? value)
     {
-        return _slice[point].StyleValue;
+        _slice.SetAll(area, new SliceValue { Format = value });
     }
 
     internal XLCellFormatValue? GetFormat(XLSheetPoint point)
@@ -81,5 +73,16 @@ internal class FormatSlice : ISlice
         return _slice[point].Format;
     }
 
-    private readonly record struct SliceValue(XLStyleValue? StyleValue, XLCellFormatValue? Format);
+    // TODO Styles: FormatSlice should keep track of used format values so we don't have to go over all of them.
+    internal void AddUsedFormat(HashSet<XLCellFormatValue> usedCellFormats)
+    {
+        var enumerator = GetEnumerator(XLSheetRange.Full);
+        while (enumerator.MoveNext())
+        {
+            if (_slice[enumerator.Current].Format is { } format)
+                usedCellFormats.Add(format);
+        }
+    }
+
+    private readonly record struct SliceValue(XLCellFormatValue? Format);
 }

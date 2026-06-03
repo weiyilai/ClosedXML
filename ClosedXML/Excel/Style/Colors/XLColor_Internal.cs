@@ -4,7 +4,7 @@ public partial class XLColor
 {
     internal XLColorKey Key { get; }
 
-    private XLColor() : this(new XLColorKey())
+    private XLColor() : this(new XLColorKey() { ColorType = XLColorType.Automatic })
     {
         HasValue = false;
     }
@@ -14,4 +14,9 @@ public partial class XLColor
         Key = key;
         HasValue = true;
     }
+
+    /// <summary>
+    /// Lower case color type for exception messages.
+    /// </summary>
+    private string LcColorType => ColorType.ToString().ToLowerInvariant();
 }

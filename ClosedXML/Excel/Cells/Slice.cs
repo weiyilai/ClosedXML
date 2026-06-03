@@ -1,4 +1,4 @@
-﻿#nullable disable
+#nullable disable
 
 using System;
 using System.Collections;
@@ -224,6 +224,14 @@ namespace ClosedXML.Excel
             Set(sp2, in value1);
         }
 
+        internal void SetAll(XLSheetRange range, in TElement value)
+        {
+            foreach (var point in range)
+            {
+                Set(point, in value);
+            }
+        }
+
         internal void Set(XLSheetPoint point, in TElement value)
             => Set(point.Row, point.Column, in value);
 
@@ -385,7 +393,7 @@ namespace ClosedXML.Excel
             XLSheetPoint IEnumerator<XLSheetPoint>.Current => Point;
 
             object IEnumerator.Current => Point;
-            
+
             public void Dispose() { }
         }
     }

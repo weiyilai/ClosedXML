@@ -28,7 +28,7 @@ internal sealed partial class XLNumberCellFormat
         }
     }
 
-    private string Format
+    private XLNumberFormat Format
     {
         get => _parent.Resolve(static x => x.NumberFormat);
         set => _parent.ModifyNumberFormat(value);
@@ -46,6 +46,6 @@ internal sealed partial class XLNumberCellFormat
 
     internal void SetNumberFormat(string numberFormat)
     {
-        Format = numberFormat;
+        Format = XLNumberFormat.Parse(numberFormat);
     }
 }

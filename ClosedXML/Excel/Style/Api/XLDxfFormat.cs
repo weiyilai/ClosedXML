@@ -16,7 +16,13 @@ internal partial class XLDxFormat
 
     private XLDxfValue Dxf => _container.FormatValue ?? XLDxfValue.Empty;
 
+    private XLDxfAlignmentFormat Alignment => new(this);
+
     private XLDxfFontFormat Font => new(this);
+
+    private XLDxfFillFormat Fill => new(this);
+
+    private XLDxfBorderFormat Border => new(this);
 
     internal TProperty? Resolve<TComponent, TProperty>(Func<XLDxfValue, TComponent> getComponent, Func<TComponent, TProperty?> getProperty)
         where TProperty : struct
@@ -38,6 +44,39 @@ internal partial class XLDxFormat
         {
             var modifiedFont = modify(dxf.Font, value);
             var modifiedDxf = dxf with { Font = modifiedFont };
+            return modifiedDxf;
+        });
+        _container.FormatValue = modifiedDxf;
+    }
+
+    internal void ModifyFill<T>(Func<XLDifferentialFillValue, T, XLDifferentialFillValue> modify, T value)
+    {
+        var modifiedDxf = _styles.GetRegisteredDxFormat(Dxf, dxf =>
+        {
+            var modifiedFill = modify(dxf.Fill, value);
+            var modifiedDxf = dxf with { Fill = modifiedFill };
+            return modifiedDxf;
+        });
+        _container.FormatValue = modifiedDxf;
+    }
+
+    internal void ModifyAlignment<T>(Func<XLDifferentialAlignmentValue, T, XLDifferentialAlignmentValue> modify, T value)
+    {
+        var modifiedDxf = _styles.GetRegisteredDxFormat(Dxf, dxf =>
+        {
+            var modifiedAlignment = modify(dxf.Alignment, value);
+            var modifiedDxf = dxf with { Alignment = modifiedAlignment };
+            return modifiedDxf;
+        });
+        _container.FormatValue = modifiedDxf;
+    }
+
+    internal void ModifyBorder<T>(Func<XLDifferentialBorderValue, T, XLDifferentialBorderValue> modify, T value)
+    {
+        var modifiedDxf = _styles.GetRegisteredDxFormat(Dxf, dxf =>
+        {
+            var modifiedBorder = modify(dxf.Border, value);
+            var modifiedDxf = dxf with { Border = modifiedBorder };
             return modifiedDxf;
         });
         _container.FormatValue = modifiedDxf;

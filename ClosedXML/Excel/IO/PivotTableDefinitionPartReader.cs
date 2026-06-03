@@ -125,7 +125,7 @@ internal class PivotTableDefinitionPartReader
                 var baseField = dataField.BaseField?.Value ?? -1;
                 var baseItem = dataField.BaseItem?.Value ?? 1048832;
                 var numberFormatId = checked((int?)dataField.NumberFormatId?.Value);
-                var numberFormat = numberFormatId is not null ? styles.GetNumberFormat(numberFormatId.Value) : null;
+                var numberFormat = numberFormatId is not null ? styles.NumberFormats[numberFormatId.Value] : (XLNumberFormat?)null;
                 var xlDataField = new XLPivotDataField(xlPivotTable, checked((int)field))
                 {
                     DataFieldName = name,
@@ -146,32 +146,15 @@ internal class PivotTableDefinitionPartReader
             foreach (var format in formats.Cast<Format>())
             {
                 var action = format.Action?.Value.ToClosedXml() ?? XLPivotFormatAction.Formatting;
-                var dxfKey = XLStyleValue.Default.Key;
-                if (format.FormatId is not null)
-                {
-                    // TODO: What about alignment?
-                    var differentialFormats = sheet.Workbook.Styles.DifferentialFormats;
-                    var df = differentialFormats[checked((int)format.FormatId.Value)];
-                    if (df.NumberFormat is not null)
-                        dxfKey = dxfKey with { NumberFormat = XLNumberFormatKey.ForFormat(df.NumberFormat) };
-
-                    if (df.Font is not null)
-                        dxfKey = dxfKey with { Font = df.Font.ApplyTo(dxfKey.Font) };
-
-                    if (df.Fill is not null)
-                        dxfKey = dxfKey with { Fill = df.Fill.ApplyTo(dxfKey.Fill) };
-
-                    if (df.Border is not null)
-                        dxfKey = dxfKey with { Border = df.Border.ApplyTo(dxfKey.Border) };
-                }
-
-                var dxfValue = XLStyleValue.FromKey(ref dxfKey);
+                var dxf = format.FormatId is { } dxfId
+                    ? sheet.Workbook.Styles.DifferentialFormats[checked((int)dxfId.Value)]
+                    : null;
                 var pivotArea = format.PivotArea ?? throw PartStructureException.ExpectedElementNotFound();
                 var xlPivotArea = LoadPivotArea(pivotArea);
                 var xlFormat = new XLPivotFormat(xlPivotArea)
                 {
                     Action = action,
-                    DxfStyleValue = dxfValue,
+                    FormatValue = dxf,
                 };
                 xlPivotTable.AddFormat(xlFormat);
             }
@@ -379,7 +362,7 @@ internal class PivotTableDefinitionPartReader
         var compact = pivotField.Compact?.Value ?? true;
         var allDrilled = pivotField.AllDrilled?.Value ?? false;
         var numberFormatId = checked((int?)pivotField.NumberFormatId?.Value);
-        var numberFormat = numberFormatId is not null ? styles.GetNumberFormat(numberFormatId.Value) : null;
+        var numberFormat = numberFormatId is not null ? styles.NumberFormats[numberFormatId.Value] : (XLNumberFormat?)null;
         var outline = pivotField.Outline?.Value ?? true;
         var subtotalTop = pivotField.SubtotalTop?.Value ?? true;
         var dragToRow = pivotField.DragToRow?.Value ?? true;

@@ -1,13 +1,10 @@
-﻿using ClosedXML.Excel;
+using ClosedXML.Excel;
 using System;
 
 namespace ClosedXML.Examples.Misc
 {
     public class WorkbookProtection : IXLExample
     {
-        #region Methods
-
-        // Public
         public void Create(String filePath)
         {
             using var wb = new XLWorkbook();
@@ -15,7 +12,5 @@ namespace ClosedXML.Examples.Misc
             wb.Protect("Abc@123");
             wb.SaveAs(filePath);
         }
-
-        #endregion Methods
     }
 }

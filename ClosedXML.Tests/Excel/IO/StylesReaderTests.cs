@@ -165,7 +165,7 @@ internal class StylesReaderTests
             var fill = styles.Fills[0];
             Assert.NotNull(fill.Pattern);
             Assert.AreEqual(XLFillPatternValues.LightGrid, fill.Pattern.PatternType);
-            Assert.AreEqual(XLColor.NoColor, fill.Pattern.PatternColor);
+            Assert.AreEqual(XLColor.Automatic, fill.Pattern.PatternColor);
             Assert.AreEqual(XLColor.FromRgb(0x804000), fill.Pattern.BackgroundColor);
         });
     }
@@ -324,7 +324,7 @@ internal class StylesReaderTests
             Assert.IsTrue(format.Protection.Locked);
             Assert.IsFalse(format.Protection.Hidden);
 
-            Assert.AreSame(styles.NumberFormats[164], format.NumberFormat);
+            Assert.AreEqual(styles.NumberFormats[164], format.NumberFormat);
             Assert.AreSame(styles.Fonts[1], format.Font);
             Assert.AreSame(styles.Fills[1], format.Fill);
             Assert.AreSame(styles.Borders[0], format.Border);
@@ -382,7 +382,7 @@ internal class StylesReaderTests
             Assert.IsTrue(style.Protection.Locked);
             Assert.IsFalse(style.Protection.Hidden);
 
-            Assert.AreSame(styles.NumberFormats[190], style.NumberFormat);
+            Assert.AreEqual(styles.NumberFormats[190], style.NumberFormat);
             Assert.AreEqual("0.00", style.NumberFormat);
 
             Assert.AreSame(styles.Fonts[1], style.Font);
@@ -564,11 +564,11 @@ internal class StylesReaderTests
                 Assert.AreEqual(XLFillPatternValues.LightGrid, dxf.Fill?.Pattern?.PatternType);
                 Assert.AreEqual(XLColor.FromRgb(0x0000FF), dxf.Fill.Pattern.PatternColor);
                 Assert.AreEqual(XLColor.FromRgb(0x00FF00), dxf.Fill.Pattern.BackgroundColor);
-                Assert.AreEqual(XLBorderStyleValues.Thin, dxf.Border?.Right.Style);
-                Assert.AreEqual(XLColor.FromRgb(0x00FF00), dxf.Border?.Right.Color);
-                Assert.AreEqual(XLBorderLine.None, dxf.Border.Left);
-                Assert.AreEqual(XLBorderLine.None, dxf.Border.Top);
-                Assert.AreEqual(XLBorderLine.None, dxf.Border.Bottom);
+                Assert.AreEqual(XLBorderStyleValues.Thin, dxf.Border?.Right.Value.Style);
+                Assert.AreEqual(XLColor.FromRgb(0x00FF00), dxf.Border?.Right.Value.Color);
+                Assert.IsNull(dxf.Border.Left);
+                Assert.IsNull(dxf.Border.Top);
+                Assert.IsNull(dxf.Border.Bottom);
             });
     }
 
@@ -582,8 +582,8 @@ internal class StylesReaderTests
                 var dxf = styles.DifferentialFormats.Single().Value;
                 Assert.IsTrue(dxf.Font.IsEmpty());
                 Assert.IsNull(dxf.NumberFormat);
-                Assert.IsNull(dxf.Fill);
-                Assert.IsNull(dxf.Border);
+                Assert.AreSame(XLDifferentialFillValue.Empty, dxf.Fill);
+                Assert.AreSame(XLDifferentialBorderValue.Empty, dxf.Border);
             });
     }
 
@@ -606,7 +606,7 @@ internal class StylesReaderTests
     }
 
     [Test]
-    public void Differential_formats_use_background_color_for_solid_fill_color()
+    public void Differential_formats_use_foreground_color_for_solid_fill_color()
     {
         AssertDxf(
             """
@@ -623,8 +623,8 @@ internal class StylesReaderTests
             {
                 var dxf = styles.DifferentialFormats.Single().Value;
                 Assert.AreEqual(XLFillPatternValues.Solid, dxf.Fill?.Pattern?.PatternType);
-                Assert.AreEqual(XLColor.FromRgb(0x800000), dxf.Fill?.Pattern?.PatternColor);
-                Assert.AreEqual(XLColor.FromRgb(0x00FF00), dxf.Fill?.Pattern?.BackgroundColor);
+                Assert.AreEqual(XLColor.FromRgb(0x00FF00), dxf.Fill?.Pattern?.PatternColor);
+                Assert.AreEqual(XLColor.FromRgb(0x800000), dxf.Fill?.Pattern?.BackgroundColor);
             });
     }
 
@@ -1016,8 +1016,8 @@ internal class StylesReaderTests
         {
             var style = styles.CellStyles[0];
 
-            Assert.AreSame(XLPredefinedFormat.FormatCodes[XLPredefinedFormat.General], style.NumberFormat);
-            Assert.AreSame(XLPredefinedFormat.FormatCodes[XLPredefinedFormat.General], styles.NumberFormats[0]);
+            Assert.AreEqual(XLPredefinedFormat.FormatCodes[XLPredefinedFormat.General], style.NumberFormat);
+            Assert.AreEqual(XLPredefinedFormat.FormatCodes[XLPredefinedFormat.General], styles.NumberFormats[0]);
 
             Assert.AreSame(styles.Fonts[0], style.Font);
 
@@ -1027,7 +1027,7 @@ internal class StylesReaderTests
             Assert.AreSame(XLBorderFormatValue.None, style.Border);
             Assert.AreSame(XLBorderFormatValue.None, styles.Borders[1]);
 
-            Assert.AreSame(styles.DefaultNormalStyle.Alignment, style.Alignment);
+            Assert.AreSame(XLAlignmentFormatValue.Default, style.Alignment);
             Assert.AreSame(styles.DefaultNormalStyle.Protection, style.Protection);
         }, xml);
     }
@@ -1064,8 +1064,8 @@ internal class StylesReaderTests
         {
             var format = styles.CellFormats[0];
 
-            Assert.AreSame(XLPredefinedFormat.FormatCodes[XLPredefinedFormat.General], format.NumberFormat);
-            Assert.AreSame(XLPredefinedFormat.FormatCodes[XLPredefinedFormat.General], styles.NumberFormats[0]);
+            Assert.AreEqual(XLPredefinedFormat.FormatCodes[XLPredefinedFormat.General], format.NumberFormat);
+            Assert.AreEqual(XLPredefinedFormat.FormatCodes[XLPredefinedFormat.General], styles.NumberFormats[0]);
 
             Assert.AreSame(styles.Fonts[0], format.Font);
 
@@ -1075,7 +1075,7 @@ internal class StylesReaderTests
             Assert.AreSame(XLBorderFormatValue.None, format.Border);
             Assert.AreSame(XLBorderFormatValue.None, styles.Borders[1]);
 
-            Assert.AreSame(styles.DefaultNormalStyle.Alignment, format.Alignment);
+            Assert.AreSame(XLAlignmentFormatValue.Default, format.Alignment);
             Assert.AreSame(styles.DefaultNormalStyle.Protection, format.Protection);
         }, xml);
     }

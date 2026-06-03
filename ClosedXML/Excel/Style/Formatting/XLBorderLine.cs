@@ -5,7 +5,10 @@ namespace ClosedXML.Excel.Formatting;
 /// </summary>
 internal readonly record struct XLBorderLine(XLColor Color, XLBorderStyleValues Style)
 {
-    internal static readonly XLBorderLine None = new(XLColor.Auto, XLBorderStyleValues.None);
+    /// <summary>
+    /// Default XML attribute values.
+    /// </summary>
+    internal static readonly XLBorderLine None = new(XLColor.Automatic, XLBorderStyleValues.None);
 
     /// <summary>
     /// Is the border line visible?
