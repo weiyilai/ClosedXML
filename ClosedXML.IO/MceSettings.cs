@@ -1,0 +1,30 @@
+using System;
+using System.Collections.Generic;
+
+namespace ClosedXML.IO;
+
+/// <summary>
+/// Settings for <see cref="MceXmlTreeReader"/>.
+/// </summary>
+public class MceSettings
+{
+    /// <summary>
+    /// A set of namespaces understood by the consuming application.
+    /// </summary>
+    public HashSet<string> ApplicationConfiguration { get; init; } = new();
+
+    /// <summary>
+    /// A local name for application-defined extension element.
+    /// </summary>
+    public string? AdeeLocalName { get; init; }
+
+    /// <summary>
+    /// A namespace of application-defined extension element.
+    /// </summary>
+    public string? AdeeNamespaceUri { get; init; }
+
+    /// <summary>
+    /// A handler called when the MCE processor detects a mismatch.
+    /// </summary>
+    public Action<MismatchInfo>? SignalMismatch { get; init; }
+}

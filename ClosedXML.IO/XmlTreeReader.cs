@@ -151,7 +151,7 @@ public sealed class XmlTreeReader : IDisposable
     /// an exception or be treated as missing and just return null? Excel generally ignores
     /// unparseable attributes.
     /// </summary>
-    internal bool StrictAttributeParsing { get; }
+    public bool StrictAttributeParsing { get; }
 
     /// <summary>
     /// Read next element. Check lookup element is <paramref name="localName"/>. If it is, open the

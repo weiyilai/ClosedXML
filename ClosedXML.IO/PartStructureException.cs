@@ -1,4 +1,5 @@
 using System;
+using System.Xml;
 
 namespace ClosedXML.IO;
 
@@ -147,6 +148,10 @@ public class PartStructureException : Exception
         return new PartStructureException($"The value of attribute '{attributeValue}' is not valid value for the attribute.");
     }
 
+    internal static PartStructureException MceError(XmlReader reader, string message)
+    {
+        return new PartStructureException(McePrefix(reader) + message);
+    }
 
     private static string BuildMessage(string message, XmlTreeReader? reader)
     {
@@ -156,5 +161,16 @@ public class PartStructureException : Exception
         }
 
         return message;
+    }
+
+    private static string McePrefix(XmlReader reader)
+    {
+        var lineInfo = reader.GetLineInfo();
+        if (lineInfo.Line is not null && lineInfo.Position is not null)
+        {
+            return $"MCE({lineInfo.Line},{lineInfo.Position}): ";
+        }
+
+        return "MCE: ";
     }
 }
