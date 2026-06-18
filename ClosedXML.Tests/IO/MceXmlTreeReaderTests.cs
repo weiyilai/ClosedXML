@@ -182,7 +182,7 @@ internal class MceXmlTreeReaderTests
                               <bar:bar mc:MustUnderstand="bar"/>
                             </root>
                             """;
-        using var reader = CreateMceReader(xml, [], mismatch: info => throw new InvalidOperationException($"Mismatch at {info.LineNumber}:{info.LinePosition}"));
+        using var reader = CreateMceReader(xml, [], mismatch: info => throw new InvalidOperationException($"Mismatch at {info.LineInfo}"));
 
         reader.Read();
         Assert.That(reader.Read, Throws.TypeOf<InvalidOperationException>().With.Message.EqualTo("Mismatch at 2:4"));
@@ -196,7 +196,7 @@ internal class MceXmlTreeReaderTests
                               <mc:Choice Requires="foo" mc:MustUnderstand="bar"/>
                             </mc:AlternateContent>
                             """;
-        using var reader = CreateMceReader(xml, [FooNs], mismatch: info => throw new InvalidOperationException($"Mismatch at {info.LineNumber}:{info.LinePosition}"));
+        using var reader = CreateMceReader(xml, [FooNs], mismatch: info => throw new InvalidOperationException($"Mismatch at {info.LineInfo}"));
 
         Assert.That(reader.Read, Throws.TypeOf<InvalidOperationException>().With.Message.EqualTo("Mismatch at 2:4"));
     }
@@ -209,7 +209,7 @@ internal class MceXmlTreeReaderTests
                               <mc:Fallback/>
                             </mc:AlternateContent>
                             """;
-        using var reader = CreateMceReader(xml, [], mismatch: info => throw new InvalidOperationException($"Mismatch at {info.LineNumber}:{info.LinePosition}"));
+        using var reader = CreateMceReader(xml, [], mismatch: info => throw new InvalidOperationException($"Mismatch at {info.LineInfo}"));
 
         Assert.That(reader.Read, Throws.TypeOf<InvalidOperationException>().With.Message.EqualTo("Mismatch at 1:2"));
     }
@@ -223,7 +223,7 @@ internal class MceXmlTreeReaderTests
                               <mc:Fallback mc:MustUnderstand="bar"/>
                             </mc:AlternateContent>
                             """;
-        using var reader = CreateMceReader(xml, [], mismatch: info => throw new InvalidOperationException($"Mismatch at {info.LineNumber}:{info.LinePosition}"));
+        using var reader = CreateMceReader(xml, [], mismatch: info => throw new InvalidOperationException($"Mismatch at {info.LineInfo}"));
 
         Assert.That(reader.Read, Throws.TypeOf<InvalidOperationException>().With.Message.EqualTo("Mismatch at 3:4"));
     }

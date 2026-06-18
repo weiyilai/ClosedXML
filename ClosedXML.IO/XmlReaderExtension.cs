@@ -4,11 +4,11 @@ namespace ClosedXML.IO;
 
 internal static class XmlReaderExtension
 {
-    public static (int? Line, int? Position) GetLineInfo(this XmlReader reader)
+    public static LineInfo GetLineInfo(this XmlReader reader)
     {
         if (reader is IXmlLineInfo lineInfo && lineInfo.HasLineInfo())
-            return (lineInfo.LineNumber, lineInfo.LinePosition);
+            return new LineInfo(lineInfo.LineNumber, lineInfo.LinePosition);
 
-        return (null, null);
+        return new LineInfo(0, 0);
     }
 }

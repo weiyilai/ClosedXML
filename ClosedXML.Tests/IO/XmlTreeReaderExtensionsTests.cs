@@ -1,6 +1,6 @@
 using NUnit.Framework;
 using System.IO;
-using System.Xml;
+using System.Text;
 using ClosedXML.Excel.IO;
 using ClosedXML.IO;
 
@@ -59,8 +59,8 @@ internal class XmlTreeReaderExtensionsTests
     private static XmlTreeReader CreateReader(string attributeValue)
     {
         var xmlContext = $"<element {AttributeName}=\"{attributeValue}\"/>";
-        var xmlReader = XmlReader.Create(new StringReader(xmlContext));
-        var reader = new XmlTreeReader(xmlReader, new XmlToEnumMapper.Builder().Build(), false);
+        var stream = new MemoryStream(Encoding.UTF8.GetBytes(xmlContext));
+        var reader = new XmlTreeReader(stream, new XmlToEnumMapper.Builder().Build(), false);
         reader.Open("element", string.Empty);
         return reader;
     }

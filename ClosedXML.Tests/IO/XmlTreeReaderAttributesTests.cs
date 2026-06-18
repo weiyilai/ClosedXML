@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 using System.Reflection;
-using System.Xml;
+using System.Text;
 using ClosedXML.Excel.IO;
 using ClosedXML.IO;
 using ClosedXML.Utils;
@@ -132,9 +132,9 @@ internal class XmlTreeReaderAttributesTests
     private static XmlTreeReader CreateReader(string attributeValue, XmlToEnumMapper mapper = null)
     {
         var xmlContext = $"<element {AttributeName}=\"{attributeValue}\"/>";
-        var xmlReader = XmlReader.Create(new StringReader(xmlContext));
+        var stream = new MemoryStream(Encoding.UTF8.GetBytes(xmlContext));
         mapper ??= new XmlToEnumMapper.Builder().Build();
-        var reader = new XmlTreeReader(xmlReader, mapper, false);
+        var reader = new XmlTreeReader(stream, mapper, false);
         reader.Open("element", string.Empty);
         return reader;
     }

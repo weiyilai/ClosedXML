@@ -1,5 +1,4 @@
 using System;
-using System.Xml;
 
 namespace ClosedXML.IO;
 
@@ -43,7 +42,7 @@ public class PartStructureException : Exception
     /// </summary>
     public static Exception ExpectedChoiceElementNotFound(XmlTreeReader reader)
     {
-        return new PartStructureException($"The structure of XML expected an element from choice of several, but found {reader.ElementName} instead.", reader);
+        return new PartStructureException($"The structure of XML expected an element from choice of several, but found {reader.ElementName} instead", reader);
     }
 
     /// <summary>
@@ -148,29 +147,19 @@ public class PartStructureException : Exception
         return new PartStructureException($"The value of attribute '{attributeValue}' is not valid value for the attribute.");
     }
 
-    internal static PartStructureException MceError(XmlReader reader, string message)
+    internal static PartStructureException MceError(LineInfo lineInfo, string message)
     {
-        return new PartStructureException(McePrefix(reader) + message);
+        return new PartStructureException($"MCE({lineInfo.LineNumber},{lineInfo.LinePosition}): {message}");
     }
 
     private static string BuildMessage(string message, XmlTreeReader? reader)
     {
-        if (reader is not null && reader.TryGetLineInfo(out var lineInfo))
+        if (reader is not null)
         {
+            var lineInfo = reader.LineInfo;
             message += $" Line:{lineInfo.LineNumber}, Position:{lineInfo.LinePosition}.";
         }
 
         return message;
-    }
-
-    private static string McePrefix(XmlReader reader)
-    {
-        var lineInfo = reader.GetLineInfo();
-        if (lineInfo.Line is not null && lineInfo.Position is not null)
-        {
-            return $"MCE({lineInfo.Line},{lineInfo.Position}): ";
-        }
-
-        return "MCE: ";
     }
 }

@@ -5,7 +5,8 @@ namespace ClosedXML.IO;
 /// </summary>
 public class MismatchInfo
 {
-    public int? LineNumber { get; init; }
-
-    public int? LinePosition { get; init; }
+    /// <summary>
+    /// Position in a document where mismatch happened.
+    /// </summary>
+    public LineInfo LineInfo { get; init; }
 }

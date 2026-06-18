@@ -95,6 +95,9 @@ public class MceXmlTreeReader : IXmlTreeReader
     public XmlTreeNodeType NodeType { get; private set; }
 
     /// <inheritdoc/>
+    public int Depth => _reader.Depth;
+
+    /// <inheritdoc/>
     public string LocalName => _reader.LocalName;
 
     /// <inheritdoc/>
@@ -102,6 +105,9 @@ public class MceXmlTreeReader : IXmlTreeReader
 
     /// <inheritdoc/>
     public string Value => _reader.Value;
+
+    /// <inheritdoc/>
+    public LineInfo LineInfo => _reader.GetLineInfo();
 
     /// <inheritdoc/>
     public bool Read()
@@ -487,13 +493,10 @@ public class MceXmlTreeReader : IXmlTreeReader
 
                 if (!_appConfig.Contains(ns))
                 {
-                    var lineInfo = _reader.GetLineInfo();
                     var info = new MismatchInfo
                     {
-                        LineNumber = lineInfo.Line,
-                        LinePosition = lineInfo.Position
+                        LineInfo = _reader.GetLineInfo()
                     };
-
                     _signalMismatch(info);
                 }
             }
@@ -505,8 +508,7 @@ public class MceXmlTreeReader : IXmlTreeReader
         // An exception to throw when input is invalid XML (unpaired elements, ends without being
         // at the end of XML tree). That should never happen, because XmlReader should throw when
         // it detects an invalid XML.
-        var lineInfo = _reader.GetLineInfo();
-        return new UnreachableException($"Not a valid XML stream (unpaired elements) at {lineInfo.Line ?? -1}:{lineInfo.Position ?? -1}.");
+        return new UnreachableException($"Not a valid XML stream (unpaired elements) at {_reader.GetLineInfo()}.");
     }
 
     /// <summary>
@@ -523,8 +525,11 @@ public class MceXmlTreeReader : IXmlTreeReader
     };
 
     /// <summary>
-    /// Tracker to keep track of encountered items on path from root to the current element. Used
-    /// to check whether an item was declared on current or an ancestor element.
+    /// Tracker that keeps track of items encountered on the path from the root to the current
+    /// element. It is used to check whether an item was declared on the current element or on
+    /// an ancestor element. Because it must determine whether the item matches an item
+    /// in the current element or <em>any</em> ancestor, it stores only the item found at
+    /// the lowest depth, since items at higher depths are redundant.
     /// </summary>
     private class Tracker<T>
         where T : notnull

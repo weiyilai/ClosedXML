@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
 using System.IO;
 using System.Xml;
+using static ClosedXML.IO.XmlTreeNodeType;
 
 namespace ClosedXML.IO;
 
@@ -48,54 +49,25 @@ namespace ClosedXML.IO;
 /// </list>
 /// </para>
 /// </summary>
-/// <remarks>
-/// <para>
-/// When adding API, use <em>tell, don't ask principle</em>. Asking generally inherently requires
-/// allocation of a new string, but passing a string to a method doesn't.
-/// </para>
-/// <para>Example:
-/// <example>
-/// <c>reader.IsStartElement("font")</c> vs <c>reader.LocalName == "font"</c>. The former methods
-/// re-uses interned string. If reader is optimized, it can check everything on stack, without any
-/// new allocations. The second comparison basically requires a new string allocation for the
-/// <see cref="XmlReader.LocalName"/> getter.
-/// </example>
-/// </para>
-/// <para>
-/// Another example would be <see cref="XmlReader.ReadContentAsBoolean"/> instead of getting string
-/// and parsing it ourselves. Allocations do matter when parsing hundreds of MBs.
-/// </para>
-/// </remarks>
 public sealed class XmlTreeReader : IDisposable
 {
     private static readonly XmlReaderSettings Settings = new()
     {
+        IgnoreWhitespace = true,
         IgnoreComments = true,
+        IgnoreProcessingInstructions = true,
         Async = false,
         DtdProcessing = DtdProcessing.Prohibit,
-        IgnoreWhitespace = true,
         CloseInput = true
     };
 
     /// <summary>
-    /// The XmlReader that holds current element. The current node should always be either
-    /// <see cref="XmlNodeType.Element"/> or <see cref="XmlNodeType.EndElement"/>.
+    /// The reader that holds the current element. The current node must always be either
+    /// <see cref="OpenElement"/> or <see cref="CloseElement"/> after an API method call.
     /// </summary>
-    private readonly XmlReader _reader;
+    private readonly IXmlTreeReader _reader;
 
     private readonly IEnumMapper _enumMapper;
-
-    /// <summary>
-    /// <para>
-    /// An abstraction to deal with empty elements. If current element is an empty element
-    /// (regardless of whether in processing or lookup mode), this property determines if
-    /// the element is interpreted as starting element or ending element.
-    /// </para>
-    /// <para>
-    /// The property is set for every element to make everything easier.
-    /// </para>
-    /// </summary>
-    private bool _isStart = true;
 
     /// <summary>
     /// What is current state of parser:
@@ -116,20 +88,16 @@ public sealed class XmlTreeReader : IDisposable
     /// </item>
     /// </list>
     /// </summary>
-    private bool _inLookup = true;
+    private bool _inLookup;
 
     private readonly List<string> _context = new();
 
     public XmlTreeReader(Stream stream, IEnumMapper enumMapper, bool strictAttributeParsing)
     {
-        _reader = XmlReader.Create(stream, Settings);
-        _enumMapper = enumMapper;
-        StrictAttributeParsing = strictAttributeParsing;
-    }
-
-    public XmlTreeReader(XmlReader reader, IEnumMapper enumMapper, bool strictAttributeParsing)
-    {
-        _reader = reader;
+        _reader = new MceXmlTreeReader(XmlReader.Create(stream, Settings), new MceSettings
+        {
+            SignalMismatch = info => throw PartStructureException.MceError(info.LineInfo, "Mismatch between consuming application capability and document requirements.")
+        });
         _enumMapper = enumMapper;
         StrictAttributeParsing = strictAttributeParsing;
     }
@@ -142,11 +110,6 @@ public sealed class XmlTreeReader : IDisposable
     public IReadOnlyList<string> Context => _context;
 
     /// <summary>
-    /// Get name of current element (lookup/processing). It includes an alias for ns.
-    /// </summary>
-    internal string ElementName => _reader.Name;
-
-    /// <summary>
     /// Should attributes with values outside of their simple type be treated as errors and throw
     /// an exception or be treated as missing and just return null? Excel generally ignores
     /// unparseable attributes.
@@ -154,16 +117,22 @@ public sealed class XmlTreeReader : IDisposable
     public bool StrictAttributeParsing { get; }
 
     /// <summary>
+    /// Get the local name of current element (lookup/processing).
+    /// </summary>
+    internal string ElementName => _reader.LocalName;
+
+    internal LineInfo LineInfo => _reader.LineInfo;
+
+    /// <summary>
     /// Read next element. Check lookup element is <paramref name="localName"/>. If it is, open the
     /// element and return true. Otherwise, return false (element doesn't change).
     /// </summary>
     public bool TryOpen(string localName, string namespaceUri)
     {
-        MoveToStart();
-        ThrowWhenReaderNotOnElement();
         SwitchToLookup();
+        Debug.Assert(_reader.NodeType is OpenElement or CloseElement);
 
-        if (_isStart && _reader.LocalName == localName && _reader.NamespaceURI == namespaceUri)
+        if (_reader.NodeType == OpenElement && _reader.LocalName == localName && _reader.NamespaceUri == namespaceUri)
         {
             // Element has been opened, so it should be processed.
             SwitchToProcessing();
@@ -174,13 +143,12 @@ public sealed class XmlTreeReader : IDisposable
         return false;
     }
 
-    // Throws when it is on closing elements of incorrect type
     public bool TryClose(string localName, string namespaceUri)
     {
-        ThrowWhenReaderNotOnElement();
         SwitchToLookup();
+        Debug.Assert(_reader.NodeType is OpenElement or CloseElement);
 
-        if (_isStart || _reader.LocalName != localName || _reader.NamespaceURI != namespaceUri)
+        if (_reader.NodeType == OpenElement || _reader.LocalName != localName || _reader.NamespaceUri != namespaceUri)
             return false;
 
         // Element has been closed, so it should be processed. Though closing elements are not
@@ -198,7 +166,7 @@ public sealed class XmlTreeReader : IDisposable
     public void Open(string localName, string namespaceUri)
     {
         if (!TryOpen(localName, namespaceUri))
-            throw PartStructureException.ExpectedElementNotFound($"Expected opening element '{localName}', but reader is currently on {(_isStart ? "opening" : "closing")} '{_reader.Name}'.");
+            throw PartStructureException.ExpectedElementNotFound($"Expected opening element '{localName}', but reader is currently on {_reader.NodeType} node '{_reader.LocalName}'.", this);
     }
 
     /// <summary>
@@ -208,7 +176,7 @@ public sealed class XmlTreeReader : IDisposable
     public void Close(string localName, string namespaceUri)
     {
         if (!TryClose(localName, namespaceUri))
-            throw PartStructureException.ExpectedElementNotFound($"Expected closing element '{localName}', but reader is currently on {(_isStart ? "opening" : "closing")} '{_reader.Name}'.", this);
+            throw PartStructureException.ExpectedElementNotFound($"Expected closing element '{localName}', but reader is currently on {_reader.NodeType} node '{_reader.LocalName}'.", this);
     }
 
     /// <summary>
@@ -222,101 +190,55 @@ public sealed class XmlTreeReader : IDisposable
         var startDepth = _reader.Depth;
         do
         {
-            MoveToNextElement();
-        } while (_isStart || _reader.Depth > startDepth);
+            if (!_reader.Read())
+                throw InvalidXml();
+        } while (_reader.NodeType != CloseElement || _reader.Depth > startDepth);
 
         _inLookup = false;
-    }
-
-    /// <summary>
-    /// Read the content of current element. Ends in a lookup state on the end element.
-    /// </summary>
-    /// <exception cref="PartStructureException">The content contains elements.</exception>
-    public string GetContent()
-    {
-        ThrowOnNonStartElement();
-        if (_reader.IsEmptyElement)
-        {
-            _inLookup = true;
-            _isStart = false;
-            return string.Empty;
-        }
-
-        // ReadElementContentAsString reads beyond closing element. Make your own reader.
-        var value = string.Empty;
-        while (ReadNode() is { } nodeType && nodeType != XmlNodeType.EndElement)
-        {
-            // All unspecified nodes should be skipped. It is either comments, processing
-            // instructions or something that shouldn't ever happen (e.g. attribute).
-            switch (nodeType)
-            {
-                case XmlNodeType.Text:
-                case XmlNodeType.Whitespace:
-                case XmlNodeType.SignificantWhitespace:
-                case XmlNodeType.CDATA:
-                    if (value.Length == 0)
-                        value = _reader.Value;
-                    else
-                        value += _reader.Value;
-                    break;
-                case XmlNodeType.EntityReference:
-                    value += _reader.Name; // Does it even work? I have no idea how to get this node.
-                    break;
-                case XmlNodeType.Element:
-                    throw PartStructureException.UnexpectedElementFound(_reader.LocalName); // No child elements allowed
-            }
-        }
-
-        _inLookup = true;
-        _isStart = false;
-        return value;
     }
 
     public bool? GetOptionalBool(string attributeName)
     {
         ThrowOnNonStartElement();
         bool? result = null;
-        if (_reader.MoveToAttribute(attributeName))
+        if (_reader.GetAttribute(attributeName, null) is { } value)
         {
             try
             {
-                result = _reader.ReadContentAsBoolean();
+                result = XmlConvert.ToBoolean(value);
             }
-            catch (XmlException e) when (e.InnerException is FormatException)
+            catch (FormatException e)
             {
                 if (StrictAttributeParsing)
-                    ThrowAttributeFormatException(attributeName, e);
+                    ThrowAttributeFormatException(attributeName, value, e);
             }
         }
 
-        _reader.MoveToElement();
         return result;
     }
 
     public int? GetOptionalInt(string attributeName)
     {
         ThrowOnNonStartElement();
-        _reader.MoveToAttribute(attributeName);
         int? number = null;
-        if (_reader.MoveToAttribute(attributeName))
+        if (_reader.GetAttribute(attributeName, null) is { } value)
         {
             try
             {
-                number = _reader.ReadContentAsInt();
+                number = XmlConvert.ToInt32(value);
             }
             catch (OverflowException e)
             {
                 if (StrictAttributeParsing)
-                    ThrowAttributeFormatException(attributeName, e);
+                    ThrowAttributeFormatException(attributeName, value, e);
             }
-            catch (XmlException e) when (e.InnerException is FormatException)
+            catch (FormatException e)
             {
                 if (StrictAttributeParsing)
-                    ThrowAttributeFormatException(attributeName, e);
+                    ThrowAttributeFormatException(attributeName, value, e);
             }
         }
 
-        _reader.MoveToElement();
         return number;
     }
 
@@ -324,33 +246,32 @@ public sealed class XmlTreeReader : IDisposable
     {
         ThrowOnNonStartElement();
         long? number = null;
-        if (_reader.MoveToAttribute(attributeName))
+        if (_reader.GetAttribute(attributeName, null) is { } value)
         {
             try
             {
-                number = _reader.ReadContentAsLong();
+                number = XmlConvert.ToInt64(value);
             }
             catch (OverflowException e)
             {
                 if (StrictAttributeParsing)
-                    ThrowAttributeFormatException(attributeName, e);
+                    ThrowAttributeFormatException(attributeName, value, e);
             }
-            catch (XmlException e) when (e.InnerException is FormatException)
+            catch (FormatException e)
             {
                 if (StrictAttributeParsing)
-                    ThrowAttributeFormatException(attributeName, e);
+                    ThrowAttributeFormatException(attributeName, value, e);
+            }
+
+            if (number is < 0 or > uint.MaxValue)
+            {
+                if (StrictAttributeParsing)
+                    ThrowAttributeFormatException(attributeName, value);
+
+                number = null;
             }
         }
 
-        if (number is < 0 or > uint.MaxValue)
-        {
-            if (StrictAttributeParsing)
-                ThrowAttributeFormatException(attributeName);
-
-            number = null;
-        }
-
-        _reader.MoveToElement();
         return number is not null ? (uint)number : null;
     }
 
@@ -358,33 +279,32 @@ public sealed class XmlTreeReader : IDisposable
     {
         ThrowOnNonStartElement();
         double? number = null;
-        if (_reader.MoveToAttribute(attributeName))
+        if (_reader.GetAttribute(attributeName, null) is { } value)
         {
             try
             {
-                number = _reader.ReadContentAsDouble();
+                number = XmlConvert.ToDouble(value);
             }
             catch (OverflowException e)
             {
                 if (StrictAttributeParsing)
-                    ThrowAttributeFormatException(attributeName, e);
+                    ThrowAttributeFormatException(attributeName, value, e);
             }
-            catch (XmlException e) when (e.InnerException is FormatException)
+            catch (FormatException e)
             {
                 if (StrictAttributeParsing)
-                    ThrowAttributeFormatException(attributeName, e);
+                    ThrowAttributeFormatException(attributeName, value, e);
+            }
+
+            if (number is not null && (double.IsNaN(number.Value) || double.IsInfinity(number.Value)))
+            {
+                if (StrictAttributeParsing)
+                    ThrowAttributeFormatException(attributeName, value);
+
+                number = null;
             }
         }
 
-        if (number is not null && (double.IsNaN(number.Value) || double.IsInfinity(number.Value)))
-        {
-            if (StrictAttributeParsing)
-                ThrowAttributeFormatException(attributeName);
-
-            number = null;
-        }
-
-        _reader.MoveToElement();
         return number;
     }
 
@@ -397,69 +317,53 @@ public sealed class XmlTreeReader : IDisposable
     {
         ThrowOnNonStartElement();
         DateTime? dateTime = null;
-        if (_reader.MoveToAttribute(attributeName))
+        if (_reader.GetAttribute(attributeName, null) is { } value)
         {
             try
             {
-                dateTime = _reader.ReadContentAsDateTime();
+                dateTime = XmlConvert.ToDateTime(value, XmlDateTimeSerializationMode.RoundtripKind);
             }
-            catch (XmlException e) when (e.InnerException is FormatException)
+            catch (FormatException e)
             {
                 if (StrictAttributeParsing)
-                    ThrowAttributeFormatException(attributeName, e);
+                    ThrowAttributeFormatException(attributeName, value, e);
             }
         }
 
-        _reader.MoveToElement();
         return dateTime;
     }
 
     public string? GetOptionalString(string attributeName)
     {
         ThrowOnNonStartElement();
-        return _reader.GetAttribute(attributeName);
+        return _reader.GetAttribute(attributeName, null);
     }
 
     public TEnum? GetOptionalEnum<TEnum>(string attributeName)
         where TEnum : struct, Enum
     {
         ThrowOnNonStartElement();
-        var enumString = _reader.MoveToAttribute(attributeName) ? _reader.ReadContentAsString() : null;
+        var enumString = _reader.GetAttribute(attributeName, null);
 
         if (enumString is null)
         {
-            _reader.MoveToElement();
             return null;
         }
 
         if (!_enumMapper.TryGetEnum<TEnum>(enumString, out var enumValue))
         {
             if (StrictAttributeParsing)
-                ThrowAttributeFormatException(attributeName);
+                ThrowAttributeFormatException(attributeName, enumString);
 
-            _reader.MoveToElement();
             return null;
         }
 
-        _reader.MoveToElement();
         return enumValue;
     }
 
     public void Dispose()
     {
         _reader.Dispose();
-    }
-
-    internal bool TryGetLineInfo([NotNullWhen(true)] out IXmlLineInfo? lineInfo)
-    {
-        if (_reader is IXmlLineInfo readerInfo && readerInfo.HasLineInfo())
-        {
-            lineInfo = readerInfo;
-            return true;
-        }
-
-        lineInfo = null;
-        return false;
     }
 
     private void SwitchToProcessing()
@@ -470,8 +374,6 @@ public sealed class XmlTreeReader : IDisposable
 
     private void SwitchToLookup()
     {
-        ThrowWhenReaderNotOnElement();
-
         // When switching to lookup, current node and all its attributes should have already been processed.
         if (_inLookup)
             return;
@@ -486,66 +388,32 @@ public sealed class XmlTreeReader : IDisposable
     /// </summary>
     private void MoveToNextElement()
     {
-        if (_isStart && _reader.IsEmptyElement)
+        while (_reader.Read())
         {
-            _isStart = false;
-            return;
-        }
-
-        while (ReadNode() is { } nodeType)
-        {
-            // The only allowed node type is element or end of element. All other types should
-            // either be skipped (e.g. text) or are errors.
-            if (nodeType is XmlNodeType.Element)
+            if (_reader.NodeType is OpenElement or CloseElement)
             {
-                _isStart = true;
                 return;
             }
-
-            if (nodeType is XmlNodeType.EndElement)
-            {
-                _isStart = false;
-                return;
-            }
-
-            // All other nodes should be skipped:
-            // * The possible nodes (Text, Comment, CDATA, SignificantWhitespace,
-            //   ProcessingInstruction) should be skipped, because they are not elements. Excel
-            //   also skips text that is between nodes where it is not valid, without error.
-            // * Other node types are disallowed by usage semantic (Document, None, XmlDeclaration)
-            //   or XmlReader setting (DTD).
-            // * Attribute should never be encountered because it is after element.
         }
-    }
 
-    private XmlNodeType? ReadNode()
-    {
-        return _reader.Read() ? _reader.NodeType : null;
-    }
-
-    private void MoveToStart()
-    {
-        if (_reader.NodeType == XmlNodeType.None)
-        {
-            _reader.MoveToContent();
-        }
-    }
-
-    private void ThrowWhenReaderNotOnElement()
-    {
-        if (_reader.NodeType is not XmlNodeType.Element and not XmlNodeType.EndElement)
-            throw new InvalidOperationException("XML reader is not on start or end note.");
+        throw InvalidXml();
     }
 
     private void ThrowOnNonStartElement()
     {
-        if (_reader.NodeType != XmlNodeType.Element || !_isStart || _inLookup)
+        if (_reader.NodeType != OpenElement || _inLookup)
             throw new InvalidOperationException("To read content/attribute, the reader must be on start element and in processing state.");
     }
 
-    private void ThrowAttributeFormatException(string attributeName, Exception? exception = null)
+    private void ThrowAttributeFormatException(string attributeName, string attributeValue, Exception? exception = null)
     {
-        var attributeValue = _reader.ReadContentAsString();
         throw PartStructureException.InvalidAttributeFormat(attributeName, attributeValue, this, exception);
+    }
+
+    private Exception InvalidXml()
+    {
+        // This should never happen. The underlaying reader should throw when it detects
+        // invalid XML (no root, unpaired elements, multiple elements in root)
+        return new UnreachableException($"{_reader.LineInfo}: Invalid XML.");
     }
 }

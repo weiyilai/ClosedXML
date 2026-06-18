@@ -19,6 +19,16 @@ public interface IXmlTreeReader : IDisposable
     XmlTreeNodeType NodeType { get; }
 
     /// <summary>
+    /// Get depth of current element.
+    /// </summary>
+    int Depth { get; }
+
+    /// <summary>
+    /// Get position of current element.
+    /// </summary>
+    LineInfo LineInfo { get; }
+
+    /// <summary>
     /// Name of an open/close element. If not on an element, return an empty string.
     /// </summary>
     /// <remarks>The name is atomized.</remarks>
