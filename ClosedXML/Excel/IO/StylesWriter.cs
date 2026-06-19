@@ -209,7 +209,6 @@ internal class StylesWriter
         if (borderFormatsMap.Count > 0)
             WriteBorders(xml, borderFormatsMap);
 
-        // TODO Styles: Ensure normal style is written, though that should be done during initialization/loading
         var cellStylesMap = new SequentialMap<StyleId, XLCellStyleValue>(styles.CellStyles);
 
         // All cell styles, regardless if they are used or not should be written to the file
