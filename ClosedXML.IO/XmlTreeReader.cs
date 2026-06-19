@@ -65,7 +65,7 @@ public sealed class XmlTreeReader : IDisposable
     /// The reader that holds the current element. The current node must always be either
     /// <see cref="OpenElement"/> or <see cref="CloseElement"/> after an API method call.
     /// </summary>
-    private readonly IXmlTreeReader _reader;
+    private readonly IXmlReader _reader;
 
     private readonly IEnumMapper _enumMapper;
 
@@ -94,7 +94,7 @@ public sealed class XmlTreeReader : IDisposable
 
     public XmlTreeReader(Stream stream, IEnumMapper enumMapper, bool strictAttributeParsing)
     {
-        _reader = new MceXmlTreeReader(XmlReader.Create(stream, Settings), new MceSettings
+        _reader = new MceXmlReader(XmlReader.Create(stream, Settings), new MceSettings
         {
             SignalMismatch = info => throw PartStructureException.MceError(info.LineInfo, "Mismatch between consuming application capability and document requirements.")
         });

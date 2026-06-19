@@ -14,7 +14,7 @@ namespace ClosedXML.IO;
 /// there is no benefit in skipping attributes. The consuming application asks for a presence of
 /// an attribute. If consuming application won't process attribute, it won't even ask fo it.
 /// </remarks>
-public class MceXmlTreeReader : IXmlTreeReader
+public class MceXmlReader : IXmlReader
 {
     private readonly XmlReader _reader;
 
@@ -62,7 +62,7 @@ public class MceXmlTreeReader : IXmlTreeReader
     /// </summary>
     private int? _inAdee;
 
-    public MceXmlTreeReader(XmlReader reader, MceSettings settings)
+    public MceXmlReader(XmlReader reader, MceSettings settings)
     {
         const string mceNs = "http://schemas.openxmlformats.org/markup-compatibility/2006";
 

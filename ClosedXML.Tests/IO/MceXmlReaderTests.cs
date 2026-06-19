@@ -9,7 +9,7 @@ using static ClosedXML.IO.XmlTreeNodeType;
 
 namespace ClosedXML.Tests.IO;
 
-internal class MceXmlTreeReaderTests
+internal class MceXmlReaderTests
 {
     private const string MceNs = "http://schemas.openxmlformats.org/markup-compatibility/2006";
     private const string FooNs = "http://www.example.com/foo";
@@ -228,7 +228,7 @@ internal class MceXmlTreeReaderTests
         Assert.That(reader.Read, Throws.TypeOf<InvalidOperationException>().With.Message.EqualTo("Mismatch at 3:4"));
     }
 
-    private static MceXmlTreeReader CreateMceReader(string xml, HashSet<string> appConfig, (string LocalName, string NamespaceUri)? adee = null, Action<MismatchInfo>? mismatch = null)
+    private static MceXmlReader CreateMceReader(string xml, HashSet<string> appConfig, (string LocalName, string NamespaceUri)? adee = null, Action<MismatchInfo>? mismatch = null)
     {
         var stringReader = new StringReader(xml);
         var xmlReader = XmlReader.Create(stringReader, new XmlReaderSettings
@@ -238,7 +238,7 @@ internal class MceXmlTreeReaderTests
             IgnoreProcessingInstructions = true,
             DtdProcessing = DtdProcessing.Ignore
         });
-        var mceReader = new MceXmlTreeReader(xmlReader, new MceSettings
+        var mceReader = new MceXmlReader(xmlReader, new MceSettings
         {
             ApplicationConfiguration = appConfig,
             AdeeLocalName = adee?.LocalName,
@@ -248,7 +248,7 @@ internal class MceXmlTreeReaderTests
         return mceReader;
     }
 
-    private static void AssertReadThrows(MceXmlTreeReader reader, string expectedMessage)
+    private static void AssertReadThrows(MceXmlReader reader, string expectedMessage)
     {
         Assert.That(reader.Read, Throws.Exception.TypeOf<PartStructureException>()
             .With.Message.StartsWith("MCE").And.Message.EndsWith(expectedMessage));

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace ClosedXML.IO;
 
 /// <summary>
-/// Settings for <see cref="MceXmlTreeReader"/>.
+/// Settings for <see cref="MceXmlReader"/>.
 /// </summary>
 public class MceSettings
 {

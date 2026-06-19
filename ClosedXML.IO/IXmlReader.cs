@@ -6,7 +6,7 @@ namespace ClosedXML.IO;
 /// <summary>
 /// A simplified XML reader that reads the content and hides full complexity the <see cref="XmlReader"/>.
 /// </summary>
-public interface IXmlTreeReader : IDisposable
+public interface IXmlReader : IDisposable
 {
     /// <summary>
     /// Read next node. If no more nodes can be read, return <c>false</c>.

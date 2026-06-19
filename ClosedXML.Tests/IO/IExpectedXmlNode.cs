@@ -5,5 +5,5 @@ namespace ClosedXML.Tests.IO;
 
 internal interface IExpectedXmlNode
 {
-    void AssertMatches(IXmlTreeReader reader);
+    void AssertMatches(IXmlReader reader);
 }

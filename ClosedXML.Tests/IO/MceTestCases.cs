@@ -560,7 +560,7 @@ internal record MceTestCase(string Description, string Xml, HashSet<string> AppC
             return this with { Attributes = new Dictionary<string, string>(Attributes ?? []) { { name, value } } };
         }
 
-        public void AssertMatches(IXmlTreeReader reader)
+        public void AssertMatches(IXmlReader reader)
         {
             Assert.That(reader.NodeType, Is.EqualTo(XmlTreeNodeType.OpenElement));
             Assert.That(reader.LocalName, Is.EqualTo(LocalName));
@@ -580,7 +580,7 @@ internal record MceTestCase(string Description, string Xml, HashSet<string> AppC
 
     private record Close(string LocalName, string? NamespaceUri = null) : IExpectedXmlNode
     {
-        public void AssertMatches(IXmlTreeReader reader)
+        public void AssertMatches(IXmlReader reader)
         {
             Assert.That(reader.NodeType, Is.EqualTo(XmlTreeNodeType.CloseElement));
             Assert.That(reader.LocalName, Is.EqualTo(LocalName));
@@ -591,7 +591,7 @@ internal record MceTestCase(string Description, string Xml, HashSet<string> AppC
 
     private record Text(string Value, bool Trim = true) : IExpectedXmlNode
     {
-        public void AssertMatches(IXmlTreeReader reader)
+        public void AssertMatches(IXmlReader reader)
         {
             Assert.That(reader.NodeType, Is.EqualTo(XmlTreeNodeType.Text));
             Assert.That(Trim ? reader.Value.Trim() : reader.Value, Is.EqualTo(Value));

@@ -3,7 +3,7 @@ using System.Xml;
 namespace ClosedXML.IO;
 
 /// <summary>
-/// A node the <see cref="IXmlTreeReader"/> is currently on.
+/// A node the <see cref="IXmlReader"/> is currently on.
 /// </summary>
 public enum XmlTreeNodeType
 {
