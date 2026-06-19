@@ -58,12 +58,12 @@ namespace ClosedXML.Excel
 
         public XLRangeColumn CreateRangeColumn(XLRangeAddress rangeAddress)
         {
-            return new XLRangeColumn(rangeAddress, _worksheet.Style);
+            return new XLRangeColumn(rangeAddress);
         }
 
         public XLRangeRow CreateRangeRow(XLRangeAddress rangeAddress)
         {
-            return new XLRangeRow(rangeAddress, _worksheet.Style);
+            return new XLRangeRow(rangeAddress);
         }
 
         public XLTable CreateTable(XLRangeAddress rangeAddress)

@@ -6,11 +6,7 @@ using System.Linq;
 
 namespace ClosedXML.Excel
 {
-    internal class XLColumns :
-#if !STYLES_REWORK
-        XLStylizedBase,
-#endif
-        IXLColumns
+    internal class XLColumns : IXLColumns
     {
         private readonly List<XLColumn> _columnsCollection = new List<XLColumn>();
 
@@ -39,9 +35,6 @@ namespace ClosedXML.Excel
         /// <param name="defaultStyleSheet">A sheet with a default style to use when initializing child entries.</param>
         /// <param name="lazyEnumerable">A predefined enumerator of <see cref="XLColumn"/> to support lazy initialization.</param>
         public XLColumns(XLWorkbook workbook, XLWorksheet? worksheet, XLWorksheet? defaultStyleSheet = null, IEnumerable<XLColumn>? lazyEnumerable = null)
-#if !STYLES_REWORK
-            : base(defaultStyleSheet?.StyleValue)
-#endif
         {
             _workbook = workbook;
             _worksheet = worksheet;
@@ -230,13 +223,11 @@ namespace ClosedXML.Excel
             return this;
         }
 
-#if STYLES_REWORK
         public IXLStyle Style
         {
             get => Format;
             set => Format.SetStyle(value);
         }
-#endif
 
         internal XLCellFormat Format
         {
@@ -253,35 +244,6 @@ namespace ClosedXML.Excel
 
         #endregion IXLColumns Members
 
-#if !STYLES_REWORK
-        #region IXLStylized Members
-
-        protected override IEnumerable<XLStylizedBase> Children
-        {
-            get
-            {
-                if (AllColumnsOfSheet)
-                    yield return _worksheet;
-                else
-                {
-                    foreach (XLColumn column in Columns)
-                        yield return column;
-                }
-            }
-        }
-
-        public override IEnumerable<IXLRange> RangesUsed
-        {
-            get
-            {
-                var retVal = new XLRanges(_workbook);
-                this.ForEach(c => retVal.Add(c.AsRange()));
-                return retVal;
-            }
-        }
-
-        #endregion IXLStylized Members
-#endif
         public void Add(XLColumn column)
         {
             Materialize();

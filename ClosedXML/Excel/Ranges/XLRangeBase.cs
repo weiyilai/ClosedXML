@@ -10,26 +10,13 @@ using ClosedXML.Excel.Formatting;
 
 namespace ClosedXML.Excel
 {
-    internal abstract class XLRangeBase :
-#if !STYLES_REWORK
-        XLStylizedBase, IXLStylized,
-#endif
-        IXLRangeBase
+    internal abstract class XLRangeBase : IXLRangeBase
     {
         private XLSortElements _sortRows;
         private XLSortElements _sortColumns;
-        private static Int32 IdCounter = 0;
-        private readonly Int32 Id;
 
-#if STYLES_REWORK
         protected XLRangeBase(XLRangeAddress rangeAddress)
-#else
-        protected XLRangeBase(XLRangeAddress rangeAddress, XLStyleValue styleValue)
-            : base(styleValue)
-#endif
         {
-            Id = ++IdCounter;
-
             _rangeAddress = rangeAddress;
         }
 
@@ -95,13 +82,11 @@ namespace ClosedXML.Excel
 
         #region IXLRangeBase Members
 
-#if STYLES_REWORK
         public IXLStyle Style
         {
             get => Format;
             set => Format.SetStyle(value);
         }
-#endif
 
         IXLRangeAddress IXLAddressable.RangeAddress
         {
@@ -187,22 +172,6 @@ namespace ClosedXML.Excel
 
         #endregion IXLRangeBase Members
 
-#if !STYLES_REWORK
-        #region IXLStylized Members
-
-        public override IEnumerable<IXLRange> RangesUsed => new XLRanges(Worksheet) { AsRange() };
-
-        protected override IEnumerable<XLStylizedBase> Children
-        {
-            get
-            {
-                foreach (var cell in Cells().OfType<XLCell>())
-                    yield return cell;
-            }
-        }
-
-        #endregion IXLStylized Members
-#endif
         #endregion Public properties
 
         #region IXLRangeBase Members

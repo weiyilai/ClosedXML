@@ -202,11 +202,7 @@ namespace ClosedXML.Excel
                                      workbookPart.AddNewPart<WorkbookStylesPart>(
                                          context.RelIdGenerator.GetNext(RelType.Workbook));
 
-#if STYLES_REWORK
             new StylesWriter().WriteContent(workbookStylesPart, XmlToEnumMapper.Instance, Styles, this, context);
-#else
-            WorkbookStylesPartWriter.GenerateContent(workbookStylesPart, this, context);
-#endif
 
             var sharedStringTablePart = workbookPart.SharedStringTablePart ??
                                         workbookPart.AddNewPart<SharedStringTablePart>(

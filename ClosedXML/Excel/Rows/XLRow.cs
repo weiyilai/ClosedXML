@@ -33,19 +33,6 @@ namespace ClosedXML.Excel
             get { return XLRangeType.Row; }
         }
 
-#if !STYLES_REWORK
-        protected override IEnumerable<XLStylizedBase> Children
-        {
-            get
-            {
-                int row = RowNumber();
-
-                foreach (XLCell cell in Worksheet.Internals.CellsCollection.GetCellsInRow(row))
-                    yield return cell;
-            }
-        }
-#endif
-
         public Boolean Collapsed
         {
             get => _flags.HasFlag(XlRowFlags.Collapsed);

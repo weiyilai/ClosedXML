@@ -231,13 +231,11 @@ namespace ClosedXML.Excel
 
         #region IXLCell Members
 
-#if STYLES_REWORK
         public IXLStyle Style
         {
             get => Format;
             set => Format.SetStyle(value);
         }
-#endif
 
         IXLWorksheet IXLCell.Worksheet
         {
@@ -927,7 +925,6 @@ namespace ClosedXML.Excel
 
             if (options.HasFlag(XLCellsUsedOptions.NormalFormats))
             {
-#if STYLES_REWORK
                 if (FormatValue is { } format)
                 {
                     if (format.IncludeQuotePrefix)
@@ -938,23 +935,6 @@ namespace ClosedXML.Excel
                     if (defaultFormat != format)
                         return false;
                 }
-#else
-
-                if (StyleValue.IncludeQuotePrefix)
-                    return false;
-
-                if (!StyleValue.Equals(Worksheet.StyleValue))
-                    return false;
-
-                if (StyleValue.Equals(Worksheet.StyleValue))
-                {
-                    if (Worksheet.Internals.RowsCollection.TryGetValue(_rowNumber, out XLRow row) && !row.StyleValue.Equals(Worksheet.StyleValue))
-                        return false;
-
-                    if (Worksheet.Internals.ColumnsCollection.TryGetValue(_columnNumber, out XLColumn column) && !column.StyleValue.Equals(Worksheet.StyleValue))
-                        return false;
-                }
-#endif
             }
 
             if (options.HasFlag(XLCellsUsedOptions.MergedRanges) && IsMerged())
@@ -1098,33 +1078,6 @@ namespace ClosedXML.Excel
         }
 
         #endregion IXLCell Members
-
-#if !STYLES_REWORK
-        #region IXLStylized Members
-
-        void IXLStylized.ModifyStyle(Func<XLStyleKey, XLStyleKey> modification)
-        {
-            //XLCell cannot have children so the base method may be optimized
-            var styleKey = modification(StyleValue.Key);
-            StyleValue = XLStyleValue.FromKey(ref styleKey);
-        }
-
-        protected override IEnumerable<XLStylizedBase> Children
-        {
-            get { yield break; }
-        }
-
-        public override IEnumerable<IXLRange> RangesUsed
-        {
-            get
-            {
-                var retVal = new XLRanges(Worksheet) { AsRange() };
-                return retVal;
-            }
-        }
-
-        #endregion IXLStylized Members
-#endif
 
         /// <summary>
         /// Ensure the cell has style set directly on the cell, not inherited from column/row/worksheet styles.

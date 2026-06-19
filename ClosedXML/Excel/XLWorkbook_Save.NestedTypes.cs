@@ -23,7 +23,7 @@ namespace ClosedXML.Excel
                 PivotSourceCacheId = 0;
             }
 
-            public RelIdGenerator RelIdGenerator { get; private set; }
+            public RelIdGenerator RelIdGenerator { get; }
 
             /// <summary>
             /// A map of number format to a number format id for saved file. It contains all number
@@ -90,29 +90,9 @@ namespace ClosedXML.Excel
                 return DxfMap[dxf];
             }
 
-            internal bool TryGetDxfId(XLCellFormatValue dxf, out uint dxfId)
-            {
-#if STYLES_REWORK
-                throw new NotImplementedException();
-#else
-                if (DifferentialFormats.TryGetValue(dxf, out var differentialFormatId))
-                {
-                    dxfId = (uint)differentialFormatId;
-                    return true;
-                }
-
-                dxfId = default;
-                return false;
-#endif
-            }
-
             internal uint GetStyleId(XLCellFormatValue? format)
             {
-#if STYLES_REWORK
                 return format is not null ? FormatMap[format] : 0;
-#else
-                return _sharedStyles[style].StyleId;
-#endif
             }
 #nullable disable
         }
@@ -196,42 +176,5 @@ namespace ClosedXML.Excel
         }
 
         #endregion Nested type: RelIdGenerator
-
-#if !STYLES_REWORK
-        #region Nested type: FillInfo
-
-        internal struct FillInfo
-        {
-            public XLFillValue Fill;
-            public UInt32 FillId;
-        }
-
-        #endregion Nested type: FillInfo
-
-        #region Nested type: BorderInfo
-
-        internal struct BorderInfo
-        {
-            public XLBorderValue Border;
-            public UInt32 BorderId;
-        }
-
-        #endregion Nested type: BorderInfo
-
-        #region Nested type: StyleInfo
-
-        internal struct StyleInfo
-        {
-            public UInt32 BorderId;
-            public UInt32 FillId;
-            public UInt32 FontId;
-            public Boolean IncludeQuotePrefix;
-            public Int32 NumberFormatId;
-            public XLStyleValue Style;
-            public UInt32 StyleId;
-        }
-
-        #endregion Nested type: StyleInfo
-#endif
     }
 }

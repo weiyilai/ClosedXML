@@ -8,12 +8,8 @@ namespace ClosedXML.Excel
         /// <summary>
         /// The direct constructor should only be used in <see cref="XLWorksheet.RangeFactory"/>.
         /// </summary>
-        public XLRangeRow(XLRangeAddress rangeAddress, IXLStyle defaultStyle)
-#if STYLES_REWORK
+        public XLRangeRow(XLRangeAddress rangeAddress)
             : base(rangeAddress)
-#else
-            : base(rangeAddress, ((XLStyle)defaultStyle).Value)
-#endif
         {
         }
 

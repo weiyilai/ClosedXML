@@ -6,19 +6,12 @@ using System.Linq;
 
 namespace ClosedXML.Excel
 {
-    internal class XLRangeRows :
-#if !STYLES_REWORK
-        XLStylizedBase,
-#endif
-        IXLRangeRows
+    internal class XLRangeRows : IXLRangeRows
     {
         private readonly XLWorksheet _worksheet;
         private readonly List<XLRangeRow> _ranges = new List<XLRangeRow>();
 
         public XLRangeRows(XLWorksheet worksheet)
-#if !STYLES_REWORK
-            : base(XLStyle.Default.Value)
-#endif
         {
             _worksheet = worksheet;
         }
@@ -34,13 +27,11 @@ namespace ClosedXML.Excel
 
         #region IXLRangeRows Members
 
-#if STYLES_REWORK
         public IXLStyle Style
         {
             get => Format;
             set => Format.SetStyle(value);
         }
-#endif
 
         public IXLRangeRows Clear(XLClearOptions clearOptions = XLClearOptions.All)
         {
@@ -104,30 +95,5 @@ namespace ClosedXML.Excel
         }
 
         #endregion IXLRangeRows Members
-
-#if !STYLES_REWORK
-        #region IXLStylized Members
-
-        protected override IEnumerable<XLStylizedBase> Children
-        {
-            get
-            {
-                foreach (var range in _ranges)
-                    yield return range;
-            }
-        }
-
-        public override IEnumerable<IXLRange> RangesUsed
-        {
-            get
-            {
-                var retVal = new XLRanges(_worksheet);
-                this.ForEach(c => retVal.Add(c.AsRange()));
-                return retVal;
-            }
-        }
-
-        #endregion IXLStylized Members
-#endif
     }
 }

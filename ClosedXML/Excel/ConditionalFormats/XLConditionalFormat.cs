@@ -101,9 +101,6 @@ namespace ClosedXML.Excel
         #region Constructors
 
         internal XLConditionalFormat(XLWorksheet worksheet, XLAreaList areaList)
-#if !STYLES_REWORK
-            : base(XLStyle.Default.Value)
-#endif
         {
             _worksheet = worksheet;
             Id = Guid.NewGuid();

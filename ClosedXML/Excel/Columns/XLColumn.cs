@@ -31,18 +31,6 @@ namespace ClosedXML.Excel
             get { return XLRangeType.Column; }
         }
 
-#if !STYLES_REWORK
-        protected override IEnumerable<XLStylizedBase> Children
-        {
-            get
-            {
-                int column = ColumnNumber();
-                foreach (XLCell cell in Worksheet.Internals.CellsCollection.GetCellsInColumn(column))
-                    yield return cell;
-            }
-        }
-#endif
-
         public Boolean Collapsed { get; set; }
 
         #region IXLColumn Members

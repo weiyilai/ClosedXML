@@ -45,12 +45,7 @@ namespace ClosedXML.Excel
                 new XLRangeAddress(
                     new XLAddress(null, XLHelper.MinRowNumber, XLHelper.MinColumnNumber, false, false),
                     new XLAddress(null, XLHelper.MaxRowNumber, XLHelper.MaxColumnNumber, false, false))
-#if STYLES_REWORK
                 )
-#else
-                ,
-                ((XLStyle)workbook.Style).Value)
-#endif
         {
             Workbook = workbook;
             SheetId = sheetId;
@@ -133,30 +128,6 @@ namespace ClosedXML.Excel
         {
             get { return _rangeFactory; }
         }
-
-#if !STYLES_REWORK
-        protected override IEnumerable<XLStylizedBase> Children
-        {
-            get
-            {
-                var columnsUsed = Internals.ColumnsCollection.Keys
-                    .Union(Internals.CellsCollection.ColumnsUsedKeys)
-                    .Distinct()
-                    .OrderBy(c => c)
-                    .ToList();
-                foreach (var col in columnsUsed)
-                    yield return Column(col);
-
-                var rowsUsed = Internals.RowsCollection.Keys
-                    .Union(Internals.CellsCollection.RowsUsedKeys)
-                    .Distinct()
-                    .OrderBy(r => r)
-                    .ToList();
-                foreach (var row in rowsUsed)
-                    yield return Row(row);
-            }
-        }
-#endif
 
         internal Boolean RowHeightChanged { get; set; }
 
