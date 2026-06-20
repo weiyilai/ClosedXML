@@ -109,7 +109,7 @@ namespace ClosedXML.Tests.Excel.Styles
             AssertCellBorder(ws, "C3", None, XLBorderStyleValues.None);
         }
 
-        [Test, Ignore("Performance reasons")] // TODO Styles: Enable after switch
+        [Test]
 #if NETFRAMEWORK
         [Timeout(100)]
 #else
@@ -143,7 +143,7 @@ namespace ClosedXML.Tests.Excel.Styles
             AssertCellBorder(ws, "B3", Left | Right, XLBorderStyleValues.Thick, XLColor.Red);
         }
 
-        [Test, Ignore("Performance reasons")] // TODO Styles: Enable after switch
+        [Test]
 #if NETFRAMEWORK
         [Timeout(100)]
 #else
@@ -177,7 +177,7 @@ namespace ClosedXML.Tests.Excel.Styles
             AssertCellBorder(ws, "B3", Top | Bottom, XLBorderStyleValues.Thick, XLColor.Red);
         }
 
-        [Test, Ignore("Fixes #2517 in styles rework")] // TODO Styles: Enable after style rework switch
+        [Test]
         public void InsideBorder_for_multicolumn_colspans()
         {
             using var wb = new XLWorkbook();
@@ -232,9 +232,8 @@ namespace ClosedXML.Tests.Excel.Styles
             Assert.AreEqual(XLBorderStyleValues.Thick, b2.BottomBorder);
             Assert.AreEqual(XLColor.Red, b2.BottomBorderColor);
 
-            // TODO Styles: Enable after switch, repository makes a mess with equality
-            // AssertCellBorder(ws, "A2", Top | Bottom, XLBorderStyleValues.Thick, XLColor.Red);
-            // AssertCellBorder(ws, "C2", Top | Bottom, XLBorderStyleValues.Thick, XLColor.Red);
+            AssertCellBorder(ws, "A2", Top | Bottom, XLBorderStyleValues.Thick, XLColor.Red);
+            AssertCellBorder(ws, "C2", Top | Bottom, XLBorderStyleValues.Thick, XLColor.Red);
         }
 
         [Test]
@@ -263,12 +262,11 @@ namespace ClosedXML.Tests.Excel.Styles
             Assert.AreEqual(XLBorderStyleValues.Thin, b2.BottomBorder);
             Assert.AreEqual(XLColor.Blue, b2.BottomBorderColor);
 
-            // TODO Styles: Enable after switch, repository makes a mess with equality
-            // AssertCellBorder(ws, "A2", Left | Right, XLBorderStyleValues.Thick, XLColor.Red);
-            // AssertCellBorder(ws, "C2", Left | Right, XLBorderStyleValues.Thick, XLColor.Red);
+            AssertCellBorder(ws, "A2", Left | Right, XLBorderStyleValues.Thick, XLColor.Red);
+            AssertCellBorder(ws, "C2", Left | Right, XLBorderStyleValues.Thick, XLColor.Red);
         }
 
-        [Test, Ignore("Fixes #2517 in styles rework")] // TODO Styles: Enable after style rework switch
+        [Test]
         public void InsideBorder_for_multirow_rowspans()
         {
             using var wb = new XLWorkbook();
