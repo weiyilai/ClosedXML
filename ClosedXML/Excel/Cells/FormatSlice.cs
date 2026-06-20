@@ -5,7 +5,7 @@ namespace ClosedXML.Excel;
 
 internal class FormatSlice : ISlice
 {
-    private readonly Slice<SliceValue> _slice = new();
+    private readonly Slice<XLCellFormatValue?> _slice = new();
 
     public bool IsEmpty => _slice.IsEmpty;
 
@@ -59,18 +59,17 @@ internal class FormatSlice : ISlice
 
     public void Set(Point point, XLCellFormatValue? value)
     {
-        var modified = _slice[point] with { Format = value };
-        _slice.Set(point, modified);
+        _slice.Set(point, value);
     }
 
     internal void SetAll(Area area, XLCellFormatValue? value)
     {
-        _slice.SetAll(area, new SliceValue { Format = value });
+        _slice.SetAll(area, value);
     }
 
     internal XLCellFormatValue? GetFormat(Point point)
     {
-        return _slice[point].Format;
+        return _slice[point];
     }
 
     // TODO Styles: FormatSlice should keep track of used format values so we don't have to go over all of them.
@@ -79,10 +78,8 @@ internal class FormatSlice : ISlice
         var enumerator = GetEnumerator(Area.Full);
         while (enumerator.MoveNext())
         {
-            if (_slice[enumerator.Current].Format is { } format)
+            if (_slice[enumerator.Current] is { } format)
                 usedCellFormats.Add(format);
         }
     }
-
-    private readonly record struct SliceValue(XLCellFormatValue? Format);
 }
