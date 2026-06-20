@@ -159,7 +159,7 @@ namespace ClosedXML.Excel
         public IXLStyle Style
         {
             get => Format;
-            set => Format.SetValue(value);
+            set => Format.SetStyle(value);
         }
 
         public XLDictionary<XLFormula> Values { get; }

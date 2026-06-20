@@ -405,10 +405,14 @@ internal class XLWorkbookStyles
     internal XLDxfValue GetRegisteredDxFormat(XLDxfValue original, Func<XLDxfValue, XLDxfValue> modify)
     {
         var modified = modify(original);
-        return RegisteredDxFormat(modified);
+        return RegisterDxFormat(modified);
     }
 
-    internal XLDxfValue RegisteredDxFormat(XLDxfValue dxf)
+    /// <summary>
+    /// Register dxf from potentially different workbook into this workbook.
+    /// </summary>
+    /// <returns>Registered instance.</returns>
+    internal XLDxfValue RegisterDxFormat(XLDxfValue dxf)
     {
         if (_differentialFormats.TryGetValue(dxf, out var existingDxf))
             return existingDxf;

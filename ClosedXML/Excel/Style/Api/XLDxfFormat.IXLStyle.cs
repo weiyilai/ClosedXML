@@ -57,14 +57,4 @@ internal partial class XLDxFormat : IXLStyle
     {
         throw new NotSupportedException();
     }
-
-    /// <summary>
-    /// A helper method that is used when a style if copied from one object to another.
-    /// For example, <c>conditionaFormat.Style = someOtherApi.Style</c>.
-    /// </summary>
-    internal void SetStyle(IXLStyle other)
-    {
-        // TODO Styles: Implement.
-        throw new NotImplementedException();
-    }
 }

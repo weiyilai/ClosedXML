@@ -82,8 +82,15 @@ internal partial class XLDxFormat
         _container.FormatValue = modifiedDxf;
     }
 
-    internal void SetValue(IXLStyle value)
+    /// <summary>
+    /// A helper method that is used when a style if copied from one object to another.
+    /// For example, <c>conditionaFormat.Style = someOtherApi.Style</c>.
+    /// </summary>
+    internal void SetStyle(IXLStyle other)
     {
-        throw new NotImplementedException();
+        if (other is not XLDxFormat otherFormat)
+            throw new NotSupportedException("Can only copy from dxf.");
+
+        _container.FormatValue = _styles.RegisterDxFormat(otherFormat.Dxf);
     }
 }
