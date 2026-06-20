@@ -230,7 +230,7 @@ internal partial class XLCellFormat
         var styles = _workbook.Styles;
         Modify(format =>
         {
-            var modifiedNumberFormat = styles.GetRegisteredNumberFormat(numberFormat);
+            var modifiedNumberFormat = styles.RegisterNumberFormat(numberFormat);
             var modifiedFormat = styles.GetRegisteredCellFormat(format, cellFormat => cellFormat with
             {
                 NumberFormat = modifiedNumberFormat,

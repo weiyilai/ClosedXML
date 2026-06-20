@@ -227,7 +227,7 @@ internal class XLWorkbookStyles
         var numFmtId = FirstUserDefinedNumberFormatIndex;
         if (_numberFormats.Count > 0)
             numFmtId = Math.Max(_numberFormats.Keys.Max() + 1, numFmtId);
-        
+
         _numberFormats.Add(numFmtId, numberFormat);
     }
 
@@ -282,7 +282,7 @@ internal class XLWorkbookStyles
         _mruColors = mruColors;
     }
 
-    internal XLNumberFormat GetRegisteredNumberFormat(XLNumberFormat numberFormat)
+    internal XLNumberFormat RegisterNumberFormat(XLNumberFormat numberFormat)
     {
         if (_numberFormats.TryGetValue(numberFormat, out var existingFormat))
             return existingFormat;
@@ -293,14 +293,19 @@ internal class XLWorkbookStyles
 
     private XLAlignmentFormatValue GetRegisteredAlignmentFormat(XLAlignmentFormatValue original, Func<XLAlignmentFormatValue, XLAlignmentFormatValue> modify)
     {
-        // TODO Styles: Probably also make a table for alignment
-        return modify(original);
+        return RegisterAlignmentFormat(modify(original));
     }
 
-    private XLProtectionFormatValue GetRegisteredProtectionFormat(XLProtectionFormatValue original, Func<XLProtectionFormatValue, XLProtectionFormatValue> modify)
+    private XLAlignmentFormatValue RegisterAlignmentFormat(XLAlignmentFormatValue original)
+    {
+        // TODO Styles: Probably also make a table for alignment
+        return original;
+    }
+
+    private XLProtectionFormatValue RegisterProtectionFormat(XLProtectionFormatValue original)
     {
         // TODO Styles: Probably also make a table for protection
-        return modify(original);
+        return original;
     }
 
     /// <summary>
@@ -311,10 +316,10 @@ internal class XLWorkbookStyles
     internal XLFontFormatValue GetRegisteredFontFormat(XLFontFormatValue original, Func<XLFontFormatValue, XLFontFormatValue> modify)
     {
         var modified = modify(original);
-        return GetRegisteredFontFormat(modified);
+        return RegisterFontFormat(modified);
     }
 
-    internal XLFontFormatValue GetRegisteredFontFormat(XLFontFormatValue font)
+    internal XLFontFormatValue RegisterFontFormat(XLFontFormatValue font)
     {
         if (_fontFormats.TryGetValue(font, out var existingFont))
             return existingFont;
@@ -325,7 +330,7 @@ internal class XLWorkbookStyles
 
     internal XLCellFormatValue GetModifiedFormat(XLCellFormatValue originalFormat, XLNumberFormat numberFormat)
     {
-        var modifiedNumberFormat = GetRegisteredNumberFormat(numberFormat);
+        var modifiedNumberFormat = RegisterNumberFormat(numberFormat);
         var modifiedFormat = GetRegisteredCellFormat(originalFormat, format => format with { NumberFormat = modifiedNumberFormat });
         return modifiedFormat;
     }
@@ -354,31 +359,50 @@ internal class XLWorkbookStyles
     internal XLFillFormatValue GetRegisteredFillFormat(XLFillFormatValue original, Func<XLFillFormatValue, XLFillFormatValue> modify)
     {
         var modified = modify(original);
-        if (_fillFormats.TryGetValue(modified, out var existingFill))
+        return RegisterFillFormat(modified);
+    }
+
+    private XLFillFormatValue RegisterFillFormat(XLFillFormatValue fill)
+    {
+        if (_fillFormats.TryGetValue(fill, out var existingFill))
             return existingFill;
 
-        AddFillFormat(modified);
-        return modified;
+        AddFillFormat(fill);
+        return fill;
     }
 
     internal XLBorderFormatValue GetRegisteredBorderFormat(XLBorderFormatValue original, Func<XLBorderFormatValue, XLBorderFormatValue> modify)
     {
         var modified = modify(original);
-        if (_borderFormats.TryGetValue(modified, out var existingFill))
-            return existingFill;
+        return RegisterBorderFormat(modified);
+    }
 
-        AddBorderFormat(modified);
-        return modified;
+    private XLBorderFormatValue RegisterBorderFormat(XLBorderFormatValue border)
+    {
+        if (_borderFormats.TryGetValue(border, out var existingBorder))
+            return existingBorder;
+
+        AddBorderFormat(border);
+        return border;
     }
 
     internal XLCellFormatValue GetRegisteredCellFormat(XLCellFormatValue original, Func<XLCellFormatValue, XLCellFormatValue> modify)
     {
         var modified = modify(original);
-        if (_cellFormats.TryGetValue(modified, out var existing))
+        return RegisterCellFormat(modified);
+    }
+
+    /// <summary>
+    /// Register dxf from potentially different workbook into this workbook.
+    /// </summary>
+    /// <returns>Registered instance.</returns>
+    internal XLCellFormatValue RegisterCellFormat(XLCellFormatValue cellFormat)
+    {
+        if (_cellFormats.TryGetValue(cellFormat, out var existing))
             return existing;
 
-        AddFormat(modified);
-        return modified;
+        AddFormat(cellFormat);
+        return cellFormat;
     }
 
     /// <summary>
@@ -386,15 +410,30 @@ internal class XLWorkbookStyles
     /// </summary>
     internal XLCellFormatValue GetRegisteredCellFormat(XLCellFormatValue format)
     {
-        // Each component might be from a different workbook, so ensure they are all registered. Formats are immutable, so sharing is fine.
-        var registeredNumberFormat = GetRegisteredNumberFormat(format.NumberFormat);
-        var registeredAlignment = GetRegisteredAlignmentFormat(format.Alignment, static x => x);
-        var registeredProtection = GetRegisteredProtectionFormat(format.Protection, static x => x);
-        var registeredFont = GetRegisteredFontFormat(format.Font, static x => x);
-        var registeredFill = GetRegisteredFillFormat(format.Fill, static x => x);
-        var registeredBorder = GetRegisteredBorderFormat(format.Border, static x => x);
-        var registeredFormat = GetRegisteredCellFormat(format, static x => x);
-        return registeredFormat;
+        // If format is already registered, all its components must be registered too.
+        if (_cellFormats.TryGetValue(format, out var existing))
+            return existing;
+
+        // TODO: If format is from different workbook, we should copy style if from different workbook and this workbook doesn't already have a style with same name
+        StyleId? formatStyleId  = format.CellStyleId is { } cellStyleId && _cellStyles.ContainsKey(cellStyleId) ? cellStyleId : null;
+
+        // We have to create new one, because some components may already exist here
+        var cellFormat = new XLCellFormatValue
+        {
+            NumberFormat = RegisterNumberFormat(format.NumberFormat),
+            Alignment = RegisterAlignmentFormat(format.Alignment),
+            Protection = RegisterProtectionFormat(format.Protection),
+            Font = RegisterFontFormat(format.Font),
+            Fill = RegisterFillFormat(format.Fill),
+            Border = RegisterBorderFormat(format.Border),
+            CellStyleId = formatStyleId,
+            IncludeQuotePrefix = format.IncludeQuotePrefix,
+            PivotButton = format.PivotButton,
+            CustomFormat = format.CustomFormat
+        };
+
+        AddFormat(cellFormat);
+        return cellFormat;
     }
 
     /// <summary>

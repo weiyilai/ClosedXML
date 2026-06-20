@@ -96,7 +96,7 @@ internal class XLPivotDataField : IXLPivotValue
         set
         {
             _numberFormat = value is not null
-                ? _pivotTable.Worksheet.Workbook.Styles.GetRegisteredNumberFormat(value.Value)
+                ? _pivotTable.Worksheet.Workbook.Styles.RegisterNumberFormat(value.Value)
                 : null;
         }
     }

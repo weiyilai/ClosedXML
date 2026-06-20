@@ -136,6 +136,37 @@ public class CopyingRangesTests
         Assert.AreEqual("A1:A2", ws2.ConditionalFormats.First().Ranges.ToSpaceList());
     }
 
+    [Test]
+    public void Copy_cell_format_with_some_components_already_used_in_target_workbook()
+    {
+        // Each workbook contains all used formats and their components. Each format in a workbook
+        // must reference only registered instances from the workbook. When a format is copied
+        // from another workbook, it must reuse components already existing (=equal to the copied
+        // source component) in target workbook and register components that don't exist (=don't
+        // have equal component) in the target workbook. Failure to do so will lead to an invalid
+        // state and likely an exception during save.
+        TestHelper.CreateSaveLoadAssert((_, ws) =>
+        {
+            using var otherWb = new XLWorkbook();
+            var otherWs = otherWb.AddWorksheet();
+
+            // Add same fill format to both ws1 and ws2
+            ws.Cell("A1").Style.Fill.SetBackgroundColor(XLColor.Red);
+            otherWs.Cell("A1").Style.Fill.SetBackgroundColor(XLColor.Red);
+
+            // Cell format on otherWs is different from all formats on ws1
+            otherWs.Cell("A1").Style.NumberFormat.Format = "Value[@]";
+
+            // Copy format
+            ws.Cell("B1").CopyFrom(otherWs.Cell("A1"));
+        },
+        (_, ws) =>
+        {
+            Assert.That(ws.Cell("B1").Style.Fill.BackgroundColor, Is.EqualTo(XLColor.Red));
+            Assert.That(ws.Cell("B1").Style.NumberFormat.Format, Is.EqualTo("Value[@]"));
+        });
+    }
+
     private static void FillRow(IXLRow row1)
     {
         row1.Cell(1).Style.Fill.SetBackgroundColor(XLColor.Red);

@@ -156,7 +156,7 @@ namespace ClosedXML.Excel
         internal static XLComment Create(XLCell cell, int? shapeId)
         {
             var styles = cell.Worksheet.Workbook.Styles;
-            var defaultFont = styles.GetRegisteredFontFormat(DefaultCommentFont);
+            var defaultFont = styles.RegisterFontFormat(DefaultCommentFont);
             var comment = new XLComment(defaultFont, styles, null);
             comment.Initialize(cell, shapeId: shapeId);
             return comment;
@@ -166,9 +166,9 @@ namespace ClosedXML.Excel
         {
             // source cell could be from different workbook, so register formats
             var styles = targetCell.Worksheet.Workbook.Styles;
-            var defaultFont = styles.GetRegisteredFontFormat(sourceCell.GetFormat().Font);
+            var defaultFont = styles.RegisterFontFormat(sourceCell.GetFormat().Font);
             var phoneticsFont = originalComment.HasPhonetics
-                ? styles.GetRegisteredFontFormat(XLFontFormatValue.FromFontBase(originalComment.Phonetics, styles))
+                ? styles.RegisterFontFormat(XLFontFormatValue.FromFontBase(originalComment.Phonetics, styles))
                 : null;
             var comment = new XLComment(defaultFont, styles, phoneticsFont);
 
