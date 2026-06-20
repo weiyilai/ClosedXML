@@ -11,7 +11,6 @@ using ClosedXML.Utils;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
-using static ClosedXML.Excel.XLPredefinedFormat.DateTime;
 using X14 = DocumentFormat.OpenXml.Office2010.Excel;
 
 namespace ClosedXML.Excel.IO;
@@ -498,7 +497,7 @@ internal class WorksheetPartReader
             // XLCell is by default blank, so no need to set it.
             if (cellValue is not null && double.TryParse(cellValue, XLHelper.NumberStyle, XLHelper.ParseCulture, out var number))
             {
-                var numberDataType = GetNumberDataType(format.NumberFormat);
+                var numberDataType = format.NumberFormat.GetNumberDataType();
                 var cellNumber = numberDataType switch
                 {
                     XLDataType.DateTime => XLCellValue.FromSerialDateTime(number),
@@ -623,87 +622,6 @@ internal class WorksheetPartReader
             xlCell.GetRichText().Phonetics.Add(pr.Text.InnerText.FixNewLines(), (Int32)pr.BaseTextStartIndex.Value,
                                           (Int32)pr.EndingBaseIndex.Value);
         }
-    }
-
-    // TODO Styles: Move methods to strongly typed number format
-    private static XLDataType GetNumberDataType(XLNumberFormat numberFormat)
-    {
-        if (XLPredefinedFormat.NumberFormatIds.TryGetValue(numberFormat, out var formatId))
-        {
-            var numberFormatId = (XLPredefinedFormat.DateTime)formatId;
-            var isTimeOnlyFormat = numberFormatId is
-                Hour12MinutesAmPm or
-                Hour12MinutesSecondsAmPm or
-                Hour24Minutes or
-                Hour24MinutesSeconds or
-                MinutesSeconds or
-                Hour12MinutesSeconds or
-                MinutesSecondsMillis1;
-
-            if (isTimeOnlyFormat)
-                return XLDataType.TimeSpan;
-
-            var isDateTimeFormat = numberFormatId is
-                    DayMonthYear4WithSlashes or
-                    DayMonthAbbrYear2WithDashes or
-                    DayMonthAbbrWithDash or
-                    MonthDayYear4WithDashesHour24Minutes;
-
-            if (isDateTimeFormat)
-                return XLDataType.DateTime;
-
-            return XLDataType.Number;
-        }
-
-        if (!String.IsNullOrWhiteSpace(numberFormat))
-        {
-            var dataType = GetDataTypeFromFormat(numberFormat);
-            return dataType ?? XLDataType.Number;
-        }
-
-        return XLDataType.Number;
-    }
-
-    private static XLDataType? GetDataTypeFromFormat(String format)
-    {
-        int length = format.Length;
-        String f = format.ToLower();
-        for (Int32 i = 0; i < length; i++)
-        {
-            Char c = f[i];
-            if (c == '"')
-                i = f.IndexOf('"', i + 1);
-            else if (c == '[')
-            {
-                // #1742 We need to skip locale prefixes in DateTime formats [...]
-                i = f.IndexOf(']', i + 1);
-                if (i == -1)
-                    return null;
-            }
-            else if (c == '0' || c == '#' || c == '?')
-                return XLDataType.Number;
-            else if (c == 'y' || c == 'd')
-                return XLDataType.DateTime;
-            else if (c == 'h' || c == 's')
-                return XLDataType.TimeSpan;
-            else if (c == 'm')
-            {
-                // Excel treats "m" immediately after "hh" or "h" or immediately before "ss" or "s" as minutes, otherwise as a month value
-                // We can ignore the "hh" or "h" prefixes as these would have been detected by the preceding condition above.
-                // So we just need to make sure any 'm' is followed immediately by "ss" or "s" (excluding placeholders) to detect a timespan value
-                for (Int32 j = i + 1; j < length; j++)
-                {
-                    if (f[j] == 'm')
-                        continue;
-                    else if (f[j] == 's')
-                        return XLDataType.TimeSpan;
-                    else if ((f[j] >= 'a' && f[j] <= 'z') || (f[j] >= '0' && f[j] <= '9'))
-                        return XLDataType.DateTime;
-                }
-                return XLDataType.DateTime;
-            }
-        }
-        return null;
     }
 
     private static void LoadSheetViews(SheetViews sheetViews, XLWorksheet ws)
