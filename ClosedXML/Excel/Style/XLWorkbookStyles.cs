@@ -429,7 +429,7 @@ internal class XLWorkbookStyles
         var styles = new XLWorkbookStyles
         {
             DefaultTableStyle = XLTableTheme.TableStyleMedium2.ToString(),
-            DefaultPivotStyle = XLPivotTableTheme.PivotStyleLight16.ToString()
+            DefaultPivotStyle = nameof(XLPivotTableTheme.PivotStyleLight16)
         };
 
         foreach (var (numFmtId, formatCode) in XLPredefinedFormat.FormatCodes)
