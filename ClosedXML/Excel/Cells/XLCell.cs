@@ -925,14 +925,10 @@ namespace ClosedXML.Excel
 
             if (options.HasFlag(XLCellsUsedOptions.NormalFormats))
             {
-                if (FormatValue is { } format)
+                if (FormatValue is { } cellFormat)
                 {
-                    if (format.IncludeQuotePrefix)
-                        return false;
-
-                    // TODO Styles: Think about empty detection. Original is pretty suss, document if necessary
-                    var defaultFormat = Worksheet.Workbook.Styles.DefaultFormat;
-                    if (defaultFormat != format)
+                    var inheritedFormat = Worksheet.GetInheritedFormat(Point);
+                    if (!XLCellFormatValue.AreSame(cellFormat, inheritedFormat))
                         return false;
                 }
             }

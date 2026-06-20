@@ -120,7 +120,7 @@ namespace ClosedXML.Excel
 
         private Double _columnWidth;
 
-        public XLWorksheetInternals Internals { get; private set; }
+        public XLWorksheetInternals Internals { get; }
 
         internal XLSparklineGroups SparklineGroupsInternal { get; }
 
@@ -1857,6 +1857,11 @@ namespace ClosedXML.Excel
             // style set when column/row is created to avoid problems with correct which
             // style has precedence. I.e. set column blue, set row red => cell is red.
             // Swap order the the cell is blue.
+            return GetInheritedFormat(point);
+        }
+
+        internal XLCellFormatValue GetInheritedFormat(Point point)
+        {
             if (Internals.RowsCollection.TryGetValue(point.Row, out var row) && row.FormatValue is not null)
                 return row.FormatValue;
 

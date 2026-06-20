@@ -11,6 +11,11 @@ public enum XLCellsUsedOptions
 
     Contents = 1 << 0,
     DataType = 1 << 1,
+
+    /// <summary>
+    /// A cell is considered used when its format is different than the format determined
+    /// through inheritance from its row, column, sheet or workbook.
+    /// </summary>
     NormalFormats = 1 << 2,
     ConditionalFormats = 1 << 3,
     Comments = 1 << 4,

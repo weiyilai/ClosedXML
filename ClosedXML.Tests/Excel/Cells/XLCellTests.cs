@@ -41,22 +41,24 @@ namespace ClosedXML.Tests
         }
 
         [Test]
-        public void CellsUsedIncludeStyles1()
+        public void CellsUsed_include_format_different_from_inherited_format1()
         {
-            IXLWorksheet ws = new XLWorkbook().Worksheets.Add("Sheet1");
+            using var wb = new XLWorkbook();
+            var ws = wb.Worksheets.Add("Sheet1");
             ws.Row(3).Style.Fill.BackgroundColor = XLColor.Red;
-            ws.Column(3).Style.Fill.BackgroundColor = XLColor.Red;
+            ws.Column(3).Style.Fill.BackgroundColor = XLColor.Blue;
             ws.Cell(2, 2).Value = "ASDF";
             var range = ws.RangeUsed(XLCellsUsedOptions.All).RangeAddress.ToString();
             Assert.AreEqual("B2:C3", range);
         }
 
         [Test]
-        public void CellsUsedIncludeStyles2()
+        public void CellsUsed_include_format_different_from_inherited_format2()
         {
-            IXLWorksheet ws = new XLWorkbook().Worksheets.Add("Sheet1");
+            using var wb = new XLWorkbook();
+            var ws = wb.Worksheets.Add("Sheet1");
             ws.Row(2).Style.Fill.BackgroundColor = XLColor.Red;
-            ws.Column(2).Style.Fill.BackgroundColor = XLColor.Red;
+            ws.Column(2).Style.Fill.BackgroundColor = XLColor.Blue;
             ws.Cell(3, 3).Value = "ASDF";
             var range = ws.RangeUsed(XLCellsUsedOptions.All).RangeAddress.ToString();
             Assert.AreEqual("B2:C3", range);

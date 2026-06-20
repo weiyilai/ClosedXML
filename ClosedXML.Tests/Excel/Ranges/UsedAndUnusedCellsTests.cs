@@ -397,5 +397,28 @@ namespace ClosedXML.Tests.Excel.Ranges
                 Assert.AreEqual(XLHelper.LastCell, lastCell.Address.ToString());
             }
         }
+
+        [Test]
+        public void Normal_format_considers_cell_used_when_it_has_format_different_from_inherited_format()
+        {
+            using var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet();
+            var cell = ws.Cell("A1");
+            var columnStyle = ws.Column(1).Style;
+            columnStyle.Fill.SetBackgroundColor(XLColor.Red);
+
+            Assert.IsTrue(cell.IsEmpty(XLCellsUsedOptions.NormalFormats));
+            Assert.AreEqual(XLColor.Red, cell.Style.Fill.BackgroundColor);
+
+            cell.Style.Fill.BackgroundColor = XLColor.Blue;
+
+            Assert.IsFalse(cell.IsEmpty(XLCellsUsedOptions.NormalFormats));
+            Assert.AreEqual(XLColor.Blue, cell.Style.Fill.BackgroundColor);
+
+            cell.Style.Fill.BackgroundColor = XLColor.Red;
+
+            Assert.IsTrue(cell.IsEmpty(XLCellsUsedOptions.NormalFormats));
+            Assert.AreEqual(XLColor.Red, cell.Style.Fill.BackgroundColor);
+        }
     }
 }
