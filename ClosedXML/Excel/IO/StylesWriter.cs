@@ -55,7 +55,7 @@ internal class StylesWriter
     internal void WriteContent(WorkbookStylesPart stylesPart, IEnumMapper mapper, XLWorkbookStyles styles, XLWorkbook workbook, XLWorkbook.SaveContext context)
     {
         // Determine which format components are used and thus should be saved.
-        var usedCellFormats = new HashSet<XLCellFormatValue>
+        var usedCellFormats = new HashSet<XLCellFormatValue>(ReferenceEqualityComparer<XLCellFormatValue>.Instance)
         {
             styles.DefaultCellFormat
         };
