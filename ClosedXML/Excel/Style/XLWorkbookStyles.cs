@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using ClosedXML.Excel.Formatting;
 using ClosedXML.Utils;
@@ -23,6 +24,10 @@ internal class XLWorkbookStyles
     private readonly BiDictionary<int, XLFillFormatValue> _fillFormats;
 
     private readonly BiDictionary<int, XLBorderFormatValue> _borderFormats;
+
+    private readonly BiDictionary<int, XLAlignmentFormatValue> _alignmentFormats;
+
+    private readonly BiDictionary<int, XLProtectionFormatValue> _protectionFormats;
 
     /// <summary>
     /// The key is XfId, the value is cell format.
@@ -113,6 +118,8 @@ internal class XLWorkbookStyles
         _fontFormats = new BiDictionary<int, XLFontFormatValue>();
         _fillFormats = new BiDictionary<int, XLFillFormatValue>();
         _borderFormats = new BiDictionary<int, XLBorderFormatValue>();
+        _alignmentFormats = new BiDictionary<int, XLAlignmentFormatValue>();
+        _protectionFormats = new BiDictionary<int, XLProtectionFormatValue>();
         _cellFormats = new BiDictionary<int, XLCellFormatValue>();
         _cellStyles = new BiDictionary<StyleId, XLCellStyleValue>();
         _differentialFormats = new BiDictionary<int, XLDxfValue>();
@@ -296,16 +303,22 @@ internal class XLWorkbookStyles
         return RegisterAlignmentFormat(modify(original));
     }
 
-    private XLAlignmentFormatValue RegisterAlignmentFormat(XLAlignmentFormatValue original)
+    internal XLAlignmentFormatValue RegisterAlignmentFormat(XLAlignmentFormatValue alignment)
     {
-        // TODO Styles: Probably also make a table for alignment
-        return original;
+        if (_alignmentFormats.TryGetValue(alignment, out var existingAlignment))
+            return existingAlignment;
+
+        _alignmentFormats.Add(_alignmentFormats.Count, alignment);
+        return alignment;
     }
 
-    private XLProtectionFormatValue RegisterProtectionFormat(XLProtectionFormatValue original)
+    internal XLProtectionFormatValue RegisterProtectionFormat(XLProtectionFormatValue protection)
     {
-        // TODO Styles: Probably also make a table for protection
-        return original;
+        if (_protectionFormats.TryGetValue(protection, out var existingProtection))
+            return existingProtection;
+
+        _protectionFormats.Add(_protectionFormats.Count, protection);
+        return protection;
     }
 
     /// <summary>
@@ -392,15 +405,17 @@ internal class XLWorkbookStyles
         return RegisterCellFormat(modified);
     }
 
-    /// <summary>
-    /// Register dxf from potentially different workbook into this workbook.
-    /// </summary>
-    /// <returns>Registered instance.</returns>
     internal XLCellFormatValue RegisterCellFormat(XLCellFormatValue cellFormat)
     {
         if (_cellFormats.TryGetValue(cellFormat, out var existing))
             return existing;
 
+        Debug.Assert(_numberFormats.ContainsValue(cellFormat.NumberFormat));
+        Debug.Assert(_alignmentFormats.TryGetValue(cellFormat.Alignment, out var registeredAlignment) && ReferenceEquals(cellFormat.Alignment, registeredAlignment));
+        Debug.Assert(_protectionFormats.TryGetValue(cellFormat.Protection, out var registeredProtection) && ReferenceEquals(cellFormat.Protection, registeredProtection));
+        Debug.Assert(_fontFormats.TryGetValue(cellFormat.Font, out var registeredFont) && ReferenceEquals(cellFormat.Font, registeredFont));
+        Debug.Assert(_fillFormats.TryGetValue(cellFormat.Fill, out var registeredFill) && ReferenceEquals(cellFormat.Fill, registeredFill));
+        Debug.Assert(_borderFormats.TryGetValue(cellFormat.Border, out var registeredBorder) && ReferenceEquals(cellFormat.Border, registeredBorder));
         AddFormat(cellFormat);
         return cellFormat;
     }
@@ -482,8 +497,7 @@ internal class XLWorkbookStyles
         styles.AddCellStyle(0, normalStyle);
 
         var defaultFormat = XLCellFormatValue.FromStyle(0, normalStyle);
-        styles.AddFormat(defaultFormat);
-        styles.DefaultFormat = defaultFormat;
+        styles.DefaultFormat = styles.GetRegisteredCellFormat(defaultFormat);
 
         return styles;
     }

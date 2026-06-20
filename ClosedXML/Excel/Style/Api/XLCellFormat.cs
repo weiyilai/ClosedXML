@@ -281,7 +281,7 @@ internal partial class XLCellFormat
         var styles = _workbook.Styles;
         Modify(format =>
         {
-            var modifiedAlignment = modifyAlignment(format.Alignment, value);
+            var modifiedAlignment = styles.RegisterAlignmentFormat(modifyAlignment(format.Alignment, value));
             var modifiedFormat = styles.GetRegisteredCellFormat(format, cellFormat => cellFormat with
             {
                 Alignment = modifiedAlignment,
@@ -296,7 +296,7 @@ internal partial class XLCellFormat
         var styles = _workbook.Styles;
         Modify(format =>
         {
-            var modifiedProtection = modifyProtection(format.Protection, value);
+            var modifiedProtection = styles.RegisterProtectionFormat(modifyProtection(format.Protection, value));
             var modifiedFormat = styles.GetRegisteredCellFormat(format, cellFormat => cellFormat with
             {
                 Protection = modifiedProtection,

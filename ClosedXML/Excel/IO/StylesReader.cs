@@ -572,23 +572,25 @@ internal partial class StylesReader
         if (applyProtection ?? defaultApply)
             components |= CellFormatComponents.Protection;
 
+        var formatAlignment = alignment is not null ? new XLAlignmentFormatValue
+        {
+            Horizontal = alignment.Horizontal ?? XLAlignmentFormatValue.Default.Horizontal,
+            Vertical = alignment.Vertical ?? XLAlignmentFormatValue.Default.Vertical,
+            TextRotation = alignment.TextRotation ?? XLAlignmentFormatValue.Default.TextRotation,
+            WrapText = alignment.WrapText ?? XLAlignmentFormatValue.Default.WrapText,
+            Indent = alignment.Indent ?? XLAlignmentFormatValue.Default.Indent,
+            RelativeIndent = alignment.RelativeIndent ?? XLAlignmentFormatValue.Default.RelativeIndent,
+            JustifyLastLine = alignment.JustifyLastLine ?? XLAlignmentFormatValue.Default.JustifyLastLine,
+            ShrinkToFit = alignment.ShrinkToFit ?? XLAlignmentFormatValue.Default.ShrinkToFit,
+            ReadingOrder = alignment.ReadingOrder ?? XLAlignmentFormatValue.Default.ReadingOrder,
+        } : XLAlignmentFormatValue.Default;
+        var formatProtection = protection ?? _defaultProtectionFormat;
         var format = new XLCellFormatValue
         {
             NumberFormat = numberFormat,
             // Alignment is not copied from default format
-            Alignment = alignment is not null ? new XLAlignmentFormatValue
-            {
-                Horizontal = alignment.Horizontal ?? XLAlignmentFormatValue.Default.Horizontal,
-                Vertical = alignment.Vertical ?? XLAlignmentFormatValue.Default.Vertical,
-                TextRotation = alignment.TextRotation ?? XLAlignmentFormatValue.Default.TextRotation,
-                WrapText = alignment.WrapText ?? XLAlignmentFormatValue.Default.WrapText,
-                Indent = alignment.Indent ?? XLAlignmentFormatValue.Default.Indent,
-                RelativeIndent = alignment.RelativeIndent ?? XLAlignmentFormatValue.Default.RelativeIndent,
-                JustifyLastLine = alignment.JustifyLastLine ?? XLAlignmentFormatValue.Default.JustifyLastLine,
-                ShrinkToFit = alignment.ShrinkToFit ?? XLAlignmentFormatValue.Default.ShrinkToFit,
-                ReadingOrder = alignment.ReadingOrder ?? XLAlignmentFormatValue.Default.ReadingOrder,
-            } : XLAlignmentFormatValue.Default,
-            Protection = protection ?? _defaultProtectionFormat,
+            Alignment = _styles.RegisterAlignmentFormat(formatAlignment),
+            Protection = _styles.RegisterProtectionFormat(formatProtection),
             Font = font,
             Fill = fill,
             Border = border,
